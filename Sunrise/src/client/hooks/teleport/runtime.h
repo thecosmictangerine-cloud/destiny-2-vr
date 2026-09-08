@@ -117,6 +117,15 @@ void apply_pending(void* component) noexcept;
 [[nodiscard]] bool write_velocity(void* component, const Vector& velocity) noexcept;
 
 /**
+ * Reports the base of one player's camera pose block.
+ * Exposed so a feature can write the pose the camera hook has just published: that hook is the
+ * only site that reaches the block at all.
+ * @param playerIndex Player whose block to address.
+ * @return The block base, or null while the camera singleton is unresolved.
+ */
+[[nodiscard]] std::byte* camera_block(std::uint32_t playerIndex) noexcept;
+
+/**
  * The camera hook is the only site that sees the pose block, so it publishes the vector here.
  * @param forward Receives the camera forward vector published this frame.
  * @return True once the camera hook has published one.

@@ -18,6 +18,7 @@
 #include "../fly/fly.h"
 #include "../polled_input/runtime.h"
 #include "../sword_skate/sword_skate.h"
+#include "../vr/runtime.h"
 #include "internal.h"
 #include "runtime.h"
 
@@ -79,6 +80,11 @@ std::int64_t __fastcall camera_transform(std::uint32_t playerIndex) noexcept {
     const CameraTransform next = original<CameraTransform>(kCameraSlot);
     const std::int64_t result = next != nullptr ? next(playerIndex) : 0;
     capture_camera_pose(playerIndex);
+    // The VR probe overwrites the pose the engine just produced. It runs after the capture on
+    // purpose, so what the teleport and the world lines read stays the engine's own pose, and
+    // before everything else in the frame, which is what should see the overwritten one.
+    hooks::vr::poll_keys();
+    hooks::vr::apply_camera(playerIndex);
     poll_request();
     force_pending();
     // Read here, not on the physics tick: that tick stops for a player who is standing still.

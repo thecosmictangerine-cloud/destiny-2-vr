@@ -330,6 +330,18 @@ void clear_targets() noexcept {
     invalidate_camera_pose();
 }
 
+/** Reports the base of one player's camera pose block. */
+std::byte* camera_block(std::uint32_t playerIndex) noexcept {
+    if (playerIndex == kInvalidHandle || g_cameraSingleton == nullptr) {
+        return nullptr;
+    }
+    std::byte* const camera = g_cameraSingleton();
+    if (camera == nullptr) {
+        return nullptr;
+    }
+    return camera + kCameraBlockStride * playerIndex;
+}
+
 /** Publishes the frame's complete camera pose and its forward vector. */
 void capture_camera_pose(std::uint32_t playerIndex) noexcept {
     if (playerIndex == kInvalidHandle || g_cameraSingleton == nullptr) {

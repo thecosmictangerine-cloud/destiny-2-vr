@@ -49,7 +49,7 @@
       <ConformanceMode>true</ConformanceMode>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor\detours;$(ProjectDir)vendor\lua;$(ProjectDir)vendor\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(ProjectDir)vendor\detours;$(ProjectDir)vendor\lua;$(ProjectDir)vendor\openxr\include;$(ProjectDir)vendor\sqlite;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;WIN32_LEAN_AND_MEAN;NOMINMAX;IMGUI_USER_CONFIG=&quot;core/ui/imgui_user_config.h&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -248,6 +248,12 @@
     <ClCompile Include="src\client\hooks\teleport\teleport_lifecycle.cpp" />
     <ClCompile Include="src\client\hooks\teleport\teleport_move.cpp" />
     <ClCompile Include="src\client\hooks\teleport\teleport_action_key.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_camera.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_gamepad.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_destination.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_watch.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_weapon.cpp" />
+    <ClCompile Include="src\client\hooks\vr\xr_runtime.cpp" />
     <ClCompile Include="src\client\hooks\world_objects\world_object_registry.cpp" />
     <ClCompile Include="src\client\hooks\world_objects\world_object_identity_report.cpp" />
     <ClCompile Include="src\client\hooks\world_objects\world_object_purge_policy.cpp" />
@@ -1321,6 +1327,12 @@
     <ClInclude Include="src\client\input\window_focus.h" />
     <ClInclude Include="src\client\hooks\teleport\internal.h" />
     <ClInclude Include="src\client\hooks\teleport\runtime.h" />
+    <ClInclude Include="src\client\hooks\vr\runtime.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_gamepad.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_destination.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_watch.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_weapon.h" />
+    <ClInclude Include="src\client\hooks\vr\xr_runtime.h" />
     <ClInclude Include="src\client\hooks\world_objects\world_object_registry.h" />
     <ClInclude Include="src\client\hooks\world_objects\world_object_rebind_trace.h" />
     <ClInclude Include="src\client\hooks\world_objects\internal.h" />

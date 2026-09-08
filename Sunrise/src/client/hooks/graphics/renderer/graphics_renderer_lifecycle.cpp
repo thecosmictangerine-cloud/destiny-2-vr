@@ -9,6 +9,7 @@
 #include "../../cursor/runtime.h"
 #include "../../inactivity/inactivity_override.h"
 #include "../../polled_input/runtime.h"
+#include "../../vr/runtime.h"
 #include "../input/input.h"
 #include "graphics_renderer_report.h"
 #include "state.h"
@@ -319,9 +320,11 @@ void present(IDXGISwapChain* swapChain) noexcept {
         (void)initialize_locked(swapChain);
     }
     bool framed = false;
+    ID3D11Device* vrDevice = nullptr;
     if (g_resources.swapChain == swapChain && fully_active_locked()) {
         render_frame_locked();
         framed = true;
+        vrDevice = g_resources.device;
     }
     ReleaseSRWLockExclusive(&g_rendererLock);
 
@@ -335,6 +338,11 @@ void present(IDXGISwapChain* swapChain) noexcept {
     polled_input::apply_visibility(visible);
     // The game makes its raw-mouse window during startup, so the first tries find nothing.
     (void)input::install_raw_input_window();
+    // The VR frame enters the OpenXR runtime, which blocks on the compositor, so it runs last and
+    // only once the renderer lock is gone.
+    if (vrDevice != nullptr) {
+        hooks::vr::present_frame(vrDevice, swapChain);
+    }
 }
 
 } // namespace sunrise::client::hooks::graphics::renderer

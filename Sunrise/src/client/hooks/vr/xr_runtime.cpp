@@ -1957,10 +1957,14 @@ void end_frame(IDXGISwapChain* swapChain) noexcept {
         g_haveRendered = true;
     }
     if ((g_frameIndex % kSubmitReportPeriod) == 0 || result != XR_SUCCESS) {
-        log_fmt("ev=vr.xr submit layers=%u result=%d fov=%.4f",
+        // The aspect goes out beside the FOV because it is the only proof the write landed: the
+        // block is recomputed by the engine every frame, so reading it from outside the process
+        // shows the engine's own value whatever the module did.
+        log_fmt("ev=vr.xr submit layers=%u result=%d fov=%.4f aspect=%.4f",
                 layerCount,
                 static_cast<int>(result),
-                g_renderedFov.load(std::memory_order_relaxed));
+                g_renderedFov.load(std::memory_order_relaxed),
+                g_renderedAspect.load(std::memory_order_relaxed));
     }
 }
 

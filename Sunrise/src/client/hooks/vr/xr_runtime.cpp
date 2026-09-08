@@ -119,6 +119,9 @@ struct Api final {
     PFN_xrGetActionStateFloat getActionStateFloat{};
     PFN_xrGetActionStateVector2f getActionStateVector2f{};
     PFN_xrGetActionStateBoolean getActionStateBoolean{};
+    PFN_xrGetActionStatePose getActionStatePose{};
+    PFN_xrCreateActionSpace createActionSpace{};
+    PFN_xrLocateSpace locateSpace{};
 };
 
 constexpr std::uint32_t kViewCount = 2;
@@ -127,6 +130,8 @@ constexpr std::uint32_t kMaxSwapchainImages = 8;
 constexpr XrDuration kImageWaitNanoseconds = 100'000'000;
 /** Frames between throttled submit reports. */
 constexpr std::uint64_t kSubmitReportPeriod = 300;
+/** Frames between controller pose reports. About a second, so a scripted step can read one. */
+constexpr std::uint64_t kHandReportPeriod = 60;
 
 /**
  * The runtime's swapchain the back buffer is copied into, one image for both eyes, and the blit
@@ -172,6 +177,15 @@ struct Actions final {
     XrAction thumbL{XR_NULL_HANDLE};
     XrAction thumbR{XR_NULL_HANDLE};
     XrAction menu{XR_NULL_HANDLE};
+    /**
+     * Aim poses. One action per hand rather than a single action with subaction paths: the mock
+     * runtime tells the hands apart by the last character of the action name, so `aim_l`/`aim_r`
+     * are load bearing for every test in scripts	esting.
+     */
+    XrAction aimL{XR_NULL_HANDLE};
+    XrAction aimR{XR_NULL_HANDLE};
+    XrSpace spaceL{XR_NULL_HANDLE};
+    XrSpace spaceR{XR_NULL_HANDLE};
     bool attached{};
 };
 
@@ -228,10 +242,21 @@ float g_unitsPerMetre{1.0F};
 
 /** Head position taken as the origin, in OpenXR's own basis and metres. */
 XrVector3f g_origin{};
+/**
+ * Head yaw at the last recentre, in the game's basis.
+ *
+ * Recentring used to take only the position, which left an arbitrary constant offset between where
+ * the player looked and where the character faced -- whatever direction they happened to be sitting
+ * in relative to the room's own forward axis. Invisible in the mock, because the mock's zero yaw is
+ * the identity orientation, and a standing bug on a real headset.
+ */
+float g_originYaw{};
 bool g_haveOrigin{false};
 bool g_recentreRequested{true};
 
 HeadPose g_pose{};
+/** Aim poses of the two controllers, left at index 0, right at index 1. */
+std::array<HandPose, 2> g_hands{};
 InputState g_input{};
 SRWLOCK g_poseLock{SRWLOCK_INIT};
 std::uint64_t g_frameIndex{};
@@ -248,6 +273,8 @@ bool g_haveRendered{false};
 bool g_shouldRender{false};
 /** Horizontal FOV the camera hook left in the engine, read back from the pose block. */
 std::atomic<float> g_renderedFov{0.0F};
+/** Aspect the camera hook left in the engine, read back the same way. */
+std::atomic<float> g_renderedAspect{0.0F};
 
 /** Emits one preformatted line on the client channel. */
 void log_line(const char* text) noexcept {
@@ -864,8 +891,14 @@ template <typename T>
            && bind(g_api.syncActions, "xrSyncActions", g_instance)
            && bind(g_api.getActionStateFloat, "xrGetActionStateFloat", g_instance)
            && bind(g_api.getActionStateVector2f, "xrGetActionStateVector2f", g_instance)
-           && bind(g_api.getActionStateBoolean, "xrGetActionStateBoolean", g_instance);
+           && bind(g_api.getActionStateBoolean, "xrGetActionStateBoolean", g_instance)
+           && bind(g_api.getActionStatePose, "xrGetActionStatePose", g_instance)
+           && bind(g_api.createActionSpace, "xrCreateActionSpace", g_instance)
+           && bind(g_api.locateSpace, "xrLocateSpace", g_instance);
 }
+
+/** Defined below, beside the basis conversion; used by the layer submission above it. */
+[[nodiscard]] XrPosef cyclopean(const std::array<XrView, kViewCount>& views) noexcept;
 
 /** Releases one COM object and clears the pointer. */
 template <typename Interface> void release_com(Interface*& object) noexcept {
@@ -891,6 +924,19 @@ template <typename Interface> void release_com(Interface*& object) noexcept {
     std::snprintf(info.actionName, sizeof info.actionName, "%s", name);
     std::snprintf(info.localizedActionName, sizeof info.localizedActionName, "%s", name);
     return g_api.createAction(g_actions.set, &info, &output) == XR_SUCCESS
+           && output != XR_NULL_HANDLE;
+}
+
+/** Creates the reference-space-relative space of one pose action. */
+[[nodiscard]] bool make_action_space(XrAction action, XrSpace& output) noexcept {
+    if (action == XR_NULL_HANDLE || g_api.createActionSpace == nullptr) {
+        return false;
+    }
+    XrActionSpaceCreateInfo info{XR_TYPE_ACTION_SPACE_CREATE_INFO};
+    info.action = action;
+    info.subactionPath = XR_NULL_PATH;
+    info.poseInActionSpace.orientation.w = 1.0F;
+    return g_api.createActionSpace(g_session, &info, &output) == XR_SUCCESS
            && output != XR_NULL_HANDLE;
 }
 
@@ -945,12 +991,16 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         && make_action(g_actions.y, "btn_y", XR_ACTION_TYPE_BOOLEAN_INPUT)
         && make_action(g_actions.thumbL, "btn_thumb_l", XR_ACTION_TYPE_BOOLEAN_INPUT)
         && make_action(g_actions.thumbR, "btn_thumb_r", XR_ACTION_TYPE_BOOLEAN_INPUT)
-        && make_action(g_actions.menu, "btn_menu", XR_ACTION_TYPE_BOOLEAN_INPUT);
+        && make_action(g_actions.menu, "btn_menu", XR_ACTION_TYPE_BOOLEAN_INPUT)
+        && make_action(g_actions.aimL, "aim_l", XR_ACTION_TYPE_POSE_INPUT)
+        && make_action(g_actions.aimR, "aim_r", XR_ACTION_TYPE_POSE_INPUT);
     if (!created) {
         log_line("ev=vr.xr actions result=fail reason=action");
         return false;
     }
-    const std::array<Binding, 13> touch{{
+    const std::array<Binding, 15> touch{{
+        {g_actions.aimL, "/user/hand/left/input/aim/pose"},
+        {g_actions.aimR, "/user/hand/right/input/aim/pose"},
         {g_actions.move, "/user/hand/left/input/thumbstick"},
         {g_actions.turn, "/user/hand/right/input/thumbstick"},
         {g_actions.triggerL, "/user/hand/left/input/trigger/value"},
@@ -966,7 +1016,9 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         {g_actions.menu, "/user/hand/left/input/menu/click"},
     }};
     suggest("/interaction_profiles/oculus/touch_controller", touch);
-    const std::array<Binding, 3> simple{{
+    const std::array<Binding, 5> simple{{
+        {g_actions.aimL, "/user/hand/left/input/aim/pose"},
+        {g_actions.aimR, "/user/hand/right/input/aim/pose"},
         {g_actions.triggerR, "/user/hand/right/input/select/click"},
         {g_actions.triggerL, "/user/hand/left/input/select/click"},
         {g_actions.menu, "/user/hand/left/input/menu/click"},
@@ -980,7 +1032,12 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         return false;
     }
     g_actions.attached = true;
-    log_line("ev=vr.xr actions result=ok");
+    // Action spaces come after the attach: an unattached set has no bound sources yet, and a
+    // runtime is entitled to refuse. A refusal costs the hands and nothing else, so it is logged
+    // and the rest of the session carries on -- head tracking must not depend on controllers.
+    const bool spaces = make_action_space(g_actions.aimL, g_actions.spaceL)
+                        && make_action_space(g_actions.aimR, g_actions.spaceR);
+    log_fmt("ev=vr.xr actions result=ok spaces=%d", spaces ? 1 : 0);
     return true;
 }
 
@@ -1394,18 +1451,26 @@ void destroy_presentation() noexcept {
             g_api.releaseSwapchainImage(p.swapchain, &release);
         }
         if (submitted) {
-            // The engine's frustum is symmetric: this horizontal FOV at the back buffer's aspect.
+            // The layer has to declare the frustum the engine really rendered: its horizontal FOV
+            // and the vertical implied by the ASPECT read back out of the pose block -- not by the
+            // back buffer's pixel ratio. Once the aspect is written the two differ, and using the
+            // pixel ratio is what declared about 71 degrees vertically where a Quest 3 eye has 98,
+            // which left black bands above and below the image.
             float horizontal = g_renderedFov.load(std::memory_order_relaxed);
             if (!(horizontal > 0.0F && horizontal < 3.1F)) {
                 horizontal = 1.5708F;
             }
+            float aspect = g_renderedAspect.load(std::memory_order_relaxed);
+            if (!(aspect > 0.1F && aspect < 10.0F)) {
+                aspect = static_cast<float>(p.width) / static_cast<float>(p.height);
+            }
             const float halfHorizontal = horizontal * 0.5F;
-            const float halfVertical = std::atan(
-                std::tan(halfHorizontal) * static_cast<float>(p.height) / static_cast<float>(p.width));
+            const float halfVertical = std::atan(std::tan(halfHorizontal) / aspect);
+            const XrPosef centre = cyclopean(g_renderedViews);
             for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
                 XrCompositionLayerProjectionView& view = views[eye];
                 view = XrCompositionLayerProjectionView{XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW};
-                view.pose = g_renderedViews[eye].pose;
+                view.pose = centre;
                 view.fov = XrFovf{-halfHorizontal, halfHorizontal, halfVertical, -halfVertical};
                 view.subImage.swapchain = p.swapchain;
                 view.subImage.imageRect.offset = XrOffset2Di{0, 0};
@@ -1434,11 +1499,55 @@ void destroy_presentation() noexcept {
 }
 
 /**
+ * @return The viewpoint the mono image is really rendered from: the midpoint of the eyes, with a
+ *         single orientation for both.
+ *
+ * This is what fixes the double vision. One image was being submitted twice, but declared at each
+ * eye's own pose, and a projection layer is a geometric promise the compositor keeps: it places
+ * the content in the world according to the pose it is told, then lets the eye look at it from
+ * where that eye really is. Two different declared poses therefore put the same pixels in two
+ * different world directions, which is constant, wrong disparity across the whole frame -- a few
+ * degrees is far past what fuses, so the brain suppresses one eye. Declaring the same cyclopean
+ * pose for both views puts the content in identical world directions, disparity is zero, and it
+ * fuses at infinity: exactly the flat-and-far mono look that was agreed.
+ *
+ * The orientations are averaged rather than one of them picked, because a headset with canted
+ * panels reports a different orientation per eye and taking the left one yaws the whole view by
+ * half the cant angle, permanently.
+ */
+[[nodiscard]] XrPosef cyclopean(const std::array<XrView, kViewCount>& views) noexcept {
+    const XrQuaternionf& left = views[0].pose.orientation;
+    const XrQuaternionf& right = views[1].pose.orientation;
+    // A quaternion and its negation are the same rotation, so an unaligned sum can cancel out
+    // instead of averaging.
+    const float dot = left.x * right.x + left.y * right.y + left.z * right.z + left.w * right.w;
+    const float sign = dot < 0.0F ? -1.0F : 1.0F;
+    const XrQuaternionf mean{left.x + sign * right.x, left.y + sign * right.y,
+                             left.z + sign * right.z, left.w + sign * right.w};
+    const float length =
+        std::sqrt(mean.x * mean.x + mean.y * mean.y + mean.z * mean.z + mean.w * mean.w);
+    XrPosef pose{};
+    pose.orientation =
+        length > 1.0e-6F
+            ? XrQuaternionf{mean.x / length, mean.y / length, mean.z / length, mean.w / length}
+            : left;
+    pose.position = XrVector3f{(views[0].pose.position.x + views[1].pose.position.x) * 0.5F,
+                               (views[0].pose.position.y + views[1].pose.position.y) * 0.5F,
+                               (views[0].pose.position.z + views[1].pose.position.z) * 0.5F};
+    return pose;
+}
+
+/**
  * Maps a vector out of OpenXR's basis into the game's.
  * OpenXR: +X right, +Y up, -Z forward. Game: X forward, Z up, and therefore +Y left.
  */
 [[nodiscard]] Vector to_game(const XrVector3f& v) noexcept {
     return Vector{-v.z, -v.x, v.y};
+}
+
+/** @return The angle wrapped into -pi..pi, so a difference of two yaws never takes the long way. */
+[[nodiscard]] float wrap_angle(float radians) noexcept {
+    return std::atan2(std::sin(radians), std::cos(radians));
 }
 
 /** Turns a vector about the game's up axis. */
@@ -1447,6 +1556,57 @@ void yaw_about_up(Vector& v, float sine, float cosine) noexcept {
     const float y = v[1];
     v[0] = x * cosine - y * sine;
     v[1] = x * sine + y * cosine;
+}
+
+/**
+ * Converts one OpenXR pose into the game's basis, with its translation measured from the recentre
+ * origin and the body yaw folded in -- the same treatment the head gets, so head and hand share
+ * one anchor.
+ * @param pose Pose in the reference space.
+ * @param sine Sine of the body yaw.
+ * @param cosine Cosine of the body yaw.
+ * @param out Receives forward, up, right and offset.
+ */
+void to_game_pose(const XrPosef& pose, float sine, float cosine, HandPose& out) noexcept {
+    out.forward = to_game(rotate(pose.orientation, XrVector3f{0.0F, 0.0F, -1.0F}));
+    out.up = to_game(rotate(pose.orientation, XrVector3f{0.0F, 1.0F, 0.0F}));
+    out.right = to_game(rotate(pose.orientation, XrVector3f{1.0F, 0.0F, 0.0F}));
+    out.offset = to_game(XrVector3f{(pose.position.x - g_origin.x) * g_unitsPerMetre,
+                                    (pose.position.y - g_origin.y) * g_unitsPerMetre,
+                                    (pose.position.z - g_origin.z) * g_unitsPerMetre});
+    yaw_about_up(out.forward, sine, cosine);
+    yaw_about_up(out.up, sine, cosine);
+    yaw_about_up(out.right, sine, cosine);
+    yaw_about_up(out.offset, sine, cosine);
+}
+
+/**
+ * Locates one controller's aim pose against the same reference space the views were located in.
+ * @param space The action space, or XR_NULL_HANDLE when the runtime refused one.
+ * @param sine Sine of the body yaw.
+ * @param cosine Cosine of the body yaw.
+ * @return The pose, invalid when the space is missing or the runtime reports it untracked.
+ */
+[[nodiscard]] HandPose locate_hand(XrSpace space, float sine, float cosine) noexcept {
+    HandPose hand{};
+    if (space == XR_NULL_HANDLE || g_api.locateSpace == nullptr || g_space == XR_NULL_HANDLE) {
+        return hand;
+    }
+    XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
+    if (g_api.locateSpace(space, g_space, g_predictedDisplayTime, &location) != XR_SUCCESS) {
+        return hand;
+    }
+    // Both bits are required: an orientation-only location would put the weapon at the origin,
+    // which reads as a plausible pose and would quietly ruin every position test.
+    constexpr XrSpaceLocationFlags required =
+        XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+    if ((location.locationFlags & required) != required) {
+        return hand;
+    }
+    to_game_pose(location.pose, sine, cosine, hand);
+    hand.frame = g_frameIndex;
+    hand.valid = true;
+    return hand;
 }
 
 /** Drains the event queue, driving the session through its state machine. */
@@ -1602,7 +1762,7 @@ bool initialize(ID3D11Device* device) noexcept {
 }
 
 /** Runs one OpenXR frame and publishes the pose. */
-void begin_frame(float bodyYaw) noexcept {
+void begin_frame(float roomAnchor) noexcept {
     if (g_status != Status::running) {
         return;
     }
@@ -1649,20 +1809,40 @@ void begin_frame(float bodyYaw) noexcept {
     // What the camera hook renders next is drawn from these; the layer for that image needs them.
     g_pendingViews = views;
     g_havePending = true;
+    // Both eyes' geometry, once per session. The mock reports identical orientations and so cannot
+    // reproduce a real headset's panel cant; logging it means the next headset session leaves the
+    // evidence behind instead of the question having to be asked twice.
+    static bool loggedEyes = false;
+    if (!loggedEyes) {
+        loggedEyes = true;
+        for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
+            log_fmt("ev=vr.xr eyes index=%u pos=%.4f,%.4f,%.4f quat=%.5f,%.5f,%.5f,%.5f "
+                    "fov_lrud=%.4f,%.4f,%.4f,%.4f",
+                    eye, views[eye].pose.position.x, views[eye].pose.position.y,
+                    views[eye].pose.position.z, views[eye].pose.orientation.x,
+                    views[eye].pose.orientation.y, views[eye].pose.orientation.z,
+                    views[eye].pose.orientation.w, views[eye].fov.angleLeft, views[eye].fov.angleRight,
+                    views[eye].fov.angleUp, views[eye].fov.angleDown);
+        }
+    }
     // The head sits midway between the eyes.
     const XrPosef& left = views[0].pose;
     const XrPosef& right = views[1].pose;
     const XrVector3f centre{(left.position.x + right.position.x) * 0.5F,
                             (left.position.y + right.position.y) * 0.5F,
                             (left.position.z + right.position.z) * 0.5F};
-    if (g_recentreRequested || !g_haveOrigin) {
+    const bool recentring = g_recentreRequested || !g_haveOrigin;
+    if (recentring) {
         g_origin = centre;
         g_haveOrigin = true;
         g_recentreRequested = false;
         log_fmt("ev=vr.xr recentre x=%.3f y=%.3f z=%.3f", centre.x, centre.y, centre.z);
     }
-    const XrVector3f forwardXr = rotate(left.orientation, XrVector3f{0.0F, 0.0F, -1.0F});
-    const XrVector3f upXr = rotate(left.orientation, XrVector3f{0.0F, 1.0F, 0.0F});
+    // The cyclopean orientation, not the left eye's: with canted panels the left eye is off by
+    // half the cant angle, and that would yaw the whole view for the entire session.
+    const XrQuaternionf centreOrientation = cyclopean(views).orientation;
+    const XrVector3f forwardXr = rotate(centreOrientation, XrVector3f{0.0F, 0.0F, -1.0F});
+    const XrVector3f upXr = rotate(centreOrientation, XrVector3f{0.0F, 1.0F, 0.0F});
     const XrVector3f delta{(centre.x - g_origin.x) * g_unitsPerMetre,
                            (centre.y - g_origin.y) * g_unitsPerMetre,
                            (centre.z - g_origin.z) * g_unitsPerMetre};
@@ -1671,9 +1851,20 @@ void begin_frame(float bodyYaw) noexcept {
     pose.forward = to_game(forwardXr);
     pose.up = to_game(upXr);
     pose.offset = to_game(delta);
-    // Fold in the body yaw so mouse look still turns the body and the head adds on top.
-    const float sine = std::sin(bodyYaw);
-    const float cosine = std::cos(bodyYaw);
+    // The head's yaw in the room, before anything is folded in, and the same value measured from
+    // the recentre facing. The second is what the body servo steers towards.
+    const float roomYaw = std::atan2(pose.forward[1], pose.forward[0]);
+    if (recentring) {
+        g_originYaw = roomYaw;
+        log_fmt("ev=vr.xr recentre_yaw room=%.4f", roomYaw);
+    }
+    pose.roomYaw = wrap_angle(roomYaw - g_originYaw);
+    // Fold by the room anchor MINUS the recentre facing: the result is the anchor plus the head's
+    // own rotation, so looking straight ahead points exactly along the anchor no matter which way
+    // the player happens to be sitting in the room.
+    const float fold = wrap_angle(roomAnchor - g_originYaw);
+    const float sine = std::sin(fold);
+    const float cosine = std::cos(fold);
     yaw_about_up(pose.forward, sine, cosine);
     yaw_about_up(pose.up, sine, cosine);
     yaw_about_up(pose.offset, sine, cosine);
@@ -1695,9 +1886,33 @@ void begin_frame(float bodyYaw) noexcept {
     pose.frame = ++g_frameIndex;
     pose.valid = true;
 
+    // The hands ride on the head's frame: same reference space, same origin, same yaw fold, so a
+    // consumer can subtract one from the other and get the real geometry of the room.
+    const std::array<HandPose, 2> hands{locate_hand(g_actions.spaceL, sine, cosine),
+                                        locate_hand(g_actions.spaceR, sine, cosine)};
+
     AcquireSRWLockExclusive(&g_poseLock);
     g_pose = pose;
+    g_hands = hands;
     ReleaseSRWLockExclusive(&g_poseLock);
+
+    if ((g_frameIndex % kHandReportPeriod) == 0) {
+        // The fold angle goes out with the poses, and the head's offset beside the hands', so a
+        // test can undo the body yaw exactly and compare head against hand within one frame
+        // rather than pairing up two throttled log lines that were never adjacent.
+        log_fmt("ev=vr.xr hand yaw=%.4f r_valid=%d r_fwd=%.3f,%.3f,%.3f r_up=%.3f,%.3f,%.3f "
+                "r_off=%.3f,%.3f,%.3f l_valid=%d l_fwd=%.3f,%.3f,%.3f l_off=%.3f,%.3f,%.3f "
+                "h_off=%.3f,%.3f,%.3f",
+                fold,
+                hands[1].valid ? 1 : 0,
+                hands[1].forward[0], hands[1].forward[1], hands[1].forward[2],
+                hands[1].up[0], hands[1].up[1], hands[1].up[2],
+                hands[1].offset[0], hands[1].offset[1], hands[1].offset[2],
+                hands[0].valid ? 1 : 0,
+                hands[0].forward[0], hands[0].forward[1], hands[0].forward[2],
+                hands[0].offset[0], hands[0].offset[1], hands[0].offset[2],
+                pose.offset[0], pose.offset[1], pose.offset[2]);
+    }
 
     if ((g_frameIndex % 180) == 0) {
         log_fmt("ev=vr.xr pose fwd=%.3f,%.3f,%.3f off=%.3f,%.3f,%.3f fov=%.4f aspect=%.3f",
@@ -1757,6 +1972,14 @@ HeadPose head_pose() noexcept {
     return pose;
 }
 
+/** @return One controller's most recently located aim pose. */
+HandPose hand_pose(bool rightHand) noexcept {
+    AcquireSRWLockShared(&g_poseLock);
+    const HandPose hand = g_hands[rightHand ? 1 : 0];
+    ReleaseSRWLockShared(&g_poseLock);
+    return hand;
+}
+
 /** @return The controllers as of the last sync. */
 InputState input_state() noexcept {
     AcquireSRWLockShared(&g_poseLock);
@@ -1766,6 +1989,12 @@ InputState input_state() noexcept {
 }
 
 /** Records the horizontal FOV the engine actually rendered with this frame. */
+void note_rendered_aspect(float aspect) noexcept {
+    if (aspect > 0.1F && aspect < 10.0F) {
+        g_renderedAspect.store(aspect, std::memory_order_relaxed);
+    }
+}
+
 void note_rendered_fov(float horizontalFov) noexcept {
     g_renderedFov.store(horizontalFov, std::memory_order_relaxed);
 }
@@ -1773,6 +2002,14 @@ void note_rendered_fov(float horizontalFov) noexcept {
 /** Tears the session and instance down and unloads the runtime. */
 void shutdown() noexcept {
     destroy_presentation();
+    if (g_api.destroySpace != nullptr) {
+        for (XrSpace* space : {&g_actions.spaceL, &g_actions.spaceR}) {
+            if (*space != XR_NULL_HANDLE) {
+                g_api.destroySpace(*space);
+                *space = XR_NULL_HANDLE;
+            }
+        }
+    }
     if (g_actions.set != XR_NULL_HANDLE && g_api.destroyActionSet != nullptr) {
         g_api.destroyActionSet(g_actions.set);
     }
@@ -1783,6 +2020,7 @@ void shutdown() noexcept {
     AcquireSRWLockExclusive(&g_poseLock);
     g_input = InputState{};
     g_pose = HeadPose{};
+    g_hands = std::array<HandPose, 2>{};
     ReleaseSRWLockExclusive(&g_poseLock);
     if (g_session != XR_NULL_HANDLE) {
         if (g_sessionRunning && g_api.endSession != nullptr) {

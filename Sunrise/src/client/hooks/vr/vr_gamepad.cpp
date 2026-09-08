@@ -75,6 +75,12 @@ constexpr float kMoveRelease = 0.25F;
 constexpr float kLookDeadZone = 0.12F;
 /** Mouse counts per second at full deflection. Tuned on the headset, not here. */
 constexpr float kLookCountsPerSecond = 1400.0F;
+/**
+ * Artificial turn rate at full stick. Expressed in radians rather than mouse counts because the
+ * stick now moves the room anchor directly, which needs no calibration against the game's own
+ * sensitivity.
+ */
+constexpr float kTurnRadiansPerSecond = 2.0F;
 /** Pressed above, released below: triggers, grips and the analogue-to-digital buttons. */
 constexpr float kTriggerPress = 0.55F;
 constexpr float kTriggerRelease = 0.35F;
@@ -171,7 +177,24 @@ void move_mouse(LONG dx, LONG dy) noexcept {
     return std::copysign(scaled * scaled, value);
 }
 
+/**
+ * @return True while injected input may be sent at all.
+ * Injected input lands on the foreground window, so anything but the game, with the mod's own
+ * interface closed, would receive it instead.
+ */
+[[nodiscard]] bool gate_open() noexcept {
+    return client::input::game_focused() && !core::ui::runtime::snapshot().visible;
+}
+
 } // namespace
+
+bool turn_body(int counts) noexcept {
+    if (counts == 0 || !gate_open()) {
+        return false;
+    }
+    move_mouse(static_cast<LONG>(counts), 0);
+    return true;
+}
 
 void release_all() noexcept {
     for (std::size_t index = 0; index < g_keyDown.size(); ++index) {
@@ -188,9 +211,8 @@ void release_all() noexcept {
 }
 
 void pump(bool enabled) noexcept {
-    // Injected input lands on the foreground window: anything but the game with the mod's own
-    // interface closed would get it, so nothing goes out then and nothing stays held either.
-    if (!enabled || !client::input::game_focused() || core::ui::runtime::snapshot().visible) {
+    // Nothing goes out while the gate is shut, and nothing stays held either.
+    if (!enabled || !gate_open()) {
         release_all();
         return;
     }
@@ -204,22 +226,35 @@ void pump(bool enabled) noexcept {
 
     // Left stick: four keys with hysteresis, opposite directions exclusive.
     const auto held = [](Key key) noexcept { return g_keyDown[static_cast<std::size_t>(key)]; };
-    sent |= hold_key(Key::w, digital(in.moveY, held(Key::w), kMovePress, kMoveRelease));
-    sent |= hold_key(Key::s, digital(-in.moveY, held(Key::s), kMovePress, kMoveRelease));
-    sent |= hold_key(Key::d, digital(in.moveX, held(Key::d), kMovePress, kMoveRelease));
-    sent |= hold_key(Key::a, digital(-in.moveX, held(Key::a), kMovePress, kMoveRelease));
+    // Locomotion is expressed in the direction the player is LOOKING, then rotated into the
+    // character's frame, because the engine moves relative to the character. While the servo is
+    // caught up the rotation is nothing; while it lags -- or cannot inject at all -- this is what
+    // keeps "forward" meaning forward. Eight-way granularity is imposed by the keyboard the game
+    // reads, and is of no consequence for walking.
+    const float lag = body_yaw_error();
+    const float lagSine = std::sin(lag);
+    const float lagCosine = std::cos(lag);
+    // The stick is +Y forward and +X right; the character's forward is X and its LEFT is +Y, so a
+    // leftward turn of the movement vector is a rotation of (forward, right) by -lag.
+    const float moveForward = in.moveY * lagCosine + in.moveX * lagSine;
+    const float moveRight = in.moveX * lagCosine - in.moveY * lagSine;
+    sent |= hold_key(Key::w, digital(moveForward, held(Key::w), kMovePress, kMoveRelease));
+    sent |= hold_key(Key::s, digital(-moveForward, held(Key::s), kMovePress, kMoveRelease));
+    sent |= hold_key(Key::d, digital(moveRight, held(Key::d), kMovePress, kMoveRelease));
+    sent |= hold_key(Key::a, digital(-moveRight, held(Key::a), kMovePress, kMoveRelease));
 
-    // Right stick: mouse counts, with the fractional remainder carried so slow turns still move.
+    // Right stick: artificial turning. It moves the room anchor by an exact number of radians
+    // instead of injecting mouse counts, because a rotation expressed in radians needs no
+    // calibration and cannot drift with the game's sensitivity setting. The character is brought
+    // round to match by the body servo, so horizon and character still turn together, which is
+    // what artificial turning has always done.
+    //
+    // Vertical look is dropped on purpose: in VR the pitch comes from the player's own neck, and
+    // injecting mouse Y would only fight it.
     if (dt > 0.0F) {
-        const float wantX = look_curve(in.turnX) * kLookCountsPerSecond * dt + g_lookRemainderX;
-        const float wantY = -look_curve(in.turnY) * kLookCountsPerSecond * dt + g_lookRemainderY;
-        const auto dx = static_cast<LONG>(std::trunc(wantX));
-        const auto dy = static_cast<LONG>(std::trunc(wantY));
-        g_lookRemainderX = wantX - static_cast<float>(dx);
-        g_lookRemainderY = wantY - static_cast<float>(dy);
-        if (dx != 0 || dy != 0) {
-            move_mouse(dx, dy);
-            sent = true;
+        const float turn = look_curve(in.turnX);
+        if (turn != 0.0F) {
+            turn_room(-turn * kTurnRadiansPerSecond * dt);
         }
     }
 

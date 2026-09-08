@@ -75,4 +75,24 @@ void present_frame(void* device, void* swapChain) noexcept;
 /** @return True while the head pose, rather than the manual deltas, is driving the camera. */
 [[nodiscard]] bool head_tracking() noexcept;
 
+/**
+ * Turns the whole player -- horizon and character together -- by an explicit amount.
+ *
+ * This is the only thing that may move the horizon apart from the player's own neck. Artificial
+ * turning changes the room anchor directly rather than injecting mouse motion, so it is exact and
+ * needs no calibration; the character is then brought round to match by the body servo.
+ * @param radians Positive turns left, matching the game's +Y.
+ */
+void turn_room(float radians) noexcept;
+
+/**
+ * @return How far the character's facing still lags the direction the player is looking, in
+ *         radians, positive when the character has to turn left to catch up.
+ *
+ * Locomotion is rotated by this before it reaches the movement keys, so pushing the stick forward
+ * goes where the player is looking even while the servo has not finished catching up -- or cannot
+ * run at all, because the window lost focus or a menu is open.
+ */
+[[nodiscard]] float body_yaw_error() noexcept;
+
 } // namespace sunrise::client::hooks::vr

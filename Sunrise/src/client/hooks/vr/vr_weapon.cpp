@@ -30,26 +30,53 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
 #include <cstring>
 #include <cwchar>
+#include <limits>
 
 #include "../../../core/logging/log.h"
 #include "../../hooking/detour.h"
+#include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::weapon {
 namespace {
 
 constexpr std::uintptr_t kGetterRva = 0x12D22C0;
 constexpr std::uintptr_t kPosePtrRva = 0x12D50F0;
+/**
+ * The weapon's own transform builder, found by disassembling backwards from the getter caller
+ * `D5D832` in the live process (VMProtect encrypts the image on disk, so this is the only way).
+ *
+ * It takes ONE argument, an output buffer in rcx, calls the pose getter, builds
+ * `right = fwd x up`, assembles the 4x4 `[fwd, right, up, (0,0,0,1)]`, converts it through
+ * `+0x465100`, and copies 32 bytes of the result into its caller's buffer. The position the getter
+ * hands it, at `rbp-0x59`, is never read -- which is exactly why moving the pose's position moved
+ * nothing on screen.
+ *
+ * Those 32 bytes are therefore the real lever: whatever the caller places the weapon with, it
+ * comes out of here.
+ */
+constexpr std::uintptr_t kXformRva = 0xD5D7F0;
 constexpr std::array<std::uint8_t, 18> kGetterPrologue{0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74, 0x24,
                                                        0x10, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x49, 0x8B, 0xF8};
 constexpr std::array<std::uint8_t, 9> kPosePtrPrologue{0x40, 0x53, 0x48, 0x83, 0xEC, 0x20, 0x48, 0x63, 0xD9};
+constexpr std::array<std::uint8_t, 20> kXformPrologue{0x48, 0x8B, 0xC4, 0x48, 0x89, 0x58, 0x10, 0x48, 0x89, 0x70,
+                                                      0x18, 0x48, 0x89, 0x78, 0x20, 0x55, 0x48, 0x8D, 0x68, 0xA1};
+/** Floats in the transform builder's output buffer. */
+constexpr std::size_t kXformFloats = 8;
 
 constexpr std::uint32_t kPollPeriod = 30;
 constexpr std::uint32_t kReportPeriod = 180;
 constexpr wchar_t kCommandName[] = L"SVR_Weapon.txt";
 constexpr std::size_t kMaxCallers = 24;
 constexpr std::size_t kMaxRuleRvas = 8;
+/**
+ * Rules held per path at once. More than one is essential, not a convenience: the decisive
+ * configuration for the weapon's position hands the head to the render view's caller and the hand
+ * to the weapon's caller in the same frame, which a single rule cannot express.
+ */
+constexpr std::size_t kMaxRules = 4;
 /** Bytes of the pose region handed out through the pointer path; callers index it by small offsets. */
 constexpr std::size_t kFakeRegionBytes = 0x100;
 constexpr std::size_t kOffsetForward = 0x28;
@@ -57,14 +84,21 @@ constexpr std::size_t kOffsetUp = 0x34;
 
 using Getter = void(__fastcall*)(Vector*, Vector*, Vector*);
 using PosePtr = float*(__fastcall*)(int);
+using Xform = void*(__fastcall*)(void*);
 
-enum class Source : std::uint8_t { none, body, head };
+enum class Source : std::uint8_t { none, body, head, hand };
 
 struct Rule final {
     bool all{false};
     std::array<std::uintptr_t, kMaxRuleRvas> rvas{};
     std::size_t count{0};
     Source source{Source::none};
+};
+
+/** The rules of one path, published as a whole so a reader never sees a half-written set. */
+struct RuleSet final {
+    std::array<Rule, kMaxRules> rules{};
+    std::size_t count{0};
 };
 
 struct Caller final {
@@ -75,18 +109,62 @@ struct Caller final {
 struct Path final {
     std::array<Caller, kMaxCallers> callers{};
     std::atomic<std::uint64_t> overflow{0};
-    /** Rules are replaced whole from the camera thread; readers copy the pointer first. */
-    std::atomic<const Rule*> rule{nullptr};
-    std::array<Rule, 2> ruleSlots{};
-    std::size_t nextSlot{0};
+    /** Rule sets are published whole from the camera thread; readers copy the pointer first. */
+    std::atomic<const RuleSet*> rules{nullptr};
+    /** Double buffered, so the set being replaced is never the one a detour is reading. */
+    std::array<RuleSet, 2> sets{};
+    std::size_t nextSet{0};
 };
 
 Path g_getter{};
 Path g_ptr{};
-std::array<hooking::detour::Handle, 2> g_handles{};
+Path g_xform{};
+std::array<hooking::detour::Handle, 3> g_handles{};
+
+/** Log the transform builder's output floats, to work out what they mean. */
+std::atomic_bool g_xformDump{false};
+/**
+ * Add the hand's travel relative to the head to the buffer's position lanes.
+ *
+ * A delta rather than an absolute: `hand.offset - head.offset` is the vector by which the weapon
+ * has to move away from wherever the engine just put it, and adding it works without knowing the
+ * absolute frame or the sign convention of whatever those lanes are.
+ */
+std::atomic_bool g_xformDelta{false};
+/**
+ * Which of the eight floats the delta is added to. Measured, not guessed: forcing each float in
+ * turn and matching the weapon's template between captures gave 166 px of horizontal travel for
+ * 0.08 on lane 4, 172 px of vertical travel on lane 6, and a depth change on lane 5. Projecting
+ * those onto the camera's axes identifies them as the game's own world axes -- X forward, Y left,
+ * Z up -- which is the basis the hand and head offsets are already in, so no rotation is needed.
+ * 0.08 metres subtending 13.5 degrees also puts the weapon 0.33 m from the eye, which confirms
+ * that a game unit is a metre.
+ */
+std::array<std::atomic<int>, 3> g_xformLanes{{{4}, {5}, {6}}};
+/**
+ * Hand offset taken as the weapon's rest reference, and whether one has been taken.
+ *
+ * Without it the weapon would jump to wherever the controller is relative to the recentre origin
+ * -- for the mock, 0.3 m forward and 0.2 m right and down of the eye, which is a long way from
+ * where the engine draws a viewmodel. Referencing the controller's own rest pose instead means the
+ * gun starts exactly where the engine puts it and then tracks how far the controller has TRAVELLED,
+ * which is what makes it read as 6DOF. `xform delta abs` gives the geometrically absolute version
+ * for calibration work.
+ */
+std::array<std::atomic<float>, 3> g_handRef{};
+std::atomic_bool g_haveHandRef{false};
+std::atomic_bool g_xformAbsolute{false};
+/** Forced values, for probing one lane at a time. NaN means leave it alone. */
+std::array<std::atomic<float>, kXformFloats> g_xformForce{};
 std::atomic_bool g_installed{false};
 std::atomic_bool g_installTried{false};
 std::atomic_bool g_blockOrientation{true};
+std::atomic_bool g_blockPosition{true};
+/**
+ * Calibration nudge added to the weapon's world-space offset, in the game's own axes: X forward,
+ * Y left, Z up, in metres. Live-tunable so the gun's rest position can be seated by eye.
+ */
+std::array<std::atomic<float>, 3> g_handOffset{};
 std::uintptr_t g_base = 0;
 std::uint32_t g_frame = 0;
 /** Fake pose regions for the pointer path, one per player index the accessor is asked about. */
@@ -121,20 +199,60 @@ void count_caller(Path& path, std::uintptr_t rva) noexcept {
     path.overflow.fetch_add(1, std::memory_order_relaxed);
 }
 
+/**
+ * @return The source this caller should be handed.
+ * A rule naming the caller explicitly beats a catch-all, so `getter all body` can set the
+ * background and `getter D5D832 hand` carve one caller out of it.
+ */
 Source decide(const Path& path, std::uintptr_t rva) noexcept {
-    const Rule* rule = path.rule.load(std::memory_order_acquire);
-    if (rule == nullptr || rule->source == Source::none) {
+    const RuleSet* set = path.rules.load(std::memory_order_acquire);
+    if (set == nullptr) {
         return Source::none;
     }
-    if (rule->all) {
-        return rule->source;
+    for (std::size_t i = 0; i < set->count; ++i) {
+        const Rule& rule = set->rules[i];
+        for (std::size_t j = 0; j < rule.count; ++j) {
+            if (rule.rvas[j] == rva) {
+                return rule.source;
+            }
+        }
     }
-    for (std::size_t i = 0; i < rule->count; ++i) {
-        if (rule->rvas[i] == rva) {
-            return rule->source;
+    for (std::size_t i = 0; i < set->count; ++i) {
+        if (set->rules[i].all) {
+            return set->rules[i].source;
         }
     }
     return Source::none;
+}
+
+/**
+ * Builds the weapon pose from the right controller.
+ *
+ * The position is the engine's own camera position plus the hand's offset from the recentre
+ * origin. Using the engine's position rather than the head's is what decouples them: the room
+ * origin maps to the same world point for both, so leaning moves the head while the hand stays,
+ * and the weapon can be approached.
+ * @param out Receives the pose.
+ * @return False when no controller pose has been located yet.
+ */
+bool hand_pose_for(Pose& out) noexcept {
+    const xr::HandPose hand = xr::hand_pose(true);
+    if (!hand.valid) {
+        return false;
+    }
+    const Pose engine = engine_pose();
+    // The position is filled in for completeness only: the weapon's draw ignores the position half
+    // of this pose entirely (measured -- see the note on kXformRva), and its position is set through
+    // the transform buffer's world-space offset lanes instead. What this pose really carries to the
+    // weapon is the orientation.
+    for (std::size_t lane = 0; lane < out.position.size(); ++lane) {
+        out.position[lane] = engine.position[lane] + hand.offset[lane];
+    }
+    out.forward = hand.forward;
+    out.up = hand.up;
+    out.horizontalFov = engine.horizontalFov;
+    out.aspect = engine.aspect;
+    return true;
 }
 
 /** @return The pose a rule asks for, and whether it is usable this frame. */
@@ -142,6 +260,11 @@ bool pose_for(Source source, Pose& out) noexcept {
     switch (source) {
     case Source::body: out = engine_pose(); break;
     case Source::head: out = head_pose(); break;
+    case Source::hand:
+        if (!hand_pose_for(out)) {
+            return false;
+        }
+        break;
     default: return false;
     }
     const float n = out.forward[0] * out.forward[0] + out.forward[1] * out.forward[1] + out.forward[2] * out.forward[2];
@@ -187,6 +310,58 @@ float* __fastcall pose_ptr_replacement(int playerIndex) noexcept {
     return reinterpret_cast<float*>(fake.data());
 }
 
+/**
+ * Overwrites, and optionally reports, the 32 bytes the weapon's transform builder produced.
+ * Runs on the camera thread after the original, so the caller reads whatever is left here.
+ */
+void __fastcall xform_replacement(void* out) noexcept {
+    const auto rva = reinterpret_cast<std::uintptr_t>(_ReturnAddress()) - g_base;
+    const auto original = reinterpret_cast<Xform>(g_handles[2].original);
+    void* const result = original != nullptr ? original(out) : nullptr;
+    count_caller(g_xform, rva);
+    if (out == nullptr) {
+        return;
+    }
+    auto* const lanes = static_cast<float*>(out);
+    std::array<float, kXformFloats> before{};
+    std::memcpy(before.data(), lanes, sizeof before);
+    for (std::size_t lane = 0; lane < kXformFloats; ++lane) {
+        const float forced = g_xformForce[lane].load(std::memory_order_relaxed);
+        if (std::isfinite(forced)) {
+            lanes[lane] = forced;
+        }
+    }
+    if (g_xformDelta.load(std::memory_order_acquire)) {
+        const xr::HandPose hand = xr::hand_pose(true);
+        const xr::HeadPose head = xr::head_pose();
+        if (hand.valid && head.valid) {
+            if (!g_haveHandRef.load(std::memory_order_acquire)) {
+                for (std::size_t axis = 0; axis < 3; ++axis) {
+                    g_handRef[axis].store(hand.offset[axis], std::memory_order_relaxed);
+                }
+                g_haveHandRef.store(true, std::memory_order_release);
+            }
+            const bool absolute = g_xformAbsolute.load(std::memory_order_relaxed);
+            for (std::size_t axis = 0; axis < 3; ++axis) {
+                const int lane = g_xformLanes[axis].load(std::memory_order_relaxed);
+                if (lane < 0 || lane >= static_cast<int>(kXformFloats)) {
+                    continue;
+                }
+                const float reference = absolute ? 0.0F : g_handRef[axis].load(std::memory_order_relaxed);
+                const float travel = hand.offset[axis] - reference - head.offset[axis];
+                lanes[static_cast<std::size_t>(lane)] +=
+                    travel + g_handOffset[axis].load(std::memory_order_relaxed);
+            }
+        }
+    }
+    if (g_xformDump.load(std::memory_order_acquire) && (g_frame % kPollPeriod) == 0) {
+        reportf("ev=vr.weapon xform caller=%llX in=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
+                static_cast<unsigned long long>(rva), before[0], before[1], before[2], before[3], before[4],
+                before[5], before[6], before[7]);
+    }
+    static_cast<void>(result);
+}
+
 template <std::size_t N>
 bool prologue_matches(std::uintptr_t address, const std::array<std::uint8_t, N>& expected) noexcept {
     std::array<std::uint8_t, N> actual{};
@@ -202,6 +377,9 @@ void install() noexcept {
     if (g_installTried.exchange(true, std::memory_order_acq_rel)) {
         return;
     }
+    for (auto& forced : g_xformForce) {
+        forced.store(std::numeric_limits<float>::quiet_NaN(), std::memory_order_release);
+    }
     g_base = reinterpret_cast<std::uintptr_t>(GetModuleHandleW(nullptr));
     if (g_base == 0) {
         report("ev=vr.weapon install result=fail reason=no_base");
@@ -209,21 +387,25 @@ void install() noexcept {
     }
     const std::uintptr_t getter = g_base + kGetterRva;
     const std::uintptr_t posePtr = g_base + kPosePtrRva;
-    if (!prologue_matches(getter, kGetterPrologue) || !prologue_matches(posePtr, kPosePtrPrologue)) {
+    const std::uintptr_t xform = g_base + kXformRva;
+    if (!prologue_matches(getter, kGetterPrologue) || !prologue_matches(posePtr, kPosePtrPrologue)
+        || !prologue_matches(xform, kXformPrologue)) {
         report("ev=vr.weapon install result=fail reason=prologue_mismatch");
         return;
     }
-    const std::array<hooking::detour::Spec, 2> specs{
+    const std::array<hooking::detour::Spec, 3> specs{
         hooking::detour::Spec{reinterpret_cast<void*>(getter), reinterpret_cast<void*>(&getter_replacement)},
         hooking::detour::Spec{reinterpret_cast<void*>(posePtr), reinterpret_cast<void*>(&pose_ptr_replacement)},
+        hooking::detour::Spec{reinterpret_cast<void*>(xform), reinterpret_cast<void*>(&xform_replacement)},
     };
     if (!hooking::detour::install(specs, g_handles)) {
         report("ev=vr.weapon install result=fail reason=detour");
         return;
     }
     g_installed.store(true, std::memory_order_release);
-    reportf("ev=vr.weapon install result=ok getter=0x%llX ptr=0x%llX", static_cast<unsigned long long>(kGetterRva),
-            static_cast<unsigned long long>(kPosePtrRva));
+    reportf("ev=vr.weapon install result=ok getter=0x%llX ptr=0x%llX xform=0x%llX",
+            static_cast<unsigned long long>(kGetterRva), static_cast<unsigned long long>(kPosePtrRva),
+            static_cast<unsigned long long>(kXformRva));
 }
 
 void report_callers(const char* name, Path& path) noexcept {
@@ -267,15 +449,21 @@ bool game_path(const wchar_t* name, std::array<wchar_t, MAX_PATH>& out) noexcept
     return wcscpy_s(slash + 1, out.size() - dirLength, name) == 0;
 }
 
-/** Parses `all|none|<rva>[,<rva>...]` and `body|head` into a rule and publishes it on the path. */
+/**
+ * Parses `all|none|<rva>[,<rva>...]` and `body|head|hand` and merges it into the path's rule set.
+ *
+ * `none` clears every rule. Otherwise the rule replaces the one with the same target list if there
+ * is one, and is appended if not, so rules for different callers accumulate instead of evicting
+ * each other.
+ */
 void apply_rule(Path& path, const char* targets, const char* source, const char* name) noexcept {
-    Rule& rule = path.ruleSlots[path.nextSlot];
-    path.nextSlot = (path.nextSlot + 1) % path.ruleSlots.size();
-    rule = Rule{};
+    Rule rule{};
     if (std::strcmp(source, "body") == 0) {
         rule.source = Source::body;
     } else if (std::strcmp(source, "head") == 0) {
         rule.source = Source::head;
+    } else if (std::strcmp(source, "hand") == 0) {
+        rule.source = Source::hand;
     } else {
         rule.source = Source::none;
     }
@@ -293,13 +481,51 @@ void apply_rule(Path& path, const char* targets, const char* source, const char*
             cursor = (*end == ',') ? end + 1 : end;
         }
     }
-    if (rule.source == Source::none) {
-        rule.all = false;
-        rule.count = 0;
+    RuleSet& set = path.sets[path.nextSet];
+    path.nextSet = (path.nextSet + 1) % path.sets.size();
+    const RuleSet* current = path.rules.load(std::memory_order_acquire);
+    set = current != nullptr ? *current : RuleSet{};
+    if (std::strcmp(targets, "none") == 0 || rule.source == Source::none) {
+        set.count = 0;
+    } else {
+        std::size_t slot = set.count;
+        for (std::size_t i = 0; i < set.count; ++i) {
+            const Rule& existing = set.rules[i];
+            if (existing.all == rule.all && existing.count == rule.count
+                && std::memcmp(existing.rvas.data(), rule.rvas.data(), rule.count * sizeof(std::uintptr_t)) == 0) {
+                slot = i;
+                break;
+            }
+        }
+        if (slot < set.rules.size()) {
+            set.rules[slot] = rule;
+            if (slot == set.count) {
+                ++set.count;
+            }
+        }
     }
-    path.rule.store(&rule, std::memory_order_release);
-    reportf("ev=vr.weapon rule path=%s targets=%s source=%s rvas=%zu all=%d", name, targets, source, rule.count,
-            rule.all ? 1 : 0);
+    path.rules.store(&set, std::memory_order_release);
+    reportf("ev=vr.weapon rule path=%s targets=%s source=%s rvas=%zu all=%d rules=%zu", name, targets, source,
+            rule.count, rule.all ? 1 : 0, set.count);
+}
+
+/**
+ * The configuration proven in Io on 2026-09-09: the head drives the camera block, the controller's
+ * orientation reaches the weapon through its own getter caller, and the controller's travel reaches
+ * it through the transform buffer's world-space offset lanes. A command file can still override any
+ * of it afterwards.
+ */
+void apply_defaults() noexcept {
+    g_blockPosition.store(true, std::memory_order_release);
+    g_blockOrientation.store(true, std::memory_order_release);
+    apply_rule(g_getter, "D5D832", "hand", "getter");
+    for (std::size_t axis = 0; axis < g_xformLanes.size(); ++axis) {
+        g_xformLanes[axis].store(static_cast<int>(4 + axis), std::memory_order_release);
+    }
+    g_xformAbsolute.store(false, std::memory_order_release);
+    g_haveHandRef.store(false, std::memory_order_release);
+    g_xformDelta.store(true, std::memory_order_release);
+    report("ev=vr.weapon defaults applied=1");
 }
 
 void poll_commands() noexcept {
@@ -326,14 +552,84 @@ void poll_commands() noexcept {
         } else if (std::strcmp(verb, "ptr") == 0 && n >= 3) {
             apply_rule(g_ptr, a, b, "ptr");
         } else if (std::strcmp(verb, "block") == 0 && n >= 2) {
-            const bool on = std::strcmp(a, "on") == 0;
-            g_blockOrientation.store(on, std::memory_order_release);
-            reportf("ev=vr.weapon block orientation=%s", on ? "on" : "off");
+            // `block pos|orient on|off` addresses one field; bare `block on|off` sets both, which
+            // keeps every existing command file and every note in the docs working unchanged.
+            const bool split = std::strcmp(a, "pos") == 0 || std::strcmp(a, "orient") == 0;
+            const bool on = split ? (n >= 3 && std::strcmp(b, "on") == 0) : (std::strcmp(a, "on") == 0);
+            if (!split || std::strcmp(a, "orient") == 0) {
+                g_blockOrientation.store(on, std::memory_order_release);
+            }
+            if (!split || std::strcmp(a, "pos") == 0) {
+                g_blockPosition.store(on, std::memory_order_release);
+            }
+            reportf("ev=vr.weapon block position=%s orientation=%s",
+                    g_blockPosition.load(std::memory_order_acquire) ? "on" : "off",
+                    g_blockOrientation.load(std::memory_order_acquire) ? "on" : "off");
+        } else if (std::strcmp(verb, "hand_offset") == 0) {
+            // Parsed off the raw line: the three values are floats and can be negative, which the
+            // three-token scan above cannot express.
+            float values[3] = {};
+            if (sscanf_s(line.data(), "%*s %f %f %f", &values[0], &values[1], &values[2]) == 3) {
+                for (std::size_t lane = 0; lane < g_handOffset.size(); ++lane) {
+                    g_handOffset[lane].store(values[lane], std::memory_order_release);
+                }
+                reportf("ev=vr.weapon hand_offset fwd=%.3f right=%.3f up=%.3f", values[0], values[1],
+                        values[2]);
+            } else {
+                report("ev=vr.weapon command result=fail verb=hand_offset reason=parse");
+            }
+        } else if (std::strcmp(verb, "xform") == 0 && n >= 2) {
+            // Everything here is live-tunable on purpose: one rebuild plus a six-minute reload is
+            // the cost of a wrong guess about those eight floats, so the guessing happens through
+            // the command file instead.
+            if (std::strcmp(a, "dump") == 0) {
+                const bool on = n < 3 || std::strcmp(b, "off") != 0;
+                g_xformDump.store(on, std::memory_order_release);
+                reportf("ev=vr.weapon xform dump=%s", on ? "on" : "off");
+            } else if (std::strcmp(a, "delta") == 0) {
+                const bool off = n >= 3 && std::strcmp(b, "off") == 0;
+                const bool absolute = n >= 3 && std::strcmp(b, "abs") == 0;
+                g_xformAbsolute.store(absolute, std::memory_order_release);
+                g_xformDelta.store(!off, std::memory_order_release);
+                reportf("ev=vr.weapon xform delta=%s mode=%s", off ? "off" : "on",
+                        absolute ? "absolute" : "relative");
+            } else if (std::strcmp(a, "ref") == 0) {
+                // Retakes the controller's rest reference, so the gun's rest position can be
+                // re-seated without restarting anything.
+                g_haveHandRef.store(false, std::memory_order_release);
+                report("ev=vr.weapon xform ref retake");
+            } else if (std::strcmp(a, "lanes") == 0) {
+                int lanes[3] = {};
+                if (sscanf_s(line.data(), "%*s %*s %d %d %d", &lanes[0], &lanes[1], &lanes[2]) == 3) {
+                    for (std::size_t axis = 0; axis < g_xformLanes.size(); ++axis) {
+                        g_xformLanes[axis].store(lanes[axis], std::memory_order_release);
+                    }
+                    reportf("ev=vr.weapon xform lanes=%d,%d,%d", lanes[0], lanes[1], lanes[2]);
+                }
+            } else if (std::strcmp(a, "force") == 0) {
+                int lane = -1;
+                float value = 0.0F;
+                if (sscanf_s(line.data(), "%*s %*s %d %f", &lane, &value) == 2 && lane >= 0
+                    && lane < static_cast<int>(kXformFloats)) {
+                    g_xformForce[static_cast<std::size_t>(lane)].store(value, std::memory_order_release);
+                    reportf("ev=vr.weapon xform force lane=%d value=%.4f", lane, value);
+                }
+            } else if (std::strcmp(a, "clear") == 0) {
+                for (auto& forced : g_xformForce) {
+                    forced.store(std::numeric_limits<float>::quiet_NaN(), std::memory_order_release);
+                }
+                g_xformDelta.store(false, std::memory_order_release);
+                g_haveHandRef.store(false, std::memory_order_release);
+                report("ev=vr.weapon xform cleared");
+            } else {
+                reportf("ev=vr.weapon command result=fail verb=xform arg=%s", a);
+            }
         } else if (std::strcmp(verb, "install") == 0) {
             install();
         } else if (std::strcmp(verb, "report") == 0) {
             report_callers("getter", g_getter);
             report_callers("ptr", g_ptr);
+            report_callers("xform", g_xform);
         } else {
             reportf("ev=vr.weapon command result=fail verb=%s", verb);
         }
@@ -346,10 +642,17 @@ void poll_commands() noexcept {
 
 void tick() noexcept {
     ++g_frame;
-    // The detours are opt-in: nothing touches the engine until an `install` command arrives, so
-    // a session with the file absent is byte-for-byte the pre-F3 behaviour (loading included).
     if (g_frame % kPollPeriod == 0) {
         poll_commands();
+    }
+    // F9 brings the whole weapon configuration up by itself, so a headset session needs no command
+    // file at all. Before F9 nothing here has touched the engine, which keeps a plain session --
+    // and destination loading in particular -- byte-for-byte the pre-F3 behaviour.
+    if (!g_installTried.load(std::memory_order_acquire) && enabled() && xr::active()) {
+        install();
+        if (g_installed.load(std::memory_order_acquire)) {
+            apply_defaults();
+        }
     }
     if (!g_installed.load(std::memory_order_acquire)) {
         return;
@@ -357,11 +660,20 @@ void tick() noexcept {
     if (g_frame % kReportPeriod == 0) {
         report_callers("getter", g_getter);
         report_callers("ptr", g_ptr);
+        report_callers("xform", g_xform);
     }
 }
 
 bool block_orientation_enabled() noexcept {
     return g_blockOrientation.load(std::memory_order_acquire);
+}
+
+bool block_position_enabled() noexcept {
+    return g_blockPosition.load(std::memory_order_acquire);
+}
+
+void retake_reference() noexcept {
+    g_haveHandRef.store(false, std::memory_order_release);
 }
 
 } // namespace sunrise::client::hooks::vr::weapon

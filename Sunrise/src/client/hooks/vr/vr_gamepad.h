@@ -2,7 +2,20 @@
 
 #include <cstdint>
 
+#include "runtime.h"
+
 namespace sunrise::client::hooks::vr::gamepad {
+
+/**
+ * Injects a relative horizontal mouse movement, for the body servo.
+ *
+ * Goes through the same gate as every other injection -- nothing is sent unless the game has focus
+ * and the mod's own interface is closed -- so the servo cannot type into the overlay or steer a
+ * window the player has alt-tabbed away from.
+ * @param counts Mouse counts; positive turns the character the way a rightward mouse move does.
+ * @return True when the counts were actually sent.
+ */
+bool turn_body(int counts) noexcept;
 
 /** Counters for the log. */
 struct Stats final {

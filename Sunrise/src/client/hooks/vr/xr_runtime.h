@@ -25,9 +25,41 @@ struct HeadPose final {
     Vector up{};
     /** Head translation away from the recentre origin, in game units. */
     Vector offset{};
+    /**
+     * Head yaw relative to the direction the player was facing at the last recentre, in radians,
+     * positive turning left (the game's +Y).
+     *
+     * Published separately from the folded vectors because the body servo needs the head's own
+     * rotation on its own: the target the character's facing is driven towards is the room anchor
+     * plus this, and folding it into the vectors would make it unrecoverable.
+     */
+    float roomYaw{};
     /** Symmetric horizontal FOV covering both eye frusta, in radians. */
     float horizontalFov{};
     float aspect{};
+    /** Frame index the pose came from, so a consumer can tell a stale pose from a fresh one. */
+    std::uint64_t frame{};
+    bool valid{};
+};
+
+/**
+ * One controller's aim pose, converted out of OpenXR's basis into the game's exactly as HeadPose
+ * is, and measured from the same recentre origin.
+ *
+ * Sharing the origin is the whole point: the head and the hands then land in one world anchor, so
+ * the geometry between them -- lean towards the gun and it grows, step back and it recedes -- is
+ * preserved by the conversion instead of having to be reconstructed later.
+ */
+struct HandPose final {
+    /** Where the controller points, in the game's basis, with the body yaw folded in. */
+    Vector forward{};
+    /** Controller up, same basis. */
+    Vector up{};
+    /** Controller right, same basis. Lets a calibration offset be expressed in the hand's basis,
+     *  which is what makes one constant cancel the engine's viewmodel offset at any orientation. */
+    Vector right{};
+    /** Controller translation away from the recentre origin, in game units. */
+    Vector offset{};
     /** Frame index the pose came from, so a consumer can tell a stale pose from a fresh one. */
     std::uint64_t frame{};
     bool valid{};
@@ -89,10 +121,13 @@ void shutdown() noexcept;
  * Runs one OpenXR frame: drains events, waits, begins, syncs the actions, locates the views and
  * publishes the pose. Called from the present hook, which is the only site that owns the render
  * device.
- * @param bodyYaw Yaw of the game's own camera, in radians, folded into the published pose so
- *                mouse look still turns the body and the head adds on top of it.
+ * @param roomAnchor World yaw, in radians, that the direction the player faced at the last
+ *                   recentre maps to. The published pose is that anchor plus the head's own
+ *                   rotation, which is what anchors the horizon to the room instead of to the
+ *                   character: nothing but an explicit turn can move it, so the character may
+ *                   then be driven to follow the head without the world sliding underneath.
  */
-void begin_frame(float bodyYaw) noexcept;
+void begin_frame(float roomAnchor) noexcept;
 
 /**
  * Ends the OpenXR frame opened by begin_frame.
@@ -110,11 +145,25 @@ void end_frame(IDXGISwapChain* swapChain) noexcept;
 [[nodiscard]] InputState input_state() noexcept;
 
 /**
+ * @param rightHand True for the right controller, false for the left.
+ * @return That controller's most recently located aim pose. Copied under a lock.
+ */
+[[nodiscard]] HandPose hand_pose(bool rightHand) noexcept;
+
+/**
  * Records the horizontal FOV the camera hook actually left in the engine this frame, read back
  * from the pose block, so the layer declares the frustum the image was really rendered with.
  * @param horizontalFov Radians.
  */
 void note_rendered_fov(float horizontalFov) noexcept;
+
+/**
+ * Records the aspect the camera hook actually left in the engine this frame, so the layer can
+ * declare the vertical extent the image was really rendered with rather than the back buffer's
+ * pixel ratio.
+ * @param aspect tan(halfHorizontalFov) / tan(halfVerticalFov), as the engine stores it.
+ */
+void note_rendered_aspect(float aspect) noexcept;
 
 /** Takes the next head position as the origin, so the player can re-seat themselves. */
 void recentre() noexcept;

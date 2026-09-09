@@ -100,7 +100,48 @@ constexpr float kServoMaxRadiansPerFrame = 0.06F;
 /** Starting guess for mouse counts per radian, replaced by measurement within a few frames. */
 constexpr float kServoCountsPerRadianGuess = 900.0F;
 constexpr float kServoCountsPerRadianMin = 80.0F;
-constexpr float kServoCountsPerRadianMax = 12000.0F;
+/**
+ * Ceiling on the learned conversion, tightened from 12000 after it caused a hang on hardware.
+ *
+ * 12000 was loose enough to admit samples taken while the character was barely responding, and the
+ * estimate has a positive feedback loop: the injection ceiling is
+ * `kServoMaxRadiansPerFrame * g_countsPerRadian`, so a gain that drifts up injects more, which
+ * produces worse samples, which drift it up further. Measured in Io on 2026-09-09: across a world
+ * transition the gain went 507 -> 1551 -> 3211 in five seconds while the injection rate reached
+ * about 28000 counts a second, and the game froze one second after reaching `activity:in_world`.
+ *
+ * The value learns to 579 on this machine, twice, from a 900 guess. 3000 is generous headroom for a
+ * different mouse sensitivity and still far below anything that can flood the input queue.
+ */
+constexpr float kServoCountsPerRadianMax = 3000.0F;
+/**
+ * The response has to be a real fraction of what was asked before it teaches anything.
+ *
+ * The old test was only that the character moved MORE THAN 0.002 rad, which lets
+ * `measured = counts / achieved` reach hundreds of times the true value whenever the character is
+ * busy being created, teleported, or is simply not receiving the injection at all. Asking for a
+ * turn and getting a crumb is not a measurement of the conversion; it is a measurement of the
+ * character being unavailable.
+ */
+constexpr float kServoMinResponseFraction = 0.25F;
+/**
+ * Hard cap on the counts sent in one frame, independent of the learned gain.
+ *
+ * This is the backstop that makes a bad gain survivable instead of fatal: the gain-scaled ceiling
+ * is about 35 counts a frame at the learned 579, so 150 leaves four times the headroom for honest
+ * work while making it arithmetically impossible to flood the game's input queue.
+ */
+constexpr int kServoMaxCountsPerFrame = 150;
+/**
+ * Consecutive frames of injecting and getting no response before the servo gives up and stops
+ * injecting until the character answers again.
+ *
+ * Two situations produce it and both were seen on hardware: a world transition, where the character
+ * is not there to be turned, and an unfocused game window, where the injection is gated off before
+ * it reaches anything (measured: 330000 counts sent, `body_yaw` moved 0.017 rad). Continuing to
+ * push in either case cannot help and is what stalled the game.
+ */
+constexpr int kServoStuckFrames = 20;
 /** Weight of each new measurement in the running estimate. Slow, because single frames are noisy. */
 constexpr float kServoLearnRate = 0.10F;
 /**
@@ -155,6 +196,8 @@ float g_previousBodyYaw{0.0F};
 bool g_havePreviousBodyYaw{false};
 int g_lastServoCounts{0};
 float g_countsPerRadian{kServoCountsPerRadianGuess};
+/** Consecutive frames the servo has injected without the character answering. See kServoStuckFrames. */
+int g_servoNoResponse{0};
 /** Lag of the character behind the look direction, published for the locomotion rotation. */
 std::atomic<float> g_bodyYawError{0.0F};
 std::atomic_bool g_servoEnabled{true};
@@ -303,6 +346,7 @@ void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
         g_haveAnchor.store(false, std::memory_order_relaxed);
         g_havePreviousBodyYaw = false;
         g_lastServoCounts = 0;
+        g_servoNoResponse = 0;
         g_bodyYawError.store(0.0F, std::memory_order_relaxed);
         return;
     }
@@ -313,6 +357,7 @@ void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
         g_previousBodyYaw = bodyYaw;
         g_havePreviousBodyYaw = true;
         g_lastServoCounts = 0;
+        g_servoNoResponse = 0;
     }
 
     if (g_havePreviousBodyYaw) {
@@ -328,15 +373,29 @@ void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
             // Something outside this module turned the character a long way in one frame. Carry
             // the horizon with it rather than leaving the anchor pointing the old way for ever.
             turn_room(unexplained);
-        } else if (g_lastServoCounts != 0 && std::fabs(achieved) > 0.002F
-                   && (achieved > 0.0F) == (g_lastServoCounts < 0)) {
-            // Learn the conversion from what the last injection actually achieved. The sign test
-            // is what makes this safe: a measurement that disagrees with the direction sent is
-            // noise, or the player fighting the servo, and must not be allowed to poison the
-            // estimate.
-            const float measured = static_cast<float>(-g_lastServoCounts) / achieved;
-            if (measured > kServoCountsPerRadianMin && measured < kServoCountsPerRadianMax) {
-                g_countsPerRadian += (measured - g_countsPerRadian) * kServoLearnRate;
+        } else if (g_lastServoCounts != 0) {
+            // Did the character answer at all? The response has to be a real fraction of what was
+            // asked, not merely non-zero: `measured = counts / achieved` blows up as `achieved`
+            // approaches nothing, and "asked for a turn, got a crumb" is a measurement of the
+            // character being unavailable rather than of the mouse conversion. This is the test
+            // whose absence let the gain run away to 3211 across a world transition and stall the
+            // game.
+            const bool answered = std::fabs(achieved) > kServoMinResponseFraction * std::fabs(expected)
+                                  && (achieved > 0.0F) == (g_lastServoCounts < 0);
+            if (answered) {
+                g_servoNoResponse = 0;
+                // The sign test above is also what keeps the player fighting the servo from
+                // poisoning the estimate.
+                const float measured = static_cast<float>(-g_lastServoCounts) / achieved;
+                if (measured > kServoCountsPerRadianMin && measured < kServoCountsPerRadianMax) {
+                    g_countsPerRadian += (measured - g_countsPerRadian) * kServoLearnRate;
+                }
+            } else if (g_servoNoResponse < kServoStuckFrames) {
+                ++g_servoNoResponse;
+                if (g_servoNoResponse == kServoStuckFrames) {
+                    core::log::write(core::log::Channel::client, core::log::Level::warn,
+                                     "ev=vr.body servo=stuck reason=no_response action=stop_injecting");
+                }
             }
         }
     }
@@ -350,11 +409,29 @@ void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
         g_lastServoCounts = 0;
         return;
     }
+    // Give up rather than keep pushing at something that is not listening. The character being
+    // absent -- mid world transition, or the window unfocused so the injection never lands -- is
+    // not a case more counts can fix, and pushing anyway is what froze the game. The stuck count
+    // is cleared the moment a real response appears, so this recovers by itself.
+    if (g_servoNoResponse >= kServoStuckFrames) {
+        g_lastServoCounts = 0;
+        // Still probe occasionally, so a character that comes back is noticed. One frame in every
+        // kServoStuckFrames costs nothing and removes the need for anything else to reset this.
+        if ((g_frame % static_cast<std::uint32_t>(kServoStuckFrames)) != 0) {
+            return;
+        }
+    }
     // A leftward turn is a positive yaw in the game's basis and a rightward mouse move is what
     // produces it, so the counts carry the opposite sign to the error.
+    //
+    // Two ceilings, and the second is not redundant. The first scales with the learned conversion,
+    // which is what makes the correction the right SIZE. The second is absolute, and it is what
+    // makes a wrong conversion survivable: the gain-scaled ceiling grows with the gain, so a gain
+    // that drifts upwards injects more, which produces worse samples, which drifts it up further.
+    // That loop reached about 28000 counts a second on hardware and stalled the game.
     const float ceiling = kServoMaxRadiansPerFrame * g_countsPerRadian;
     const float wanted = std::clamp(-error * kServoGain * g_countsPerRadian, -ceiling, ceiling);
-    const int counts = static_cast<int>(wanted);
+    const int counts = std::clamp(static_cast<int>(wanted), -kServoMaxCountsPerFrame, kServoMaxCountsPerFrame);
     g_lastServoCounts = gamepad::turn_body(counts) ? counts : 0;
 }
 
@@ -501,6 +578,27 @@ bool head_tracking() noexcept {
 void present_frame(void* device, void* swapChain) noexcept {
     if (!g_enabled.load(std::memory_order_relaxed)) {
         gamepad::release_all();
+        // Switching off HANDS THE HEADSET BACK, by tearing the OpenXR session down. F9 then brings
+        // it up again through the lazy initialize below, which is the symmetry the switch always
+        // implied.
+        //
+        // Two weaker versions were tried and neither does what "off" has to mean in a headset.
+        // Returning early leaves a live session receiving no frames, so the runtime holds the last
+        // one it was given: on the monitor the view goes back to normal, but the headset is frozen
+        // and F9 reads as "it will not come out of VR". Ending each frame with no layer keeps the
+        // session healthy but the Meta runtime still shows the last thing it was handed, so it
+        // looks identical. Only giving up the session actually returns the player to the runtime's
+        // own environment.
+        //
+        // Safe to call from here: this is the present thread, so the D3D resources being released
+        // belong to it, and no frame is open -- the previous enabled iteration ended its own.
+        // shutdown() clears `g_attempted` and asks for a recentre, so the next F9 comes up fresh
+        // and re-seats the origin, which is what a player toggling out and back in wants anyway.
+        if (xr::active()) {
+            xr::shutdown();
+            core::log::write(core::log::Channel::client, core::log::Level::warn,
+                             "ev=vr.camera toggle=off xr=shutdown reason=hand_headset_back");
+        }
         return;
     }
     if (!xr::initialize(static_cast<ID3D11Device*>(device))) {

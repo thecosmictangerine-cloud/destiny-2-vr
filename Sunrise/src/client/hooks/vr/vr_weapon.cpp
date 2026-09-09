@@ -37,6 +37,7 @@
 
 #include "../../../core/logging/log.h"
 #include "../../hooking/detour.h"
+#include "runtime.h"
 #include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::weapon {
@@ -142,18 +143,64 @@ std::atomic_bool g_xformDelta{false};
  */
 std::array<std::atomic<int>, 3> g_xformLanes{{{4}, {5}, {6}}};
 /**
- * Hand offset taken as the weapon's rest reference, and whether one has been taken.
+ * The weapon's pivot correction, in the CONTROLLER's own basis: (forward, right, up), metres.
  *
- * Without it the weapon would jump to wherever the controller is relative to the recentre origin
- * -- for the mock, 0.3 m forward and 0.2 m right and down of the eye, which is a long way from
- * where the engine draws a viewmodel. Referencing the controller's own rest pose instead means the
- * gun starts exactly where the engine puts it and then tracks how far the controller has TRAVELLED,
- * which is what makes it read as 6DOF. `xform delta abs` gives the geometrically absolute version
- * for calibration work.
+ * This is the one constant the placement needs, and cancelling it is what puts the centre of
+ * rotation on the gun instead of on the eyeball.
+ *
+ * The engine draws the weapon at `camera + R(q) * d + lanes`, where `q` is the quaternion it built
+ * from the (forward, up) pair this module hands to the weapon's getter caller and `d` is its own
+ * fixed viewmodel offset, measured at about 0.33 m. Nothing cancelled `R(q) * d`, so handing the
+ * engine a different orientation swung the weapon along a 0.33 m arc centred on the eye -- a 90
+ * degree wrist roll moved it about 0.47 m. That is the "the centre of rotation is neither in the
+ * arms nor in the gun" symptom, exactly.
+ *
+ * Because `R(q)`'s columns ARE the basis handed over, the correction needs no matrix:
+ * `R(q) * v == v.x * forward + v.y * right + v.z * up`, and HandPose carries all three vectors.
+ * So one three-float constant in the hand's basis covers it at any orientation.
+ *
+ * It is one knob, not two, and that is worth knowing: the engine's `d` and the offset from the
+ * palm to the weapon model's own origin are both fixed vectors in this same basis, so their sum is
+ * the only thing that can ever be measured. Tuning it until pure rotation stops translating the
+ * gun is therefore a complete calibration, and the residual is the instrument's noise floor.
  */
-std::array<std::atomic<float>, 3> g_handRef{};
-std::atomic_bool g_haveHandRef{false};
-std::atomic_bool g_xformAbsolute{false};
+std::array<std::atomic<float>, 3> g_pivot{};
+/**
+ * Which of the controller's two OpenXR poses anchors the weapon's position.
+ *
+ * `true` (the default) uses the grip pose -- the palm centroid, which is the point a wrist really
+ * rotates about and the point a held object's grip must coincide with. `false` uses the aim pose,
+ * whose origin sits several centimetres in front of the hand in mid air; a weapon anchored there
+ * pivots about a point outside the player's fist no matter how well `g_pivot` is tuned. Kept
+ * switchable only so the difference can be measured rather than argued about.
+ */
+std::atomic_bool g_palmAnchor{true};
+/** Set once when the transform hook had to sample the pose itself, so the log says so. */
+std::atomic_bool g_latchMissed{false};
+/**
+ * Which callers of the transform builder get the weapon's offset written into their buffer.
+ *
+ * `+0xD5D7F0` is detoured wholesale, so without a gate every one of its callers is offset --
+ * including any that turns out to place something other than the first-person weapon. The default
+ * is still all of them, because that is the configuration measured to work; the counters logged by
+ * `report` say whether there is more than one, and this is how it gets narrowed when there is.
+ */
+std::array<std::atomic<std::uintptr_t>, kMaxRuleRvas> g_xformTargets{};
+std::atomic<std::size_t> g_xformTargetCount{0};
+
+/** @return True when this caller of the transform builder should have the offset applied. */
+bool xform_gated(std::uintptr_t rva) noexcept {
+    const std::size_t count = g_xformTargetCount.load(std::memory_order_acquire);
+    if (count == 0) {
+        return true;
+    }
+    for (std::size_t i = 0; i < count && i < g_xformTargets.size(); ++i) {
+        if (g_xformTargets[i].load(std::memory_order_relaxed) == rva) {
+            return true;
+        }
+    }
+    return false;
+}
 /** Forced values, for probing one lane at a time. NaN means leave it alone. */
 std::array<std::atomic<float>, kXformFloats> g_xformForce{};
 std::atomic_bool g_installed{false};
@@ -163,8 +210,31 @@ std::atomic_bool g_blockPosition{true};
 /**
  * Calibration nudge added to the weapon's world-space offset, in the game's own axes: X forward,
  * Y left, Z up, in metres. Live-tunable so the gun's rest position can be seated by eye.
+ *
+ * Deliberately NOT in the hand's basis: this one is for comfort trims that should stay put in the
+ * world, where `g_pivot` is for the part that has to rotate with the gun. Anything captured at
+ * runtime belongs in neither -- a snapshot is what made turning with the stick slide the weapon
+ * away from the hands.
  */
 std::array<std::atomic<float>, 3> g_handOffset{};
+/**
+ * One consistent sample of the head and the right hand, latched by the getter detour for the
+ * transform detour to reuse.
+ *
+ * Thread local, and that is the mechanism rather than an implementation detail. The weapon's
+ * transform builder `+0xD5D7F0` calls the pose getter itself, so on the thread that is building
+ * the weapon's transform the getter runs first and this detour runs immediately after -- one
+ * writer, one reader, same thread, no lock and no chance of pairing up two different frames. And
+ * pairing matters: `R(q)` comes from the pose the getter handed over, so the `- R(q) * d`
+ * correction has to be computed from that same sample or the cancellation leaves a residue the
+ * size of one frame's hand movement, which is felt as jitter.
+ */
+struct Sample final {
+    xr::HeadPose head{};
+    xr::HandPose hand{};
+    bool valid{};
+};
+thread_local Sample t_sample{};
 std::uintptr_t g_base = 0;
 std::uint32_t g_frame = 0;
 /** Fake pose regions for the pointer path, one per player index the accessor is asked about. */
@@ -236,10 +306,19 @@ Source decide(const Path& path, std::uintptr_t rva) noexcept {
  * @return False when no controller pose has been located yet.
  */
 bool hand_pose_for(Pose& out) noexcept {
-    const xr::HandPose hand = xr::hand_pose(true);
+    xr::HeadPose head{};
+    xr::HandPose left{};
+    xr::HandPose hand{};
+    // One lock acquisition for both, so the head and the hand cannot come from different frames.
+    xr::frame_sample(head, left, hand);
     if (!hand.valid) {
         return false;
     }
+    // Latched for the transform detour, which runs later on this same thread and must correct for
+    // the very orientation being handed over here.
+    t_sample.head = head;
+    t_sample.hand = hand;
+    t_sample.valid = true;
     const Pose engine = engine_pose();
     // The position is filled in for completeness only: the weapon's draw ignores the position half
     // of this pose entirely (measured -- see the note on kXformRva), and its position is set through
@@ -331,33 +410,67 @@ void __fastcall xform_replacement(void* out) noexcept {
             lanes[lane] = forced;
         }
     }
-    if (g_xformDelta.load(std::memory_order_acquire)) {
-        const xr::HandPose hand = xr::hand_pose(true);
-        const xr::HeadPose head = xr::head_pose();
+    if (g_xformDelta.load(std::memory_order_acquire) && xform_gated(rva)) {
+        // The sample the getter handed to the weapon this frame, on this thread. Falling back to a
+        // fresh read keeps a misconfigured session working (`getter ... body`, say), but the pivot
+        // correction is then computed against an orientation the engine was not given, so it is
+        // worth knowing about.
+        xr::HeadPose head{};
+        xr::HandPose hand{};
+        if (t_sample.valid) {
+            head = t_sample.head;
+            hand = t_sample.hand;
+            t_sample.valid = false;
+        } else {
+            xr::HandPose left{};
+            xr::frame_sample(head, left, hand);
+            g_latchMissed.store(true, std::memory_order_relaxed);
+        }
         if (hand.valid && head.valid) {
-            if (!g_haveHandRef.load(std::memory_order_acquire)) {
-                for (std::size_t axis = 0; axis < 3; ++axis) {
-                    g_handRef[axis].store(hand.offset[axis], std::memory_order_relaxed);
-                }
-                g_haveHandRef.store(true, std::memory_order_release);
-            }
-            const bool absolute = g_xformAbsolute.load(std::memory_order_relaxed);
+            // Where the weapon must end up, stated once:
+            //
+            //     weapon_world = eye_world + (hand_room - head_room)
+            //
+            // i.e. the controller's true position relative to the head, carried into the world.
+            // The engine is already going to draw it at `camera + R(q) * d + lanes` and its camera
+            // is the eye this module wrote, so what is left to write is
+            //
+            //     lanes = (palm - head) + R(q) * pivot
+            //
+            // with `pivot` absorbing both the engine's own viewmodel offset and the palm-to-model
+            // origin offset (see g_pivot).
+            //
+            // Everything in it is read from THIS frame. There is no captured reference and nothing
+            // to go stale, which is the property that matters: the room anchor's yaw fold is
+            // already inside both `palm` and `head.offset`, so it cancels in the difference and an
+            // artificial turn cannot move the weapon relative to the player. The previous version
+            // subtracted a snapshot of the folded hand offset, which did not rotate with the
+            // anchor and grew into over a metre of phantom translation at 180 degrees of turn.
+            const bool palmAnchor = g_palmAnchor.load(std::memory_order_relaxed);
+            const xr::Vector& anchor = palmAnchor ? hand.palm : hand.offset;
+            const float pivotForward = g_pivot[0].load(std::memory_order_relaxed);
+            const float pivotRight = g_pivot[1].load(std::memory_order_relaxed);
+            const float pivotUp = g_pivot[2].load(std::memory_order_relaxed);
             for (std::size_t axis = 0; axis < 3; ++axis) {
                 const int lane = g_xformLanes[axis].load(std::memory_order_relaxed);
                 if (lane < 0 || lane >= static_cast<int>(kXformFloats)) {
                     continue;
                 }
-                const float reference = absolute ? 0.0F : g_handRef[axis].load(std::memory_order_relaxed);
-                const float travel = hand.offset[axis] - reference - head.offset[axis];
-                lanes[static_cast<std::size_t>(lane)] +=
-                    travel + g_handOffset[axis].load(std::memory_order_relaxed);
+                // R(q) * pivot, without a matrix: the basis handed to the getter IS R(q)'s
+                // columns, so the correction rotates rigidly with the gun at any orientation.
+                const float correction = pivotForward * hand.forward[axis] + pivotRight * hand.right[axis]
+                                         + pivotUp * hand.up[axis];
+                lanes[static_cast<std::size_t>(lane)] += anchor[axis] - head.offset[axis] + correction
+                                                         + g_handOffset[axis].load(std::memory_order_relaxed);
             }
         }
     }
     if (g_xformDump.load(std::memory_order_acquire) && (g_frame % kPollPeriod) == 0) {
-        reportf("ev=vr.weapon xform caller=%llX in=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f",
+        reportf("ev=vr.weapon xform caller=%llX in=%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f "
+                "out=%.4f,%.4f,%.4f latch_missed=%d",
                 static_cast<unsigned long long>(rva), before[0], before[1], before[2], before[3], before[4],
-                before[5], before[6], before[7]);
+                before[5], before[6], before[7], lanes[4], lanes[5], lanes[6],
+                g_latchMissed.exchange(false, std::memory_order_relaxed) ? 1 : 0);
     }
     static_cast<void>(result);
 }
@@ -522,10 +635,30 @@ void apply_defaults() noexcept {
     for (std::size_t axis = 0; axis < g_xformLanes.size(); ++axis) {
         g_xformLanes[axis].store(static_cast<int>(4 + axis), std::memory_order_release);
     }
-    g_xformAbsolute.store(false, std::memory_order_release);
-    g_haveHandRef.store(false, std::memory_order_release);
+    g_palmAnchor.store(true, std::memory_order_release);
+    // Measured in Io on 2026-09-09, not guessed. `Solve-PivotRoll.ps1` drove the translation caused
+    // by a +/-20 degree wrist ROLL to zero: 72.0 px at the start, 0.0 px at the solution, with both
+    // signs of the roll reading exactly zero. Roll is the axis to solve on because it turns the
+    // weapon in the image plane and preserves its silhouette -- a yaw or pitch foreshortens the
+    // gun, and correlation then answers with the offset that best fits a changed shape, worth about
+    // 100 px with no translation behind it.
+    //
+    // Roll is blind to the component along its own axis, so the forward one is taken from the
+    // independent measurement in RESEARCH.md: 0.08 m of lane travel subtending 13.5 degrees puts
+    // the engine's viewmodel offset at 0.33 m. The two routes agree -- |pivot| comes out at 0.359 m
+    // against that 0.33 m -- and that agreement is the check that this is the engine's real offset
+    // rather than a fudge that happens to cancel one test.
+    //
+    // The final seating, whether the grip falls where the hand actually is, is a perceptual
+    // judgement that needs the headset; `pivot x y z` in the command file tunes it live.
+    constexpr std::array<float, 3> kMeasuredPivot{-0.3300F, -0.0915F, 0.1090F};
+    for (std::size_t axis = 0; axis < g_pivot.size(); ++axis) {
+        g_pivot[axis].store(kMeasuredPivot[axis], std::memory_order_release);
+    }
+    g_xformTargetCount.store(0, std::memory_order_release);
     g_xformDelta.store(true, std::memory_order_release);
-    report("ev=vr.weapon defaults applied=1");
+    reportf("ev=vr.weapon defaults applied=1 anchor=palm pivot=%.4f,%.4f,%.4f", kMeasuredPivot[0],
+            kMeasuredPivot[1], kMeasuredPivot[2]);
 }
 
 void poll_commands() noexcept {
@@ -573,11 +706,45 @@ void poll_commands() noexcept {
                 for (std::size_t lane = 0; lane < g_handOffset.size(); ++lane) {
                     g_handOffset[lane].store(values[lane], std::memory_order_release);
                 }
-                reportf("ev=vr.weapon hand_offset fwd=%.3f right=%.3f up=%.3f", values[0], values[1],
-                        values[2]);
+                // World axes, not the hand's: X forward, Y LEFT, Z up. The old labels said
+                // fwd/right/up, which is the basis `pivot` uses and this one does not.
+                reportf("ev=vr.weapon hand_offset x=%.3f y=%.3f z=%.3f", values[0], values[1], values[2]);
             } else {
                 report("ev=vr.weapon command result=fail verb=hand_offset reason=parse");
             }
+        } else if (std::strcmp(verb, "pivot") == 0) {
+            // The one constant the placement needs, in the controller's own basis: forward, right,
+            // up, in metres. Live-tunable because the way it is measured is a search: sweep the
+            // controller's rotation with its position held and drive the weapon's screen travel to
+            // zero. See g_pivot.
+            float values[3] = {};
+            if (sscanf_s(line.data(), "%*s %f %f %f", &values[0], &values[1], &values[2]) == 3) {
+                for (std::size_t axis = 0; axis < g_pivot.size(); ++axis) {
+                    g_pivot[axis].store(values[axis], std::memory_order_release);
+                }
+                reportf("ev=vr.weapon pivot fwd=%.3f right=%.3f up=%.3f mag=%.3f", values[0], values[1],
+                        values[2],
+                        std::sqrt(values[0] * values[0] + values[1] * values[1] + values[2] * values[2]));
+            } else {
+                report("ev=vr.weapon command result=fail verb=pivot reason=parse");
+            }
+        } else if (std::strcmp(verb, "turn") == 0) {
+            // Turns the room anchor by an exact angle, which is what artificial turning does.
+            // Here so the decisive regression -- "turning with the stick must not move the weapon
+            // relative to the player" -- can be driven to a known angle instead of holding a
+            // synthetic stick for a guessed length of time. It is the test lever for the bug that
+            // reached over a metre of phantom translation at 180 degrees.
+            float degrees = 0.0F;
+            if (sscanf_s(line.data(), "%*s %f", &degrees) == 1) {
+                turn_room(degrees * 3.14159265F / 180.0F);
+                reportf("ev=vr.weapon turn degrees=%.2f", degrees);
+            } else {
+                report("ev=vr.weapon command result=fail verb=turn reason=parse");
+            }
+        } else if (std::strcmp(verb, "anchor") == 0 && n >= 2) {
+            const bool palm = std::strcmp(a, "aim") != 0;
+            g_palmAnchor.store(palm, std::memory_order_release);
+            reportf("ev=vr.weapon anchor=%s", palm ? "palm" : "aim");
         } else if (std::strcmp(verb, "xform") == 0 && n >= 2) {
             // Everything here is live-tunable on purpose: one rebuild plus a six-minute reload is
             // the cost of a wrong guess about those eight floats, so the guessing happens through
@@ -587,17 +754,30 @@ void poll_commands() noexcept {
                 g_xformDump.store(on, std::memory_order_release);
                 reportf("ev=vr.weapon xform dump=%s", on ? "on" : "off");
             } else if (std::strcmp(a, "delta") == 0) {
+                // `abs` and `rel` are still accepted so existing command files and scripts keep
+                // parsing, but there is only one mode now: the relative one WAS the bug.
                 const bool off = n >= 3 && std::strcmp(b, "off") == 0;
-                const bool absolute = n >= 3 && std::strcmp(b, "abs") == 0;
-                g_xformAbsolute.store(absolute, std::memory_order_release);
                 g_xformDelta.store(!off, std::memory_order_release);
-                reportf("ev=vr.weapon xform delta=%s mode=%s", off ? "off" : "on",
-                        absolute ? "absolute" : "relative");
+                reportf("ev=vr.weapon xform delta=%s mode=absolute", off ? "off" : "on");
             } else if (std::strcmp(a, "ref") == 0) {
-                // Retakes the controller's rest reference, so the gun's rest position can be
-                // re-seated without restarting anything.
-                g_haveHandRef.store(false, std::memory_order_release);
-                report("ev=vr.weapon xform ref retake");
+                report("ev=vr.weapon xform ref result=noop reason=no_reference_exists");
+            } else if (std::strcmp(a, "caller") == 0 && n >= 3) {
+                std::size_t count = 0;
+                if (std::strcmp(b, "all") != 0) {
+                    const char* cursor = b;
+                    while (*cursor != '\0' && count < g_xformTargets.size()) {
+                        char* end = nullptr;
+                        const unsigned long long value = std::strtoull(cursor, &end, 16);
+                        if (end == cursor) {
+                            break;
+                        }
+                        g_xformTargets[count++].store(static_cast<std::uintptr_t>(value),
+                                                      std::memory_order_relaxed);
+                        cursor = (*end == ',') ? end + 1 : end;
+                    }
+                }
+                g_xformTargetCount.store(count, std::memory_order_release);
+                reportf("ev=vr.weapon xform caller targets=%s count=%zu", b, count);
             } else if (std::strcmp(a, "lanes") == 0) {
                 int lanes[3] = {};
                 if (sscanf_s(line.data(), "%*s %*s %d %d %d", &lanes[0], &lanes[1], &lanes[2]) == 3) {
@@ -619,7 +799,6 @@ void poll_commands() noexcept {
                     forced.store(std::numeric_limits<float>::quiet_NaN(), std::memory_order_release);
                 }
                 g_xformDelta.store(false, std::memory_order_release);
-                g_haveHandRef.store(false, std::memory_order_release);
                 report("ev=vr.weapon xform cleared");
             } else {
                 reportf("ev=vr.weapon command result=fail verb=xform arg=%s", a);
@@ -673,7 +852,11 @@ bool block_position_enabled() noexcept {
 }
 
 void retake_reference() noexcept {
-    g_haveHandRef.store(false, std::memory_order_release);
+    // Nothing to retake any more, and that is the fix rather than an omission. The weapon's
+    // placement is a pure function of this frame's head and hand poses, so a recentre moves the
+    // shared origin and both move with it; there is no stored reference left that could disagree
+    // with the new one. Kept as a symbol so F7's handler reads the same as it always did.
+    report("ev=vr.weapon recentre result=noop reason=stateless_placement");
 }
 
 } // namespace sunrise::client::hooks::vr::weapon

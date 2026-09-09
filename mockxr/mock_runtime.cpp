@@ -267,9 +267,14 @@ MOCK_FN Mock_xrEndFrame(XrSession, const XrFrameEndInfo* fei)
 //   moveX moveY handX handY handZ btnA btnB btnX btnY
 //   turnY trigL gripL gripR btnThumbL btnThumbR btnMenu
 //   lhandYaw lhandPitch lhandX lhandY lhandZ
+//   handRoll lhandRoll
 // Angles in degrees; positions in meters (offsets from the defaults);
 // buttons are 0/1. New fields appended at the end so old step lists keep working.
 // hand* fields drive the RIGHT hand; lhand* the LEFT (psi aim / VR hands).
+//
+// Roll is the axis a wrist actually turns about and the one the weapon's pivot bug shows up in,
+// so it is not optional for testing: without it "pure rotation must not translate" cannot be
+// exercised at all. Appended last, so every existing step list keeps working unchanged.
 float gInTurnX = 0, gInTrigR = 0, gInHandYaw = 0, gInHandPitch = 0;
 float gInHeadYaw = 0, gInHeadPitch = 0, gInHeadX = 0, gInHeadY = 0, gInHeadZ = 0;
 float gInMoveX = 0, gInMoveY = 0, gInHandX = 0, gInHandY = 0, gInHandZ = 0;
@@ -277,6 +282,7 @@ float gInBtnA = 0, gInBtnB = 0, gInBtnX = 0, gInBtnY = 0;
 float gInTurnY = 0, gInTrigL = 0, gInGripL = 0, gInGripR = 0;
 float gInBtnThumbL = 0, gInBtnThumbR = 0, gInBtnMenu = 0;
 float gInLHandYaw = 0, gInLHandPitch = 0, gInLHandX = 0, gInLHandY = 0, gInLHandZ = 0;
+float gInHandRoll = 0, gInLHandRoll = 0;
 bool gHaveInput = false; //!< once a file was read, head pose is file-driven
 
 MOCK_FN Mock_xrLocateViews(XrSession, const XrViewLocateInfo*, XrViewState* vs,
@@ -314,7 +320,33 @@ MOCK_FN Mock_xrLocateViews(XrSession, const XrViewLocateInfo*, XrViewState* vs,
 // ---- Input (controller actions) ----
 struct MockActionSet_T { int _; } gActionSet;
 struct MockAction { std::string name; XrActionType type; };
-struct MockActionSpace { int hand; };
+/**
+ * One action space. `palm` marks a space created from a `palm_*` action, i.e. one bound to
+ * OpenXR's grip/pose rather than aim/pose. Real hardware puts those two several centimetres
+ * apart, so the mock does too -- otherwise confusing one for the other is undetectable here and
+ * only shows up in the headset.
+ */
+struct MockActionSpace { int hand; bool palm; };
+
+/** q = a * b, both (x, y, z, w). */
+static XrQuaternionf QMul(const XrQuaternionf& a, const XrQuaternionf& b)
+{
+    return { a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+             a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+             a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
+             a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z };
+}
+
+/** Rotates v by q. */
+static XrVector3f QRot(const XrQuaternionf& q, const XrVector3f& v)
+{
+    const float tx = 2.0f * (q.y * v.z - q.z * v.y);
+    const float ty = 2.0f * (q.z * v.x - q.x * v.z);
+    const float tz = 2.0f * (q.x * v.y - q.y * v.x);
+    return { v.x + q.w * tx + (q.y * tz - q.z * ty),
+             v.y + q.w * ty + (q.z * tx - q.x * tz),
+             v.z + q.w * tz + (q.x * ty - q.y * tx) };
+}
 
 void ReadMockInput()
 {
@@ -329,14 +361,16 @@ void ReadMockInput()
     fopen_s(&f, "SVR_MockInput.txt", "r");
     if (f)
     {
-        int n = fscanf_s(f, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
+        int n = fscanf_s(f, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f "
+                        "%f %f",
             &gInTurnX, &gInTrigR, &gInHandYaw, &gInHandPitch,
             &gInHeadYaw, &gInHeadPitch, &gInHeadX, &gInHeadY, &gInHeadZ,
             &gInMoveX, &gInMoveY, &gInHandX, &gInHandY, &gInHandZ,
             &gInBtnA, &gInBtnB, &gInBtnX, &gInBtnY,
             &gInTurnY, &gInTrigL, &gInGripL, &gInGripR,
             &gInBtnThumbL, &gInBtnThumbR, &gInBtnMenu,
-            &gInLHandYaw, &gInLHandPitch, &gInLHandX, &gInLHandY, &gInLHandZ);
+            &gInLHandYaw, &gInLHandPitch, &gInLHandX, &gInLHandY, &gInLHandZ,
+            &gInHandRoll, &gInLHandRoll);
         fclose(f);
         if (n >= 1)
             gHaveInput = true;
@@ -371,6 +405,8 @@ MOCK_FN Mock_xrCreateActionSpace(XrSession, const XrActionSpaceCreateInfo* ci, X
     MockAction* a = (MockAction*)ci->action;
     MockActionSpace* s = new MockActionSpace();
     s->hand = (a && a->name.size() && a->name.back() == 'r') ? 1 : 0;
+    s->palm = (a && a->name.compare(0, 4, "palm") == 0);
+    L("xrCreateActionSpace name=%s hand=%d palm=%d", a ? a->name.c_str() : "?", s->hand, s->palm ? 1 : 0);
     *out = (XrSpace)s;
     return XR_SUCCESS;
 }
@@ -434,17 +470,29 @@ MOCK_FN Mock_xrLocateSpace(XrSpace space, XrSpace, XrTime, XrSpaceLocation* loc)
     const bool right = (s && s->hand == 1);
     float yaw = (right ? gInHandYaw : gInLHandYaw) * 3.14159265f / 180.0f;
     float pitch = (right ? gInHandPitch : gInLHandPitch) * 3.14159265f / 180.0f;
-    float cy = cosf(yaw * 0.5f), sy = sinf(yaw * 0.5f);
-    float cp = cosf(pitch * 0.5f), sp = sinf(pitch * 0.5f);
-    // q = yaw(Y) * pitch(X)
-    loc->pose.orientation.w = cy * cp;
-    loc->pose.orientation.x = cy * sp;
-    loc->pose.orientation.y = sy * cp;
-    loc->pose.orientation.z = -sy * sp;
+    float roll = (right ? gInHandRoll : gInLHandRoll) * 3.14159265f / 180.0f;
+    // q = yaw(Y) * pitch(X) * roll(Z), composed properly rather than by hand: roll is the third
+    // axis and the shortcut that produced the two-axis form does not extend to it.
+    const XrQuaternionf qy = { 0.0f, sinf(yaw * 0.5f), 0.0f, cosf(yaw * 0.5f) };
+    const XrQuaternionf qp = { sinf(pitch * 0.5f), 0.0f, 0.0f, cosf(pitch * 0.5f) };
+    const XrQuaternionf qr = { 0.0f, 0.0f, sinf(roll * 0.5f), cosf(roll * 0.5f) };
+    const XrQuaternionf q = QMul(QMul(qy, qp), qr);
+    loc->pose.orientation = q;
     if (right)
         loc->pose.position = { 0.2f + gInHandX, 1.4f + gInHandY, -0.3f + gInHandZ };
     else
         loc->pose.position = { -0.2f + gInLHandX, 1.4f + gInLHandY, -0.3f + gInLHandZ };
+    // The grip (palm) pose sits behind and below the aim origin, in the controller's own frame,
+    // roughly where a Touch controller puts it: 7 cm back along +Z and 3 cm down. Fixed offset,
+    // so it rotates with the controller -- which is exactly the property a consumer that confuses
+    // the two poses gets wrong.
+    if (s && s->palm)
+    {
+        const XrVector3f d = QRot(q, XrVector3f{ 0.0f, -0.03f, 0.07f });
+        loc->pose.position.x += d.x;
+        loc->pose.position.y += d.y;
+        loc->pose.position.z += d.z;
+    }
     loc->locationFlags = XR_SPACE_LOCATION_POSITION_VALID_BIT | XR_SPACE_LOCATION_ORIENTATION_VALID_BIT |
                          XR_SPACE_LOCATION_POSITION_TRACKED_BIT | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT;
     return XR_SUCCESS;

@@ -58,10 +58,35 @@ struct HandPose final {
     /** Controller right, same basis. Lets a calibration offset be expressed in the hand's basis,
      *  which is what makes one constant cancel the engine's viewmodel offset at any orientation. */
     Vector right{};
-    /** Controller translation away from the recentre origin, in game units. */
+    /** Controller AIM translation away from the recentre origin, in game units. */
     Vector offset{};
+    /**
+     * The GRIP (palm) translation away from the same origin, in game units.
+     *
+     * OpenXR defines two poses per controller and they are not interchangeable. `aim` is the
+     * origin of a pointing ray, and on Touch hardware it sits several centimetres in front of the
+     * hand, in mid air. `grip` is the palm centroid -- the point a wrist actually rotates about
+     * and the point a held object's grip has to coincide with. Anything placing a weapon uses
+     * this one; anything pointing uses `forward`.
+     *
+     * Falls back to `offset` when the runtime refuses a grip pose, so a consumer never has to
+     * check.
+     */
+    Vector palm{};
     /** Frame index the pose came from, so a consumer can tell a stale pose from a fresh one. */
     std::uint64_t frame{};
+    /**
+     * True when tracking was lost this frame and the pose is the last good one, re-folded by the
+     * current room anchor.
+     *
+     * Held rather than dropped on purpose: dropping it makes a weapon placed by this pose snap
+     * back to wherever the engine would have drawn it and then snap out again, which is what a
+     * Quest controller resting against the body or leaving the cameras' view produces several
+     * times a minute. The re-folding matters as much as the holding -- a snapshot kept in the
+     * folded frame goes stale the moment the player turns, which is a bug this module has
+     * already paid for once.
+     */
+    bool stale{};
     bool valid{};
 };
 
@@ -149,6 +174,19 @@ void end_frame(IDXGISwapChain* swapChain) noexcept;
  * @return That controller's most recently located aim pose. Copied under a lock.
  */
 [[nodiscard]] HandPose hand_pose(bool rightHand) noexcept;
+
+/**
+ * Copies the head and both controllers out under ONE lock acquisition.
+ *
+ * Not a convenience. Anything that computes the geometry BETWEEN the head and a hand -- which is
+ * the whole basis of the weapon's placement -- must difference two poses from the same frame. Two
+ * separate accessor calls can straddle a publish and difference two different instants, and the
+ * error that produces is a jitter of exactly the size of one frame's movement.
+ * @param head Receives the head pose.
+ * @param left Receives the left controller.
+ * @param right Receives the right controller.
+ */
+void frame_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept;
 
 /**
  * Records the horizontal FOV the camera hook actually left in the engine this frame, read back

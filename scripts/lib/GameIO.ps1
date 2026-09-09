@@ -17,6 +17,11 @@ if (-not ('SunriseVR.Native' -as [type])) {
 [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
 [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+[DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr pid);
+[DllImport("user32.dll")] public static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+[DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr hWnd);
+[DllImport("user32.dll")] public static extern int GetWindowTextW(IntPtr hWnd, System.Text.StringBuilder s, int n);
+[DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
 '@
 }
 
@@ -93,6 +98,91 @@ function Focus-Game {
     [void][SunriseVR.Native]::SetForegroundWindow($p.MainWindowHandle)
     Start-Sleep -Milliseconds 800
     return ([SunriseVR.Native]::GetForegroundWindow() -eq $p.MainWindowHandle)
+}
+
+<#
+Brings the game to the foreground and REFUSES TO CARRY ON if it does not get there.
+
+Focus-Game has always returned whether it succeeded, and every call site discarded that with
+`[void]`. The cost of that showed up as a screenshot of the editor instead of the game: the
+template matcher then compared the weapon against a code window, reported a 582 px shift at a
+correlation peak of 0.04, and a measurement that was pure garbage came back looking like a number.
+A capture of the wrong window must be a loud failure, never a quiet one.
+
+@param Attempts How many times to try before giving up.
+@param Quiet Return false instead of throwing.
+#>
+function Assert-GameFocus {
+    param([int]$Attempts = 8, [switch]$Quiet)
+    for ($i = 0; $i -lt $Attempts; $i++) {
+        if (Focus-Game) { return $true }
+        # Windows grants SetForegroundWindow only to a process that already holds the foreground or
+        # has recently received input, and a script host has neither -- so the plain call succeeds
+        # when the game happens to be in front already and is silently refused otherwise, which is
+        # exactly the intermittent pattern seen here. Borrowing the foreground thread's input queue
+        # for the duration of the call is the documented way round it.
+        if (Focus-GameHard) { return $true }
+        Start-Sleep -Milliseconds 600
+    }
+    if ($Quiet) { return $false }
+    throw ('the game is not in the foreground -- refusing to capture, the shot would be of another ' +
+        "window. In front instead: '" + (Get-ForegroundTitle) + "'")
+}
+
+<# @return The title of whatever window currently holds the foreground, for diagnosing a lost race. #>
+function Get-ForegroundTitle {
+    $builder = New-Object System.Text.StringBuilder 256
+    [void][SunriseVR.Native]::GetWindowTextW([SunriseVR.Native]::GetForegroundWindow(), $builder, 256)
+    return $builder.ToString()
+}
+
+<# Focus-Game, but attaching to the foreground thread's input queue first. See Assert-GameFocus. #>
+function Focus-GameHard {
+    $p = Get-GameProcess
+    if (-not $p) { return $false }
+    $target = $p.MainWindowHandle
+    $foreground = [SunriseVR.Native]::GetForegroundWindow()
+    $theirThread = [SunriseVR.Native]::GetWindowThreadProcessId($foreground, [IntPtr]::Zero)
+    $myThread = [SunriseVR.Native]::GetCurrentThreadId()
+    $attached = $false
+    if ($theirThread -ne 0 -and $theirThread -ne $myThread) {
+        $attached = [SunriseVR.Native]::AttachThreadInput($myThread, $theirThread, $true)
+    }
+    try {
+        [void][SunriseVR.Native]::ShowWindow($target, 9)
+        [void][SunriseVR.Native]::BringWindowToTop($target)
+        [void][SunriseVR.Native]::SetForegroundWindow($target)
+    } finally {
+        if ($attached) { [void][SunriseVR.Native]::AttachThreadInput($myThread, $theirThread, $false) }
+    }
+    Start-Sleep -Milliseconds 500
+    return ([SunriseVR.Native]::GetForegroundWindow() -eq $target)
+}
+
+<#
+Fires the weapon once, to take it out of its idle pose before anything is measured.
+
+The user's note, and it is a real hazard for every weapon measurement: after a while without input the
+weapon settles into an idle animation that points it upwards, and one click of the fire button puts
+it back to the normal pose -- level with the ground when the view is level. Measuring in one pose
+and comparing against the other would be a large, silent error that correlates with how long the
+session has been sitting rather than with anything under test.
+
+Measured on this build: with the weapon already out of idle, twenty seconds of standing still moves
+it 0 px and firing moves it 0 px (ammo 13 -> 12, so the shot did happen). So this is cheap
+insurance, not a workaround for a moving target.
+
+The click goes through mouse_event without moving the cursor, because the game reads raw input and
+because moving the pointer would turn the view.
+#>
+function Clear-WeaponIdle {
+    param([int]$SettleMs = 1200)
+    if (-not (Assert-GameFocus -Quiet)) { return $false }
+    [SunriseVR.Native]::mouse_event(0x0002, 0, 0, 0, [IntPtr]::Zero)   # LEFTDOWN
+    Start-Sleep -Milliseconds 90
+    [SunriseVR.Native]::mouse_event(0x0004, 0, 0, 0, [IntPtr]::Zero)   # LEFTUP
+    Start-Sleep -Milliseconds $SettleMs
+    return $true
 }
 
 function Send-GameKey {
@@ -196,13 +286,17 @@ function Set-MockInput {
         [double]$GripL = 0, [double]$GripR = 0,
         [double]$ThumbL = 0, [double]$ThumbR = 0, [double]$Menu = 0,
         [double]$LHandYaw = 0, [double]$LHandPitch = 0,
-        [double]$LHandX = 0, [double]$LHandY = 0, [double]$LHandZ = 0
+        [double]$LHandX = 0, [double]$LHandY = 0, [double]$LHandZ = 0,
+        # Roll is the wrist axis, and the one the weapon's pivot error shows up in. Appended last
+        # to match the mock's field order, which only ever grows at the end.
+        [double]$HandRoll = 0, [double]$LHandRoll = 0
     )
     $fields = @(
         $TurnX, $TrigR, $HandYaw, $HandPitch, $HeadYaw, $HeadPitch, $HeadX, $HeadY, $HeadZ,
         $MoveX, $MoveY, $HandX, $HandY, $HandZ, $BtnA, $BtnB, $BtnX, $BtnY,
         $TurnY, $TrigL, $GripL, $GripR, $ThumbL, $ThumbR, $Menu,
-        $LHandYaw, $LHandPitch, $LHandX, $LHandY, $LHandZ
+        $LHandYaw, $LHandPitch, $LHandX, $LHandY, $LHandZ,
+        $HandRoll, $LHandRoll
     )
     $text = ($fields | ForEach-Object { $_.ToString([System.Globalization.CultureInfo]::InvariantCulture) }) -join ' '
     $enc = New-Object System.Text.UTF8Encoding($false)

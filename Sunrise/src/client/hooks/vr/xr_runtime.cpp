@@ -186,6 +186,16 @@ struct Actions final {
     XrAction aimR{XR_NULL_HANDLE};
     XrSpace spaceL{XR_NULL_HANDLE};
     XrSpace spaceR{XR_NULL_HANDLE};
+    /**
+     * Grip (palm) poses, bound to `/input/grip/pose`. Named `palm_*` rather than `grip_*` because
+     * `grip_l`/`grip_r` are already the squeeze-value actions and the mock keys its input on the
+     * action name; the trailing `_l`/`_r` is what tells it which hand a space belongs to, so that
+     * part is as load bearing here as it is for the aim poses.
+     */
+    XrAction palmL{XR_NULL_HANDLE};
+    XrAction palmR{XR_NULL_HANDLE};
+    XrSpace palmSpaceL{XR_NULL_HANDLE};
+    XrSpace palmSpaceR{XR_NULL_HANDLE};
     bool attached{};
 };
 
@@ -993,14 +1003,18 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         && make_action(g_actions.thumbR, "btn_thumb_r", XR_ACTION_TYPE_BOOLEAN_INPUT)
         && make_action(g_actions.menu, "btn_menu", XR_ACTION_TYPE_BOOLEAN_INPUT)
         && make_action(g_actions.aimL, "aim_l", XR_ACTION_TYPE_POSE_INPUT)
-        && make_action(g_actions.aimR, "aim_r", XR_ACTION_TYPE_POSE_INPUT);
+        && make_action(g_actions.aimR, "aim_r", XR_ACTION_TYPE_POSE_INPUT)
+        && make_action(g_actions.palmL, "palm_l", XR_ACTION_TYPE_POSE_INPUT)
+        && make_action(g_actions.palmR, "palm_r", XR_ACTION_TYPE_POSE_INPUT);
     if (!created) {
         log_line("ev=vr.xr actions result=fail reason=action");
         return false;
     }
-    const std::array<Binding, 15> touch{{
+    const std::array<Binding, 17> touch{{
         {g_actions.aimL, "/user/hand/left/input/aim/pose"},
         {g_actions.aimR, "/user/hand/right/input/aim/pose"},
+        {g_actions.palmL, "/user/hand/left/input/grip/pose"},
+        {g_actions.palmR, "/user/hand/right/input/grip/pose"},
         {g_actions.move, "/user/hand/left/input/thumbstick"},
         {g_actions.turn, "/user/hand/right/input/thumbstick"},
         {g_actions.triggerL, "/user/hand/left/input/trigger/value"},
@@ -1016,9 +1030,11 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         {g_actions.menu, "/user/hand/left/input/menu/click"},
     }};
     suggest("/interaction_profiles/oculus/touch_controller", touch);
-    const std::array<Binding, 5> simple{{
+    const std::array<Binding, 7> simple{{
         {g_actions.aimL, "/user/hand/left/input/aim/pose"},
         {g_actions.aimR, "/user/hand/right/input/aim/pose"},
+        {g_actions.palmL, "/user/hand/left/input/grip/pose"},
+        {g_actions.palmR, "/user/hand/right/input/grip/pose"},
         {g_actions.triggerR, "/user/hand/right/input/select/click"},
         {g_actions.triggerL, "/user/hand/left/input/select/click"},
         {g_actions.menu, "/user/hand/left/input/menu/click"},
@@ -1037,7 +1053,12 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
     // and the rest of the session carries on -- head tracking must not depend on controllers.
     const bool spaces = make_action_space(g_actions.aimL, g_actions.spaceL)
                         && make_action_space(g_actions.aimR, g_actions.spaceR);
-    log_fmt("ev=vr.xr actions result=ok spaces=%d", spaces ? 1 : 0);
+    // The grip spaces are allowed to fail on their own: a runtime that only offers aim poses
+    // still gives head tracking and a pointable weapon, just with the pivot at the aim origin.
+    // The fallback is silent at the point of use, so it is logged loudly here instead.
+    const bool palmSpaces = make_action_space(g_actions.palmL, g_actions.palmSpaceL)
+                            && make_action_space(g_actions.palmR, g_actions.palmSpaceR);
+    log_fmt("ev=vr.xr actions result=ok spaces=%d palm_spaces=%d", spaces ? 1 : 0, palmSpaces ? 1 : 0);
     return true;
 }
 
@@ -1581,29 +1602,83 @@ void to_game_pose(const XrPosef& pose, float sine, float cosine, HandPose& out) 
 }
 
 /**
- * Locates one controller's aim pose against the same reference space the views were located in.
+ * Locates one action space against the same reference space the views were located in.
  * @param space The action space, or XR_NULL_HANDLE when the runtime refused one.
- * @param sine Sine of the body yaw.
- * @param cosine Cosine of the body yaw.
- * @return The pose, invalid when the space is missing or the runtime reports it untracked.
+ * @param out Receives the pose, untouched on failure.
+ * @return False when the space is missing or the runtime reports it untracked.
  */
-[[nodiscard]] HandPose locate_hand(XrSpace space, float sine, float cosine) noexcept {
-    HandPose hand{};
+[[nodiscard]] bool locate_raw(XrSpace space, XrPosef& out) noexcept {
     if (space == XR_NULL_HANDLE || g_api.locateSpace == nullptr || g_space == XR_NULL_HANDLE) {
-        return hand;
+        return false;
     }
     XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
     if (g_api.locateSpace(space, g_space, g_predictedDisplayTime, &location) != XR_SUCCESS) {
-        return hand;
+        return false;
     }
     // Both bits are required: an orientation-only location would put the weapon at the origin,
     // which reads as a plausible pose and would quietly ruin every position test.
     constexpr XrSpaceLocationFlags required =
         XR_SPACE_LOCATION_ORIENTATION_VALID_BIT | XR_SPACE_LOCATION_POSITION_VALID_BIT;
     if ((location.locationFlags & required) != required) {
+        return false;
+    }
+    out = location.pose;
+    return true;
+}
+
+/**
+ * The last good RAW pose of one controller, in the reference space, before any yaw fold.
+ *
+ * Raw is the entire point. Holding a pose that has already been folded by the room anchor makes it
+ * go out of date the instant the player turns, and turns a lost frame of tracking into a
+ * translation that grows with every degree of artificial turn -- the same class of error that made
+ * the weapon slide away from the hands. Kept unfolded, a held pose is re-folded by the current
+ * anchor each frame and stays exactly where the hand really was.
+ */
+struct HandRaw final {
+    XrPosef aim{};
+    XrPosef palm{};
+    bool havePalm{};
+    bool have{};
+};
+std::array<HandRaw, 2> g_handRaw{};
+
+/**
+ * Locates one controller and converts it into the game's basis.
+ *
+ * Both of the hand's OpenXR poses are located: `aim` for where it points, `grip` for where the
+ * palm is. When tracking drops, the last good raw pose is re-folded and served with `stale` set
+ * rather than the hand simply disappearing -- see HandPose::stale for why that matters.
+ * @param index 0 for the left hand, 1 for the right.
+ * @param aimSpace The aim action space.
+ * @param palmSpace The grip action space, or XR_NULL_HANDLE when the runtime refused one.
+ * @param sine Sine of the fold angle.
+ * @param cosine Cosine of the fold angle.
+ * @return The pose, invalid only when this controller has never been tracked at all.
+ */
+[[nodiscard]] HandPose locate_hand(std::size_t index, XrSpace aimSpace, XrSpace palmSpace, float sine,
+                                   float cosine) noexcept {
+    HandPose hand{};
+    HandRaw& raw = g_handRaw[index];
+    XrPosef aimPose{};
+    XrPosef palmPose{};
+    if (locate_raw(aimSpace, aimPose)) {
+        raw.aim = aimPose;
+        raw.havePalm = locate_raw(palmSpace, palmPose);
+        raw.palm = raw.havePalm ? palmPose : aimPose;
+        raw.have = true;
+    } else if (raw.have) {
+        hand.stale = true;
+    } else {
         return hand;
     }
-    to_game_pose(location.pose, sine, cosine, hand);
+    to_game_pose(raw.aim, sine, cosine, hand);
+    // Only the translation is wanted from the grip pose. Its orientation is a different convention
+    // from the aim pose's (thumb-up along its own axis rather than along the pointing ray), so
+    // taking `forward` from it would silently re-aim the weapon by about ninety degrees.
+    HandPose palmOnly{};
+    to_game_pose(raw.palm, sine, cosine, palmOnly);
+    hand.palm = palmOnly.offset;
     hand.frame = g_frameIndex;
     hand.valid = true;
     return hand;
@@ -1888,8 +1963,9 @@ void begin_frame(float roomAnchor) noexcept {
 
     // The hands ride on the head's frame: same reference space, same origin, same yaw fold, so a
     // consumer can subtract one from the other and get the real geometry of the room.
-    const std::array<HandPose, 2> hands{locate_hand(g_actions.spaceL, sine, cosine),
-                                        locate_hand(g_actions.spaceR, sine, cosine)};
+    const std::array<HandPose, 2> hands{
+        locate_hand(0, g_actions.spaceL, g_actions.palmSpaceL, sine, cosine),
+        locate_hand(1, g_actions.spaceR, g_actions.palmSpaceR, sine, cosine)};
 
     AcquireSRWLockExclusive(&g_poseLock);
     g_pose = pose;
@@ -1900,14 +1976,15 @@ void begin_frame(float roomAnchor) noexcept {
         // The fold angle goes out with the poses, and the head's offset beside the hands', so a
         // test can undo the body yaw exactly and compare head against hand within one frame
         // rather than pairing up two throttled log lines that were never adjacent.
-        log_fmt("ev=vr.xr hand yaw=%.4f r_valid=%d r_fwd=%.3f,%.3f,%.3f r_up=%.3f,%.3f,%.3f "
-                "r_off=%.3f,%.3f,%.3f l_valid=%d l_fwd=%.3f,%.3f,%.3f l_off=%.3f,%.3f,%.3f "
-                "h_off=%.3f,%.3f,%.3f",
+        log_fmt("ev=vr.xr hand yaw=%.4f r_valid=%d r_stale=%d r_fwd=%.3f,%.3f,%.3f r_up=%.3f,%.3f,%.3f "
+                "r_off=%.3f,%.3f,%.3f r_palm=%.3f,%.3f,%.3f l_valid=%d l_fwd=%.3f,%.3f,%.3f "
+                "l_off=%.3f,%.3f,%.3f h_off=%.3f,%.3f,%.3f",
                 fold,
-                hands[1].valid ? 1 : 0,
+                hands[1].valid ? 1 : 0, hands[1].stale ? 1 : 0,
                 hands[1].forward[0], hands[1].forward[1], hands[1].forward[2],
                 hands[1].up[0], hands[1].up[1], hands[1].up[2],
                 hands[1].offset[0], hands[1].offset[1], hands[1].offset[2],
+                hands[1].palm[0], hands[1].palm[1], hands[1].palm[2],
                 hands[0].valid ? 1 : 0,
                 hands[0].forward[0], hands[0].forward[1], hands[0].forward[2],
                 hands[0].offset[0], hands[0].offset[1], hands[0].offset[2],
@@ -1984,6 +2061,14 @@ HandPose hand_pose(bool rightHand) noexcept {
     return hand;
 }
 
+void frame_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept {
+    AcquireSRWLockShared(&g_poseLock);
+    head = g_pose;
+    left = g_hands[0];
+    right = g_hands[1];
+    ReleaseSRWLockShared(&g_poseLock);
+}
+
 /** @return The controllers as of the last sync. */
 InputState input_state() noexcept {
     AcquireSRWLockShared(&g_poseLock);
@@ -2007,7 +2092,8 @@ void note_rendered_fov(float horizontalFov) noexcept {
 void shutdown() noexcept {
     destroy_presentation();
     if (g_api.destroySpace != nullptr) {
-        for (XrSpace* space : {&g_actions.spaceL, &g_actions.spaceR}) {
+        for (XrSpace* space : {&g_actions.spaceL, &g_actions.spaceR, &g_actions.palmSpaceL,
+                               &g_actions.palmSpaceR}) {
             if (*space != XR_NULL_HANDLE) {
                 g_api.destroySpace(*space);
                 *space = XR_NULL_HANDLE;

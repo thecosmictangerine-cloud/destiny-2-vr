@@ -32,6 +32,11 @@ param(
     [string[]]$Extra = @(),
     # Only the steps that decide whether the position part of the pose is honoured at all.
     [switch]$Quick,
+    # Scales every translation. The default amplitudes prove the response exists but saturate: at
+    # 0.3 m, with the weapon 0.33 m from the eye, the swing is about 42 degrees and the gun leaves
+    # the frame, so nothing can be measured and little can be seen. Around 0.3 gives 150-250 px --
+    # unmistakable, still on screen, and measurable by template matching.
+    [double]$Scale = 1.0,
     [int]$SettleSeconds = 4
 )
 $ErrorActionPreference = 'Stop'
@@ -78,6 +83,7 @@ function Step {
     Set-MockInput @mock | Out-Null
     Start-Sleep -Seconds $SettleSeconds
     [void](Focus-Game)
+Write-Output ('client rect: ' + (Export-ClientRect))
     $file = Join-Path $shots ("{0}_{1:d2}_{2}.png" -f $Tag, $script:index, $Name)
     Save-Shot $file | Out-Null
     $lines = (Read-LogLines) | Select-String 'ev=vr\.xr hand'
@@ -99,7 +105,7 @@ if (-not ((Read-LogLines) | Select-String 'ev=vr\.xr init result=ok')) {
     throw 'no OpenXR session in the log -- press F9 in world first'
 }
 
-Write-Output "== configuring: $Source on getter $Getter, $($Block -join ' / ') =="
+Write-Output "== configuring: $Source on getter $Getter, $($Block -join ' / '), scale $Scale =="
 $inv = [System.Globalization.CultureInfo]::InvariantCulture
 $commands = @('install') + $Block + @("getter $Getter $Source") + $Xform
 if ($HandOffset) {
@@ -119,11 +125,11 @@ if ($Quick) {
     # Same input as the step before: the difference between these two is the scene's own noise
     # floor (grass, blinking lights, the HUD), which every other row has to be judged against.
     Step 'q_rest_again'  @{}                'NOISE FLOOR -- nothing changed'
-    Step 'q_hand_right'  @{ HandX = 0.35 }  'gun moves right on screen'
-    Step 'q_hand_back'   @{ HandZ = 0.35 }  'gun comes closer, gets bigger'
-    Step 'q_head_lean_in' @{ HeadZ = -0.4 } 'GUN GROWS and stays put in the world'
-    Step 'q_head_lean_back' @{ HeadZ = 0.4 } 'GUN RECEDES and stays put in the world'
-    Step 'q_head_right'  @{ HeadX = 0.3 }   'gun slides LEFT on screen'
+    Step 'q_hand_right'  @{ HandX = ($Scale * 0.35) }  'gun moves right on screen'
+    Step 'q_hand_back'   @{ HandZ = ($Scale * 0.35) }  'gun comes closer, gets bigger'
+    Step 'q_head_lean_in' @{ HeadZ = ($Scale * -0.4) } 'GUN GROWS and stays put in the world'
+    Step 'q_head_lean_back' @{ HeadZ = ($Scale * 0.4) } 'GUN RECEDES and stays put in the world'
+    Step 'q_head_right'  @{ HeadX = ($Scale * 0.3) }   'gun slides LEFT on screen'
     Set-MockInput @zero | Out-Null
     $csv = Join-Path $shots ("{0}_summary.csv" -f $Tag)
     $rows | Export-Csv -NoTypeInformation -Path $csv
@@ -140,22 +146,22 @@ Step 'hand_yaw_pos'  @{ HandYaw = 30 }          'gun rotates left, world does no
 Step 'hand_yaw_neg'  @{ HandYaw = -30 }         'gun rotates right, world does not move'
 Step 'hand_pitch_up' @{ HandPitch = 25 }        'gun points up'
 Step 'hand_pitch_dn' @{ HandPitch = -25 }       'gun points down'
-Step 'hand_right'    @{ HandX = 0.3 }           'gun moves right on screen'
-Step 'hand_left'     @{ HandX = -0.3 }          'gun moves left on screen'
-Step 'hand_up'       @{ HandY = 0.3 }           'gun moves up on screen'
-Step 'hand_down'     @{ HandY = -0.3 }          'gun moves down on screen'
-Step 'hand_fwd'      @{ HandZ = -0.35 }         'gun moves away, gets smaller'
-Step 'hand_back'     @{ HandZ = 0.35 }          'gun comes closer, gets bigger'
+Step 'hand_right'    @{ HandX = ($Scale * 0.3) }           'gun moves right on screen'
+Step 'hand_left'     @{ HandX = ($Scale * -0.3) }          'gun moves left on screen'
+Step 'hand_up'       @{ HandY = ($Scale * 0.3) }           'gun moves up on screen'
+Step 'hand_down'     @{ HandY = ($Scale * -0.3) }          'gun moves down on screen'
+Step 'hand_fwd'      @{ HandZ = ($Scale * -0.35) }         'gun moves away, gets smaller'
+Step 'hand_back'     @{ HandZ = ($Scale * 0.35) }          'gun comes closer, gets bigger'
 
 Write-Output ''
 Write-Output '== HALF TWO: the head moves, the hand is still -- the decoupling proof =='
 Step 'head_rest'     @{}                        'back to the reference frame'
-Step 'head_lean_in'  @{ HeadZ = -0.4 }          'GUN GROWS and stays put in the world'
-Step 'head_lean_back' @{ HeadZ = 0.4 }          'GUN RECEDES and stays put in the world'
-Step 'head_lean_right' @{ HeadX = 0.3 }         'gun slides LEFT on screen (opposite the head)'
-Step 'head_lean_left' @{ HeadX = -0.3 }         'gun slides RIGHT on screen'
-Step 'head_rise'     @{ HeadY = 0.25 }          'gun slides DOWN on screen'
-Step 'head_crouch'   @{ HeadY = -0.25 }         'gun slides UP on screen'
+Step 'head_lean_in'  @{ HeadZ = ($Scale * -0.4) }          'GUN GROWS and stays put in the world'
+Step 'head_lean_back' @{ HeadZ = ($Scale * 0.4) }          'GUN RECEDES and stays put in the world'
+Step 'head_lean_right' @{ HeadX = ($Scale * 0.3) }         'gun slides LEFT on screen (opposite the head)'
+Step 'head_lean_left' @{ HeadX = ($Scale * -0.3) }         'gun slides RIGHT on screen'
+Step 'head_rise'     @{ HeadY = ($Scale * 0.25) }          'gun slides DOWN on screen'
+Step 'head_crouch'   @{ HeadY = ($Scale * -0.25) }         'gun slides UP on screen'
 Step 'head_yaw_pos'  @{ HeadYaw = 30 }          'world turns left, gun stays in the world'
 Step 'head_yaw_neg'  @{ HeadYaw = -30 }         'world turns right, gun stays in the world'
 Step 'head_pitch_up' @{ HeadPitch = 20 }        'world tips, gun stays in the world'
@@ -163,7 +169,7 @@ Step 'head_pitch_dn' @{ HeadPitch = -20 }       'world tips, gun stays in the wo
 
 Write-Output ''
 Write-Output '== BOTH AT ONCE: bringing the gun to the face =='
-Step 'inspect'       @{ HeadZ = -0.25; HandZ = 0.2; HandY = 0.15 } 'gun close and centred, held up'
+Step 'inspect'       @{ HeadZ = ($Scale * -0.25); HandZ = ($Scale * 0.2); HandY = ($Scale * 0.15) } 'gun close and centred, held up'
 
 Set-MockInput @zero | Out-Null
 $csv = Join-Path $shots ("{0}_summary.csv" -f $Tag)

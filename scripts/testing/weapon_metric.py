@@ -25,7 +25,26 @@ import numpy as np
 from PIL import Image
 
 # Client area of the game window inside the full-desktop capture, physical pixels.
-CLIENT = (9, 38, 9 + 1280, 38 + 720)
+def _client_rect():
+    """@return The game's client area inside a full-desktop capture, as (left, top, right, bottom).
+
+    Read from `SVR_CLIENT_RECT` (`x,y,w,h`), which the PowerShell tests export after asking Windows
+    for the real rectangle. A hardcoded constant was wrong the moment the window resolution changed
+    and silently so -- the crops still produced pictures, just of the wrong part of the frame -- so
+    the assumption lives in one place now, and the fallback says what it assumes.
+    """
+    import os
+    import re
+    match = re.match(r"^\s*(-?\d+),(-?\d+),(\d+),(\d+)\s*$", os.environ.get("SVR_CLIENT_RECT", ""))
+    if match:
+        x, y, w, h = (int(g) for g in match.groups())
+        return (max(0, x), max(0, y), x + w, y + h)
+    # A 1920x1080 window at 0,0 on a 1920x1080 desktop, which is the project default; the client
+    # starts below the title bar and the bottom is clipped by the screen.
+    return (0, 31, 1920, 1080)
+
+
+CLIENT = _client_rect()
 # The window the first-person weapon is drawn in, as fractions of the client area. Chosen from a
 # coarse map of the mask: the gun and forearm occupy roughly x 0.60-0.80, y 0.55-1.00, and this
 # window is wide enough to let the gun travel a long way before leaving it.

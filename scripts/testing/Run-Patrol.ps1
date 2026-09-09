@@ -4,6 +4,10 @@
 # coordinates and mapped onto the live client rectangle.
 param(
     [string]$Destination = 'eden_freeroam 20 160 7',
+    # Which OpenXR runtime the launch is pointed at. `mock` is the harness; `meta` is the Quest via
+    # Link, for a real headset session. The registry's ActiveRuntime is SteamVR on this machine, so
+    # a launch that sets nothing would land there -- the variable is not optional.
+    [ValidateSet('mock', 'meta')][string]$Runtime = 'mock',
     [switch]$NoToggle,
     [int]$SettleSeconds = 70,
     [int]$LoadSeconds = 85,
@@ -61,8 +65,19 @@ Stop-Game
 Remove-Item C:\Games\Sunrise\SVR_MockXR.log, C:\Games\Sunrise\SVR_Weapon.txt -ErrorAction SilentlyContinue
 [System.IO.File]::WriteAllText('C:\Games\Sunrise\SVR_Destination.txt', "$Destination`n", (New-Object System.Text.UTF8Encoding($false)))
 Remove-Item C:\Games\Sunrise\SVR_Destination.off -ErrorAction SilentlyContinue
-$manifest = Enable-MockXr
-Write-Output "mock manifest: $manifest"
+if ($Runtime -eq 'meta') {
+    $manifest = 'C:\Program Files\Meta Horizon\Support\oculus-runtime\oculus_openxr_64.json'
+    if (-not (Test-Path $manifest)) { throw "Meta runtime manifest not found at $manifest" }
+    $env:XR_RUNTIME_JSON = $manifest
+    # The mock keeps the head file-driven for the rest of a session once it has read one, so its
+    # inputs are cleared even though the mock is not being loaded: a leftover file is one less thing
+    # to wonder about if the poses come out wrong.
+    Remove-Item 'C:\Games\Sunrise\SVR_MockInput.txt' -ErrorAction SilentlyContinue
+} else {
+    $manifest = Enable-MockXr
+}
+Write-Output "runtime: $Runtime"
+Write-Output "manifest: $manifest"
 Write-Output "destination: $Destination"
 Start-Game -Fresh | Out-Null
 $p = Wait-GameWindow -TimeoutSeconds 240

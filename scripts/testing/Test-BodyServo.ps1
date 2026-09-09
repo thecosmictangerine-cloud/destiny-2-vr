@@ -48,7 +48,8 @@ function Positions {
         }
     }
 }
-function S([string]$n) { Start-Sleep -Seconds 1; [void](Focus-Game); Save-Shot (Join-Path $shots ("{0}_{1}.png" -f $Tag, $n)) | Out-Null }
+function S([string]$n) { Start-Sleep -Seconds 1; [void](Focus-Game)
+Write-Output ('client rect: ' + (Export-ClientRect)); Save-Shot (Join-Path $shots ("{0}_{1}.png" -f $Tag, $n)) | Out-Null }
 
 $zero = @{ HeadYaw = 0; HeadPitch = 0; HeadX = 0; HeadY = 0; HeadZ = 0
     HandYaw = 0; HandPitch = 0; HandX = 0; HandY = 0; HandZ = 0

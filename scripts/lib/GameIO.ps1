@@ -210,6 +210,34 @@ function Set-MockInput {
     return $text
 }
 
+<#
+Publishes the game's real client rectangle in SVR_CLIENT_RECT, as "x,y,w,h" in physical pixels,
+for the Python image tools to crop with.
+
+They used to carry the rectangle as a constant, which went wrong the moment the window resolution
+changed -- and silently, because the crops still produced pictures, just of the wrong part of the
+frame. Asking Windows removes the assumption.
+#>
+function Export-ClientRect {
+    Add-Type -TypeDefinition @'
+using System; using System.Runtime.InteropServices;
+public struct SVRIORECT { public int L, T, R, B; }
+public struct SVRIOPOINT { public int X, Y; }
+public static class SVRIOWin {
+    [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out SVRIORECT r);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref SVRIOPOINT p);
+}
+'@ -ErrorAction SilentlyContinue
+    $p = Get-GameProcess
+    if (-not $p) { return $null }
+    $r = New-Object SVRIORECT
+    [void][SVRIOWin]::GetClientRect($p.MainWindowHandle, [ref]$r)
+    $o = New-Object SVRIOPOINT
+    [void][SVRIOWin]::ClientToScreen($p.MainWindowHandle, [ref]$o)
+    $env:SVR_CLIENT_RECT = ('{0},{1},{2},{3}' -f $o.X, $o.Y, ($r.R - $r.L), ($r.B - $r.T))
+    return $env:SVR_CLIENT_RECT
+}
+
 <# Removes the pose file, putting the mock back on its own procedural yaw sweep. #>
 function Clear-MockInput {
     $path = Join-Path $script:GameDir 'SVR_MockInput.txt'

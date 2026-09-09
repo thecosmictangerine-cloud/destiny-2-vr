@@ -23,14 +23,42 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-CLIENT = (9, 38, 9 + 1280, 38 + 720)
-# Template box around the weapon at rest, in client pixels, and how far to search for it.
-TEMPLATE = (830, 380, 1100, 700)
-SEARCH = 200
+def _client_rect():
+    """@return The game's client area inside a full-desktop capture, as (left, top, right, bottom).
+
+    Read from `SVR_CLIENT_RECT` (`x,y,w,h`), which the PowerShell tests export after asking Windows
+    for the real rectangle. A hardcoded constant was wrong the moment the window resolution changed
+    and silently so -- the crops still produced pictures, just of the wrong part of the frame -- so
+    the assumption lives in one place now, and the fallback says what it assumes.
+    """
+    import os
+    import re
+    match = re.match(r"^\s*(-?\d+),(-?\d+),(\d+),(\d+)\s*$", os.environ.get("SVR_CLIENT_RECT", ""))
+    if match:
+        x, y, w, h = (int(g) for g in match.groups())
+        return (max(0, x), max(0, y), x + w, y + h)
+    # A 1920x1080 window at 0,0 on a 1920x1080 desktop, which is the project default; the client
+    # starts below the title bar and the bottom is clipped by the screen.
+    return (0, 31, 1920, 1080)
+
+
+CLIENT = _client_rect()
+# Template box around the weapon at rest, and how far to search for it, both as fractions of the
+# client area so they follow the window size instead of being tied to one resolution.
+TEMPLATE_FRACTION = (0.648, 0.528, 0.859, 0.972)
+# Wide enough for the amplitudes the tests actually use: 0.1 m of travel with the weapon 0.33 m
+# from the eye is about 17 degrees, and at 104 degrees across 1920 pixels that is over 300 px.
+SEARCH_FRACTION = 0.32
 
 
 def client(path):
     return np.asarray(Image.open(path).convert("L").crop(CLIENT), dtype=np.float32)
+
+
+def template_box(width, height):
+    """@return The template box in pixels for a client area of this size."""
+    left, top, right, bottom = TEMPLATE_FRACTION
+    return (int(left * width), int(top * height), int(right * width), int(bottom * height))
 
 
 def scan(base, shot, box, centre, radius, step):
@@ -65,11 +93,14 @@ def best_shift(base, shot):
     quarter-scale images, which is both sixteen times cheaper per window and tolerant of the
     scene's fine-grained animation; the fine pass then refines to the pixel at full resolution.
     """
-    quarter = tuple(v // 4 for v in TEMPLATE)
+    height, width = base.shape
+    box = template_box(width, height)
+    search = int(SEARCH_FRACTION * width)
+    quarter = tuple(v // 4 for v in box)
     small_base, small_shot = base[::4, ::4], shot[::4, ::4]
-    coarse = scan(small_base, small_shot, quarter, (0, 0), SEARCH // 4, 1)
+    coarse = scan(small_base, small_shot, quarter, (0, 0), search // 4, 1)
     centre = (coarse[0] * 4, coarse[1] * 4)
-    return scan(base, shot, TEMPLATE, centre, 6, 1)
+    return scan(base, shot, box, centre, 6, 1)
 
 
 def main():

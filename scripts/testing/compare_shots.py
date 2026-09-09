@@ -15,14 +15,37 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw
 
-CLIENT = (9, 38, 9 + 1280, 38 + 720)
-# The weapon's corner of the client area, for --zoom.
-ZOOM = (560, 300, 1180, 720)
+def _client_rect():
+    """@return The game's client area inside a full-desktop capture, as (left, top, right, bottom).
+
+    Read from `SVR_CLIENT_RECT` (`x,y,w,h`), which the PowerShell tests export after asking Windows
+    for the real rectangle. A hardcoded constant was wrong the moment the window resolution changed
+    and silently so -- the crops still produced pictures, just of the wrong part of the frame -- so
+    the assumption lives in one place now, and the fallback says what it assumes.
+    """
+    import os
+    import re
+    match = re.match(r"^\s*(-?\d+),(-?\d+),(\d+),(\d+)\s*$", os.environ.get("SVR_CLIENT_RECT", ""))
+    if match:
+        x, y, w, h = (int(g) for g in match.groups())
+        return (max(0, x), max(0, y), x + w, y + h)
+    # A 1920x1080 window at 0,0 on a 1920x1080 desktop, which is the project default; the client
+    # starts below the title bar and the bottom is clipped by the screen.
+    return (0, 31, 1920, 1080)
+
+
+CLIENT = _client_rect()
+# The weapon's corner of the client area for --zoom, as fractions so it follows the window size.
+ZOOM_FRACTION = (0.44, 0.42, 0.92, 1.00)
 
 
 def load(path, zoom):
     image = Image.open(path).convert("RGB").crop(CLIENT)
-    return image.crop(ZOOM) if zoom else image
+    if not zoom:
+        return image
+    left, top, right, bottom = ZOOM_FRACTION
+    return image.crop((int(left * image.width), int(top * image.height),
+                       int(right * image.width), int(bottom * image.height)))
 
 
 def main():

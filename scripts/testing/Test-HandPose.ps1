@@ -33,15 +33,39 @@ function Read-LogLines {
     } finally { $stream.Dispose() }
 }
 
-# Applies one mock input state, waits for a fresh `ev=vr.xr hand` line and parses it.
+# The pose fields of the newest `ev=vr.xr hand` line, without the timestamp, so two samples can
+# be compared for equality.
+function Hand-Fields {
+    $hit = (Read-LogLines) | Select-String 'ev=vr\.xr hand' | Select-Object -Last 1
+    if (-not $hit) { return $null }
+    return ($hit.Line -replace '^.*ev=vr\.xr hand ', '')
+}
+
+# Applies one mock input state and waits for the module to actually publish it.
+#
+# Waiting a fixed time was not enough. The mock only re-reads its input file when the file's
+# last-write time changes, which it notices within about a second -- but a sample taken on a fixed
+# sleep can still land on a line logged just before the re-read, and then reports the PREVIOUS
+# step's state. That produced two false failures that looked exactly like a broken axis. Waiting
+# for the published fields to differ from the previous step's is the real condition.
 function Get-HandSample {
     param([hashtable]$Mock, [string]$Label)
-    $before = ((Read-LogLines) | Select-String 'ev=vr\.xr hand').Count
+    $previous = Hand-Fields
+    $countBefore = ((Read-LogLines) | Select-String 'ev=vr\.xr hand').Count
     Set-MockInput @Mock | Out-Null
-    Start-Sleep -Seconds $SettleSeconds
-    $lines = (Read-LogLines) | Select-String 'ev=vr\.xr hand'
-    if ($lines.Count -le $before) { throw "no fresh hand line after '$Label' (still $before)" }
-    $line = $lines[-1].Line
+    # Settled means either the published fields changed, or enough fresh lines have gone by that
+    # the mock must have re-read and simply had nothing to change -- which is the case whenever a
+    # step asks for a state the mock is already in, the first one especially.
+    $deadline = (Get-Date).AddSeconds($SettleSeconds + 8)
+    do {
+        Start-Sleep -Milliseconds 400
+        $fields = Hand-Fields
+        $fresh = ((Read-LogLines) | Select-String 'ev=vr\.xr hand').Count - $countBefore
+    } while ($fields -eq $previous -and $fresh -lt 5 -and (Get-Date) -lt $deadline)
+    if ($fields -eq $previous -and $fresh -lt 5) { throw "no fresh hand lines at all after '$Label'" }
+    # One more line, so the value read is settled rather than the first frame of the transition.
+    Start-Sleep -Milliseconds 1200
+    $line = (Read-LogLines) | Select-String 'ev=vr\.xr hand' | Select-Object -Last 1 | ForEach-Object { $_.Line }
     $sample = @{ Label = $Label; Line = $line }
     foreach ($field in 'r_valid', 'l_valid') {
         if ($line -match "$field=(\d)") { $sample[$field] = [int]$Matches[1] }
@@ -90,6 +114,7 @@ function With { param([hashtable]$Changes) $m = $zero.Clone(); foreach ($k in $C
 
 if (-not (Get-GameProcess)) { throw 'game is not running; run Run-Orbit.ps1 first' }
 [void](Focus-Game)
+Write-Output ('client rect: ' + (Export-ClientRect))
 if (-not ((Read-LogLines) | Select-String 'ev=vr\.xr init result=ok')) {
     Write-Output 'no session in the log; pressing F9'
     Send-GameKey F9

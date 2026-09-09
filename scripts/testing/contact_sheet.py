@@ -13,9 +13,35 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-CLIENT = (9, 38, 9 + 1280, 38 + 720)
-# The weapon's corner of the client area: enough room for the gun to travel a long way.
-ZOOM = (440, 200, 1240, 720)
+def _client_rect():
+    """@return The game's client area inside a full-desktop capture, as (left, top, right, bottom).
+
+    Read from `SVR_CLIENT_RECT` (`x,y,w,h`), which the PowerShell tests export after asking Windows
+    for the real rectangle. A hardcoded constant was wrong the moment the window resolution changed
+    and silently so -- the crops still produced pictures, just of the wrong part of the frame -- so
+    the assumption lives in one place now, and the fallback says what it assumes.
+    """
+    import os
+    import re
+    match = re.match(r"^\s*(-?\d+),(-?\d+),(\d+),(\d+)\s*$", os.environ.get("SVR_CLIENT_RECT", ""))
+    if match:
+        x, y, w, h = (int(g) for g in match.groups())
+        return (max(0, x), max(0, y), x + w, y + h)
+    # A 1920x1080 window at 0,0 on a 1920x1080 desktop, which is the project default; the client
+    # starts below the title bar and the bottom is clipped by the screen.
+    return (0, 31, 1920, 1080)
+
+
+CLIENT = _client_rect()
+
+
+def _zoom(client):
+    """@return ZOOM_FRACTION resolved to pixels inside a client area of this size."""
+    width, height = client[2] - client[0], client[3] - client[1]
+    left, top, right, bottom = ZOOM_FRACTION
+    return (int(left * width), int(top * height), int(right * width), int(bottom * height))
+# The weapon's corner of the client area, as fractions, so it follows the window size.
+ZOOM_FRACTION = (0.34, 0.28, 0.97, 1.00)
 
 
 def main():
@@ -36,7 +62,7 @@ def main():
     for shot in shots:
         image = Image.open(shot).convert("RGB").crop(CLIENT)
         if not full:
-            image = image.crop(ZOOM)
+            image = image.crop(_zoom(CLIENT))
         scale = cell_w / float(image.width)
         tiles.append((shot.name, image.resize((cell_w, int(image.height * scale)))))
 

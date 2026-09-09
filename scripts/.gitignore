@@ -1,0 +1,4 @@
+# Python bytecode from the measurement helpers. A compiled .pyc embeds the absolute source
+# path of the machine that built it, so these must never be committed.
+__pycache__/
+*.pyc

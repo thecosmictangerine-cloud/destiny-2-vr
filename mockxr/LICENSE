@@ -1,0 +1,32 @@
+MIT License
+
+Copyright (c) 2026 The Cosmic Tangerine
+
+This license applies to the contents of the `mockxr/` and `scripts/` directories only. Both are
+original work with no dependency on Project Sunrise: the mock runtime includes nothing but the
+Khronos OpenXR headers and d3d11, and the scripts drive the build, the game and the measurements
+from outside the process. They are separate works distributed alongside a GPL-3.0 program, not
+derived from it, and are offered under MIT so they can be reused elsewhere without GPL
+obligations.
+
+Everything else in this repository, including `Sunrise/src/client/hooks/vr/`, is GPL-3.0. That
+code includes Sunrise headers and compiles into Sunrise's DLL, so it is a derivative work. See the
+repository root `LICENSE` for the GPL text, and `Sunrise/vendor/openxr/include/` for the Khronos
+headers, which are Apache-2.0.
+
+---
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

@@ -1,0 +1,1281 @@
+client level=warn t=44922 ev=queuez stage=notification result=skipped reason=null_payload
+server level=warn t=64594 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=64609 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623105
+server level=warn t=64640 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200001 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=64656 ev=mission_script stage=attach result=no_script session=11433003384888623105 activity_row=21
+server level=warn t=64656 ev=mission_script stage=attach result=no_activity_link session=11433003384888623106
+server level=warn t=104359 ev=mission_script stage=attach result=no_activity_link session=11433003384888623105
+server level=warn t=106531 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=106547 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623107
+server level=warn t=106625 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200003 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=106625 ev=mission_script stage=attach result=no_script session=11433003384888623107 activity_row=10
+server level=warn t=106625 ev=mission_script stage=attach result=no_activity_link session=11433003384888623108
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623109
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623110
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623111
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623112
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623113
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623114
+server level=warn t=106672 ev=mission_script stage=attach result=no_activity_link session=11433003384888623115
+server level=warn t=138328 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=138344 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200004 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=138359 ev=mission_script stage=attach result=no_script session=11433003384888623108 activity_row=10
+server level=warn t=181031 ev=mission_script stage=attach result=no_activity_link session=11433003384888623107
+server level=warn t=181031 ev=mission_script stage=attach result=no_activity_link session=11433003384888623108
+server level=warn t=183031 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=183047 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623116
+server level=warn t=183125 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020000C public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=183125 ev=mission_script stage=attach result=no_script session=11433003384888623116 activity_row=11
+server level=warn t=183125 ev=mission_script stage=attach result=no_activity_link session=11433003384888623117
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623118
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623119
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623120
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623121
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623122
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623123
+server level=warn t=183172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623124
+server level=warn t=214875 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=214890 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020000D public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=214906 ev=mission_script stage=attach result=no_script session=11433003384888623117 activity_row=11
+server level=warn t=267062 ev=mission_script stage=attach result=no_activity_link session=11433003384888623116
+server level=warn t=267062 ev=mission_script stage=attach result=no_activity_link session=11433003384888623117
+server level=warn t=269172 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=269187 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623125
+server level=warn t=269250 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200015 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=269250 ev=mission_script stage=attach result=no_script session=11433003384888623125 activity_row=8
+server level=warn t=269250 ev=mission_script stage=attach result=no_activity_link session=11433003384888623126
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623130
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623131
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623132
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623133
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623129
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623127
+server level=warn t=269297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623128
+server level=warn t=301031 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=301047 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200016 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=301047 ev=mission_script stage=attach result=no_script session=11433003384888623126 activity_row=8
+server level=warn t=316078 ev=mission_script stage=attach result=no_activity_link session=11433003384888623134
+server level=warn t=318531 ev=bap svc=25 stage=plaintext result=shape_accepted conn=4 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=318547 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020001E public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=318547 ev=mission_script stage=attach result=no_script session=11433003384888623134 activity_row=8
+client level=warn t=387000 ev=vr.probe state on=1 yaw=0.0 height=0.00 fov=0.0
+client level=warn t=387000 ev=vr.probe block player=0 addr=0x27083265810
+client level=warn t=387000 ev=vr.xr load path=C:\Games\Sunrise\SunriseVR_MockXR.dll
+client level=warn t=387015 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.4242
+client level=warn t=387015 ev=vr.xr unhook module=kernelbase.dll export=LoadLibraryExW result=ok bytes=2
+client level=warn t=387015 ev=vr.xr unhook module=kernel32.dll export=GetProcAddress result=ok bytes=2
+client level=warn t=387015 ev=vr.xr ldr_notify callback=destiny2.exe+0x3AB4B0 foreign=1
+client level=warn t=387015 ev=vr.xr ldr_notify result=ok seen=1 neutralised=1
+client level=warn t=387015 ev=vr.xr load result=ok interface=1
+client level=warn t=387015 ev=vr.xr views count=2 eye=1824x1968 runtime=DishonoredVR Mock Runtime
+client level=warn t=387015 ev=vr.xr bindings profile=/interaction_profiles/oculus/touch_controller count=13 result=0
+client level=warn t=387015 ev=vr.xr bindings profile=/interaction_profiles/khr/simple_controller count=3 result=0
+client level=warn t=387015 ev=vr.xr actions result=ok
+client level=warn t=387015 ev=vr.xr init result=ok runtime=DishonoredVR Mock Runtime
+client level=warn t=387015 ev=vr.xr session state=running
+client level=warn t=387015 ev=vr.xr recentre x=0.000 y=1.600 z=0.000
+client level=warn t=387015 ev=vr.xr swapchain result=ok size=1280x720 source_format=28 format=29 direct=1 images=2
+client level=warn t=389328 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=389328 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=389344 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=390859 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=391609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=391609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=391625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=393875 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=393875 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=393906 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=394640 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=396219 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=396219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=396234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=398469 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=398469 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=398469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=398484 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=400719 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=400719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=400734 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=402203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=402922 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=402922 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=402937 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=405187 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=405187 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=405203 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=405937 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=407422 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=407422 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=407437 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=409625 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=409625 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=409625 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=409640 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=411922 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=411922 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=411937 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=413453 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=414187 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=414187 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=414203 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.312,-0.950,0.000 out_fov=1.8151
+client level=warn t=416390 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=416390 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=416406 ev=vr.weapon install result=ok getter=0x12D22C0 ptr=0x12D50F0
+client level=warn t=416406 ev=vr.weapon callers path=getter
+client level=warn t=416406 ev=vr.weapon callers path=ptr
+client level=warn t=416406 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=417125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=418609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=418609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=418609 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=418609 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=418625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=418984 ev=vr.weapon block orientation=off
+client level=warn t=418984 ev=vr.weapon rule path=getter targets=all source=head rvas=0 all=1
+client level=warn t=420797 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=420797 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=420797 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=420812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=420812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=420812 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=422953 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=422953 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=422953 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=422953 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=422969 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=424390 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=425125 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=425125 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=425125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=425125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=425140 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=426953 ev=vr.weapon callers path=getter D5D832:150 B363FA:450 B3598D:150
+client level=warn t=426953 ev=vr.weapon callers path=ptr D98F49:750 D7FF2C:8 DB8CB6:150 12B0A09:150 16E8861:150 D8F242:150 D8B348:150 D8B9B5:150 F4276C:2 D7FB5C:57 12B2284:16 D2F672:16 D8492B:32
+client level=warn t=427344 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=427344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=427359 ev=vr.weapon callers path=getter D5D832:30 B363FA:90 B3598D:30
+client level=warn t=427359 ev=vr.weapon callers path=ptr D98F49:150 D7FF2C:2 DB8CB6:30 12B0A09:30 16E8861:30 D8F242:30 D8B348:30 D8B9B5:30 F4276C:0 D7FB5C:13 12B2284:3 D2F672:3 D8492B:8
+client level=warn t=427375 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=428078 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=429531 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=429531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=429547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=429547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=429547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=431719 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=431719 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=431719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=431719 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=431719 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=431734 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=433890 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=433890 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=433906 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=433906 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=433906 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=435375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=436156 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=436156 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=436172 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=436172 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=436172 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=438437 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=438437 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=438453 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=438453 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=438469 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=439203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=440672 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=440672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=440687 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=440687 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=440703 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=442859 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=442859 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=442859 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=442875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=442875 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=442875 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=445172 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=445172 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=445187 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=445187 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:75 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=445187 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=446640 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=447390 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=447390 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=447390 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=447390 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:42
+client level=warn t=447406 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=449562 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=449562 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=449578 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=449578 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:41
+client level=warn t=449578 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=450281 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=451719 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=451719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=451734 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=451734 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:41
+client level=warn t=451750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=453890 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=453890 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=453890 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=453890 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=453890 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=453906 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=456078 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=456078 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=456094 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=456094 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=456094 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=457531 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=458265 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=458265 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=458281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=458281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=458297 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=460531 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=460531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=460547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=460547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=460547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=461250 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=462687 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=462687 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=462703 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=462703 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=462703 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=464859 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=464859 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=464859 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=464875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=464875 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=464875 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=468687 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=468687 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=468703 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=468703 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:4 D7FB5C:77 12B2284:28 D2F672:28 D8492B:44
+client level=warn t=468719 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=470125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=470844 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=470844 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=470859 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=470859 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=470859 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=472984 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=472984 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=473000 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=473000 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=473000 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=473734 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=475187 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=475187 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=475203 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=475203 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=475219 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=477375 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=477375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=477375 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=477390 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=477390 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=477406 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=479547 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=479547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=479562 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=479562 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=479578 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=481015 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=481734 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=481734 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=481750 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=481750 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=481750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=483937 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=483937 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=483953 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=483953 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=483953 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=484719 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=486172 ev=vr.xr pose fwd=-0.979,-0.205,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=486172 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=486187 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=486187 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=486187 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=487328 ev=vr.weapon rule path=getter targets=D5D832 source=head rvas=1 all=0
+client level=warn t=488390 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=488390 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=488390 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=488406 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=488406 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=488406 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=489906 ev=vr.weapon rule path=getter targets=B363FA source=head rvas=1 all=0
+client level=warn t=490609 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=490609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=490625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=490625 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:71 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=490640 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=492031 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=492750 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=492750 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=492765 ev=vr.weapon rule path=getter targets=B3598D source=head rvas=1 all=0
+client level=warn t=492765 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=492765 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=492765 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=494922 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=494922 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=494922 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=494922 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=494937 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=495297 ev=vr.weapon rule path=getter targets=none source=head rvas=0 all=0
+client level=warn t=495640 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=497078 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=497078 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=497094 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=497094 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=497094 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=499312 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=499312 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=499312 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=499328 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=499328 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=499344 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=501453 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=501453 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=501453 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=501453 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=501469 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=502875 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=503609 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=503609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=503609 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=503609 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=503625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=505812 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=505812 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=505812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=505812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=505828 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=506531 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=507953 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=507953 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=507953 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=507953 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=507969 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=510125 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=510125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=510125 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=510125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=510125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=510140 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=512469 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=512469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=512484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=512484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:72 12B2284:19 D2F672:19 D8492B:44
+client level=warn t=512500 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=513953 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=514672 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=514672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=514687 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=514687 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=514703 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=516828 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=516828 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=516844 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=516844 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=516844 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=517547 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=518984 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=518984 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=518984 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=518984 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=519000 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=521140 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=521140 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=521140 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=521140 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=521140 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=521156 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=523312 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=523312 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=523312 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=523312 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=523328 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=524765 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=525469 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=525469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=525484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=525484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=525484 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=527609 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=527609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=527625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=527625 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=527625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=528375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=529828 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=529828 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=529828 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=529828 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=529844 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=531984 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=531984 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=531984 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=532000 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=532000 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=532015 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=534156 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=534156 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=534172 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=534172 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=534172 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=535578 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=536359 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=536359 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=536375 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=536375 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:73 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=536390 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=538531 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=538531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=538547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=538547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:71 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=538547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=539250 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=540672 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=540672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=540672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=540672 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:72 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=540687 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=542906 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=542906 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=542906 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=542922 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=542922 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=542922 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=545109 ev=vr.xr pose fwd=-0.312,-0.950,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=545109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=545125 ev=vr.weapon rule path=getter targets=B363FA source=head rvas=1 all=0
+client level=warn t=545125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=545125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=545140 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=546594 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=547297 ev=vr.xr pose fwd=-0.590,-0.807,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=547297 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=547312 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=547312 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:41
+client level=warn t=547328 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=549469 ev=vr.xr pose fwd=-0.868,-0.497,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=549469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=549484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=549484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=549484 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=550187 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=551656 ev=vr.xr pose fwd=-0.720,-0.644,0.259 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=551656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=551672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=551672 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=551672 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=552797 ev=vr.weapon rule path=getter targets=D5D832 source=head rvas=1 all=0
+client level=warn t=553859 ev=vr.xr pose fwd=-0.892,-0.451,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=553859 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=553859 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=553875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=553875 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=553875 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=556062 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=556062 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=556062 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=556062 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:41
+client level=warn t=556078 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=557500 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=558203 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=558203 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=558219 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=558219 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=558234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=560359 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=560359 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=560359 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=560359 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=560375 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=561078 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=562547 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=562547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=562562 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=562562 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=562562 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=564734 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=564734 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=564734 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=564750 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=564750 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:42
+client level=warn t=564750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=567047 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=567047 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=567062 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=567062 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=567062 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=568531 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=569250 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=569250 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=569265 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=569265 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=569265 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=571406 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=571406 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=571422 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=571422 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=571422 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=572125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=573578 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=573578 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=573594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=573594 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=573594 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=575781 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=575781 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=575781 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=575797 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=575797 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=575797 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=577937 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=577937 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=577953 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=577953 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=577969 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=579390 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=580109 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=580109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=580125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=580125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=580125 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=582265 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=582265 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=582281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=582281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=582297 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=582984 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=584547 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=584547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=584562 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=584562 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=584562 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=586094 ev=vr.weapon rule path=getter targets=none source=head rvas=0 all=0
+client level=warn t=586094 ev=vr.weapon block orientation=on
+client level=warn t=586844 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=586844 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=586844 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=586859 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=586859 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=586875 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=589109 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=589109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=589125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=589125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=589125 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=590547 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=591265 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=591265 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=591281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=591281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=591281 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=593437 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=593437 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=593453 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=593453 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=593453 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=594156 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=595578 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=595578 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=595594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=595594 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=595609 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=597797 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=597797 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=597797 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=597812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=597812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:71 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=597812 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=599969 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=599969 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=599969 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=599969 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=599984 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=601390 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=602109 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=602109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=602125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=602125 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:72 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=602125 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=604297 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=604297 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=604312 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=604312 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:74 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=604312 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=605015 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=606453 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=606453 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=606469 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=606469 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=606469 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=608609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=608609 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=608609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=608625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=608625 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=608625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=610844 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=610844 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=610844 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=610844 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:44
+client level=warn t=610859 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=612328 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=613062 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=613062 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=613078 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=613078 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=613078 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=615219 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=615219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=615219 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=615219 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=615234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=615953 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=617406 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=617406 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=617406 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=617406 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:20 D2F672:19 D8492B:40
+client level=warn t=617422 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=619547 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=619547 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=619547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=619547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=619547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:19 D2F672:18 D8492B:40
+client level=warn t=619562 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=622875 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=622875 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=622922 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=622922 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:73 12B2284:25 D2F672:25 D8492B:40
+client level=warn t=622937 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=625031 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=625750 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=625750 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=625750 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=625750 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:74 12B2284:22 D2F672:22 D8492B:41
+client level=warn t=625765 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=627859 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=627859 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=627875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=627875 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=627890 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=628578 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=630000 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=630000 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=630015 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=630015 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=630015 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=632281 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=632281 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=632281 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=632281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=632281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:43
+client level=warn t=632297 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=634406 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=634406 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=634422 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=634422 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=634437 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=635828 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=636531 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=636531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=636547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=636547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=636547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=638656 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=638656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=638672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=638672 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=638672 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=639375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=640812 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=640812 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=640812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=640812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=640828 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=643062 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=643062 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=643062 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=643078 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=643078 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=643094 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=645203 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=645203 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=645219 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=645219 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=645219 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=646625 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=647328 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=647328 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=647344 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=647344 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=647344 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=649484 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=649484 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=649484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=649484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=649500 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=650187 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=651609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=651609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=651609 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=651609 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=651625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=653719 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=653719 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=653719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=653734 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=653734 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=653750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=655859 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=655859 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=655875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=655875 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=655890 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=657281 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=657984 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=657984 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=658000 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=658000 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=658000 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=660219 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=660219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=660234 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=660234 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=660250 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=660922 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=662344 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=662344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=662359 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=662359 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=662359 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=664484 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=664484 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=664484 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=664500 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=664500 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=664500 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=666672 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=666672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=666687 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=666687 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:3 D7FB5C:71 12B2284:19 D2F672:19 D8492B:40
+client level=warn t=666687 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=668062 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=668765 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=668765 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=668781 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=668781 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=668781 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=670875 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=670875 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=670890 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=670890 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=670890 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=671578 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=672984 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=672984 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=673000 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=673000 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=673000 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=675094 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=675094 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=675094 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=675109 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=675109 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:72 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=675109 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=677219 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=677219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=677234 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=677234 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=677234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=678640 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=679344 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=679344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=679359 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=679359 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:10 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:2 D7FB5C:70 12B2284:18 D2F672:18 D8492B:40
+client level=warn t=679359 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=685094 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=685094 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=685140 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=685140 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:42 D2F672:42 D8492B:47
+client level=warn t=685156 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=687094 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=691094 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=691094 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=691156 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=691156 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=691156 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=697109 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=697109 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=697109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=697156 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=697156 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=697172 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=703109 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=703109 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=703172 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=703172 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=703172 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=707125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=709125 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=709125 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=709172 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=709172 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=709187 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=715125 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=715125 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=715187 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=715187 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=715187 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=717140 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=721140 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=721140 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=721187 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=721187 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=721203 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=727140 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=727140 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=727140 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=727203 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=727203 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=727203 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=733156 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=733156 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=733203 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=733203 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=733219 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=737156 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=739156 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=739156 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=739219 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=739219 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=739219 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=745172 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=745172 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=745234 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=745234 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=745234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=747172 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=751172 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=751172 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=751234 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=751234 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=751234 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=757187 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=757187 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=757187 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=757250 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=757250 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=757250 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=763187 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=763187 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=763250 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=763250 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=763250 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=767203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=769203 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=769203 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=769265 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=769265 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=769265 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=775203 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=775219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=775265 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=775265 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=775265 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=777219 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=781219 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=781219 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=781281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=781281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=781281 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=787234 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=787234 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=787234 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=787281 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=787281 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=787281 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=793234 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=793234 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=793297 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=793297 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=793297 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=797234 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=799250 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=799250 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=799297 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=799297 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=799297 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=805250 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=805250 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=805312 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=805312 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=805312 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=807250 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=811265 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=811265 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=811312 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=811312 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=811328 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=817265 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=817265 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=817265 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=817328 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=817328 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=817328 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=823281 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=823281 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=823328 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=823328 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=823344 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=827281 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=829281 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=829281 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=829344 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=829344 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=829344 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=835297 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=835297 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=835344 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=835344 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=835359 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=837297 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=841297 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=841297 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=841359 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=841359 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=841359 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=847312 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=847312 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=847312 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=847359 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=847359 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=847375 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=853328 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=853328 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=853375 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=853375 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=853375 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=857328 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=859328 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=859328 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=859390 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=859390 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=859390 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=865344 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=865344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=865390 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=865390 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=865390 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=867344 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=871344 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=871344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=871406 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=871406 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=871406 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=877359 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=877359 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=877359 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=877406 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=877406 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=877422 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=883359 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=883359 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=883422 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=883422 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=883422 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=887375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=889375 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=889375 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=889422 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=889422 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=889437 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=895375 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=895375 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=895437 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=895437 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=895437 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=897375 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=901390 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=901390 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=901437 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=901437 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=901453 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=907390 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=907390 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=907390 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=907453 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=907453 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=907453 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=913406 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=913406 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=913453 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=913453 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=913469 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=917406 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=919406 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=919406 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=919469 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=919469 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=919469 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=925422 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=925422 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=925469 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=925469 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=925484 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=927422 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=931422 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=931422 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=931484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=931484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=931484 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=937437 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=937437 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=937437 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=937484 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=937484 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=937500 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=943437 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=943437 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=943500 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=943500 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=943500 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=947453 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=949453 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=949453 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=949515 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=949515 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=949515 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=955453 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=955453 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=955515 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=955515 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=955515 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=957469 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=961469 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=961469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=961531 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=961531 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=961531 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=967469 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=967469 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=967469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=967531 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=967531 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=967531 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=973484 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=973484 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=973547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=973547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=973547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=977484 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=979484 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=979484 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=979547 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=979547 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=979547 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=985500 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=985500 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=985562 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=985562 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=985562 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=987500 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=991515 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=991515 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=991562 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=991562 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=991578 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=997515 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=997515 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=997515 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=997578 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=997578 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=997578 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1003531 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1003531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1003578 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1003578 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1003594 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1007531 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1009531 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1009531 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1009594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1009594 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1009594 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1015547 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1015547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1015594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1015594 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1015609 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1017547 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1021547 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1021547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1021609 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1021609 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1021609 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1027562 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1027562 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1027562 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1027609 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1027609 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1027625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1033562 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1033562 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1033625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1033625 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:7 D7FB5C:77 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1033625 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1037562 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1039578 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1039578 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1039625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1039625 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1039640 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1045578 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1045578 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1045640 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1045640 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1045640 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1047578 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1051594 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1051594 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1051640 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1051640 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1051656 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1057594 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1057594 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1057594 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1057656 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1057656 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1057656 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1063609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1063609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1063656 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1063656 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1063672 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1067609 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1069609 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1069609 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1069672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1069672 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1069672 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1075625 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1075625 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1075672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1075672 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=1075687 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1077625 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1081625 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1081625 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1081687 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1081687 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1081687 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1087640 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1087640 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1087640 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1087703 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1087703 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=1087703 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1093656 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1093656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1093703 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1093703 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=1093719 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1097656 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1099656 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1099656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1099719 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1099719 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=1099719 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1105672 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1105672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1105719 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1105719 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:46
+client level=warn t=1105734 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1107672 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1111672 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1111672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1111734 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1111734 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1111734 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1117687 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1117687 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1117687 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1117750 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1117750 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:83 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=1117750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1123687 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1123687 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1123750 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1123750 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:48
+client level=warn t=1123750 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1127703 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1129703 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1129703 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1129765 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1129765 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:84 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=1129765 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1135719 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1135719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1135765 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1135765 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1135781 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1137719 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1141719 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1141719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1141781 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1141781 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1141781 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1147734 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1147734 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1147734 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1147781 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1147781 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:82 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1147797 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1153734 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1153734 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1153797 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1153797 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:78 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1153797 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1157750 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1159750 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1159750 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1159812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1159812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=1159812 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1165765 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1165765 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1165812 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1165812 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:80 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1165828 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1167765 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1171765 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1171765 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1171828 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1171828 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:45
+client level=warn t=1171828 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1177781 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1177781 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1177781 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1177828 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1177828 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:12 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:77 12B2284:45 D2F672:45 D8492B:47
+client level=warn t=1177844 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1183781 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1183781 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1183844 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1183844 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:79 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1183844 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151
+client level=warn t=1187797 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=1189797 ev=vr.xr pose fwd=-0.745,-0.667,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=1189797 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=1189859 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=1189859 ev=vr.weapon callers path=ptr D98F49:900 D7FF2C:11 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 F4276C:6 D7FB5C:81 12B2284:45 D2F672:45 D8492B:44
+client level=warn t=1189859 ev=vr.probe pose in_pos=661.01,268.12,58.20 in_fwd=-0.745,-0.667,0.000 in_fov=1.4242 out_pos=661.01,268.12,58.20 out_fwd=-0.745,-0.667,0.000 out_fov=1.8151

@@ -1,0 +1,14 @@
+# The mod fork is its own git repository, pushed to branch `vr` of this same remote. It keeps the
+# `upstream` remote and the full stanuwu/Sunrise history, which is what makes `git pull upstream`
+# merge cleanly, so it must not be absorbed into this one.
+/sunrise-vr/
+/upstream-control/
+
+# Third-party binaries kept locally for comparison and rollback: the Sunrise installer and the
+# official 0.3.2 DLL. 81 MB of redistributables that are not ours to publish.
+/tools/
+
+# Screenshots are frames of the running game, i.e. Bungie's rendered art. The project rule is no
+# game assets in the repo, so the evidence directory keeps only our own logs.
+/docs/evidence/*.png
+/docs/evidence/*.jpg

@@ -1,0 +1,935 @@
+server level=info t=516 ev=mission_script stage=initialize result=enabled session=0 activity_row=0
+server level=info t=516 ev=transport stage=listen result=ok port=30974
+server level=info t=516 ev=gameplay stage=endpoint result=ok mode=embedded port=30976 ports=16 of=16
+client level=info t=594 ev=package_trust stage=attach result=ok mode=package_integrity_bypass
+client level=info t=610 ev=bootflow_texture stage=attach count=18 result=ok
+client level=info t=610 ev=steam_init result=ok
+client level=info t=610 ev=hook stage=install group=egress count=31 result=ok
+client level=info t=2625 ev=graphics stage=probe result=ok driver=hardware level=0xB000
+client level=info t=2703 ev=cursor stage=install result=ok
+client level=info t=2703 ev=polled_input stage=install result=ok
+client level=info t=2703 ev=activate stage=graphics result=ok
+client level=info t=2703 ev=activate stage=platform result=ok
+client level=info t=2735 ev=renderer stage=init result=ok
+client level=info t=2985 ev=bootstrap stage=token result=ok
+client level=info t=3016 ev=investment stage=family5_commit result=ok
+client level=info t=3016 ev=investment stage=install result=ok
+client level=info t=3016 ev=activate stage=game_network result=ok
+client level=info t=3016 ev=activate stage=package_keys result=ok
+client level=info t=3016 ev=retail stage=install result=ok
+client level=info t=3016 ev=assert stage=install result=ok
+client level=info t=3047 ev=probe stage=hitch result=installed
+client level=info t=3047 ev=probe stage=stall result=installed
+client level=info t=3047 ev=probe stage=sense result=installed
+client level=info t=3110 ev=async_io_guard stage=patch result=ok mode=cached_manager_owner
+client level=info t=3110 ev=config_getter stage=install result=ok
+client level=info t=3172 ev=bootflow stage=character_select result=ok
+client level=info t=3172 ev=bootflow stage=slice_set result=ok
+client level=info t=3172 ev=bootflow stage=composition result=ok
+client level=info t=3172 ev=bootflow stage=orbit_handoff result=ok
+client level=info t=3172 ev=bootflow stage=owner_slot result=ok
+client level=info t=3172 ev=bootflow stage=region result=ok
+client level=info t=3188 ev=bootflow stage=world_step result=ok
+client level=info t=3188 ev=bootflow stage=current_slice result=ok
+client level=info t=3235 ev=teleport stage=install result=ok
+client level=info t=3250 ev=noclip stage=install result=ok
+client level=info t=3281 ev=infinite_ammo stage=install result=ok
+client level=info t=3281 ev=inactivity stage=install result=ok
+client level=info t=3297 ev=queuez stage=notification result=ok
+client level=info t=3313 ev=bitmap stage=ref_guard result=ok
+client level=info t=3313 ev=probe stage=msg12 result=installed
+client level=info t=3469 ev=probe stage=cine result=installed
+client level=info t=3531 ev=probe stage=cine6 result=installed
+client level=info t=3703 ev=world_objects stage=install result=ok
+client level=info t=3719 ev=activate stage=main result=ok
+client level=info t=3719 ev=nettick stage=resolve result=ok latch=0x00007FF68F5F0827
+client level=info t=3719 ev=nettick stage=sample latch=1 callbacks=4
+server level=info t=3719 ev=core stage=pump result=server_thread
+client level=info t=3750 ev=pkg stage=abilities result=ok rows=12
+client level=info t=3750 ev=build_data stage=items result=ok rows=15424
+client level=info t=3766 ev=build_data stage=domains named=1 items=1 details=1 buckets=1 sockets=1 abilities=1 progressions=1 scenarios=1
+client level=info t=3891 ev=inactivity stage=release result=noop
+client level=info t=4922 ev=retail site=5 text=networking:stun: Created stun endpoint, advancing to DNS discovery
+client level=info t=4938 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=4953 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=4969 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=4985 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5000 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5016 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5016 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5031 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5047 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5063 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5078 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5094 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5110 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5125 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5141 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5141 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5156 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5172 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5172 ev=retail site=7 text=networking:stun: Selected stun server: [0] ip address: [127.0.0.1:3074] valid stun server count: [1]
+client level=info t=5203 ev=retail site=8 text=networking:stun: client external ip address: [127.0.0.1:3097]
+client level=info t=5235 ev=retail site=9 text=networking:stun: Reporting NAT type [1] and address [127.0.0.1:3097].
+client level=info t=5719 ev=nettick stage=sample latch=1 callbacks=244
+client level=info t=7719 ev=nettick stage=sample latch=1 callbacks=532
+client level=info t=9719 ev=nettick stage=sample latch=1 callbacks=820
+client level=info t=10766 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:start' for reason 'unavailable'.
+client level=info t=11719 ev=nettick stage=sample latch=1 callbacks=1108
+client level=info t=13719 ev=nettick stage=sample latch=1 callbacks=1396
+client level=info t=15719 ev=nettick stage=sample latch=1 callbacks=1684
+client level=info t=17719 ev=nettick stage=sample latch=1 callbacks=1972
+client level=info t=19719 ev=nettick stage=sample latch=1 callbacks=2260
+client level=info t=21719 ev=nettick stage=sample latch=1 callbacks=2548
+client level=info t=23719 ev=nettick stage=sample latch=1 callbacks=2836
+client level=info t=25719 ev=nettick stage=sample latch=1 callbacks=3123
+client level=info t=27719 ev=nettick stage=sample latch=1 callbacks=3411
+client level=info t=29719 ev=nettick stage=sample latch=1 callbacks=3698
+client level=info t=31719 ev=nettick stage=sample latch=1 callbacks=3986
+client level=info t=33719 ev=nettick stage=sample latch=1 callbacks=4274
+client level=info t=35719 ev=nettick stage=sample latch=1 callbacks=4562
+client level=info t=37719 ev=nettick stage=sample latch=1 callbacks=4850
+client level=info t=39719 ev=nettick stage=sample latch=1 callbacks=5138
+client level=info t=41719 ev=nettick stage=sample latch=1 callbacks=5426
+client level=info t=43719 ev=nettick stage=sample latch=1 callbacks=5714
+client level=info t=45719 ev=nettick stage=sample latch=1 callbacks=5999
+client level=info t=47719 ev=nettick stage=sample latch=1 callbacks=6287
+client level=info t=49719 ev=nettick stage=sample latch=1 callbacks=6574
+client level=info t=51719 ev=nettick stage=sample latch=1 callbacks=6862
+client level=info t=53719 ev=nettick stage=sample latch=1 callbacks=7149
+client level=info t=55719 ev=nettick stage=sample latch=1 callbacks=7436
+client level=info t=57719 ev=nettick stage=sample latch=1 callbacks=7724
+client level=info t=59719 ev=nettick stage=sample latch=1 callbacks=8012
+client level=info t=61719 ev=nettick stage=sample latch=1 callbacks=8301
+client level=info t=63719 ev=nettick stage=sample latch=1 callbacks=8589
+client level=info t=65719 ev=nettick stage=sample latch=1 callbacks=8877
+client level=info t=67719 ev=nettick stage=sample latch=1 callbacks=9165
+client level=info t=69719 ev=nettick stage=sample latch=1 callbacks=9452
+client level=info t=71719 ev=nettick stage=sample latch=1 callbacks=9740
+client level=info t=73719 ev=nettick stage=sample latch=1 callbacks=10028
+client level=info t=75719 ev=nettick stage=sample latch=1 callbacks=10312
+client level=info t=76203 ev=retail site=10 text=networking:link: Endpoint traffic is now: [disabled].
+client level=info t=76203 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=76203 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_signin' for reason 'unavailable'.
+client level=info t=76203 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(4)], took: [1 ms], average: [1.000000 ms], min: [1.000000], max: [1.000000], count: [1]
+client level=info t=76203 ev=retail site=12 text=networking:logic:session: local user 0 set platform account id=unknown platform account id, live=1, online=1, free=0, user_content=1, friend_content=1
+client level=info t=76203 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(5)], took: [0 ms], average: [0.000000 ms], min: [0.000000], max: [0.000000], count: [1]
+client level=info t=76203 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_account_warnings' for reason 'unavailable'.
+client level=info t=76203 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:enumerate_content_rights' for reason 'unavailable'.
+client level=info t=76219 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:account_signin' for reason 'unavailable'.
+server level=info t=76266 ev=http method=post route=signon result=ok
+client level=info t=76281 ev=retail site=13 text=networking:signon:client: Server environment: live
+client level=info t=76281 ev=retail site=14 text=networking:stun: Client external address from signon: [127.0.0.1:0].
+client level=info t=76281 ev=retail site=15 text=world_controller:state:bootflow_account_signin_handler: Demonware lobby connection not desired, continuing without Demonware lobby connection.
+client level=info t=76281 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(8)], took: [69 ms], average: [69.000000 ms], min: [69.000000], max: [69.000000], count: [1]
+client level=info t=76281 ev=retail site=16 text=networking:stun: Using STUN discovered address and NAT type.
+client level=info t=76297 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [76] ms in world controller state: [7] name: [bootflow:account_signin]
+client level=info t=76297 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:content_check' for reason 'unavailable'.
+client level=info t=76297 ev=content_config stage=get route=manifest bytes=105232 result=ok
+client level=info t=76453 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [166] ms in world controller state: [16] name: [bootflow:content_check]
+client level=info t=76453 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:package_registration' for reason 'unavailable'.
+client level=info t=77719 ev=nettick stage=sample latch=1 callbacks=10599
+client level=info t=78969 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [2514] ms in world controller state: [21] name: [bootflow:package_registration]
+client level=info t=78969 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:bap_signin' for reason 'unavailable'.
+client level=info t=78969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=78969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=78969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=78969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=78969 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=78969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=78969 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=78969 ev=retail site=20 text=networking:server:bap: primary BAP server IP address: 1.0.0.127, port: 30974
+server level=info t=78985 ev=transport stage=accept result=ok conn=1
+client level=info t=79063 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(0)' after '97ms'.
+client level=info t=79063 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(13)], took: [97 ms], average: [97.000000 ms], min: [97.000000], max: [97.000000], count: [1]
+client level=info t=79469 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(1)' after '500ms'.
+client level=info t=79469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(14)'.
+client level=info t=79485 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(14)' after '13ms'.
+client level=info t=79719 ev=nettick stage=sample latch=1 callbacks=10887
+client level=info t=81719 ev=nettick stage=sample latch=1 callbacks=11175
+client level=info t=83719 ev=nettick stage=sample latch=1 callbacks=11463
+client level=info t=84094 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(2)' after '5125ms'.
+client level=info t=84094 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=84110 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(5)' after '14ms'.
+client level=info t=84110 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=84110 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=84235 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(6)' after '117ms'.
+client level=info t=84235 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(11)], took: [131 ms], average: [131.000000 ms], min: [131.000000], max: [131.000000], count: [1]
+client level=info t=84313 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(7)' after '194ms'.
+client level=info t=84313 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=84313 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(8)' after '0ms'.
+client level=info t=84313 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=84485 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(9)' after '181ms'.
+client level=info t=84485 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=84485 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(15)'.
+client level=info t=84766 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(10)' after '283ms'.
+client level=info t=84766 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(13)'.
+client level=info t=84891 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(13)' after '119ms'.
+client level=info t=84891 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(12)], took: [583 ms], average: [583.000000 ms], min: [583.000000], max: [583.000000], count: [1]
+client level=info t=85047 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(15)' after '555ms'.
+client level=info t=85047 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(16)'.
+client level=info t=85047 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(17)'.
+client level=info t=85047 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(18)'.
+client level=info t=85047 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(18)' after '0ms'.
+client level=info t=85094 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(16)' after '48ms'.
+client level=info t=85719 ev=nettick stage=sample latch=1 callbacks=11734
+client level=info t=86547 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(17)' after '1506ms'.
+client level=info t=86547 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [7575] ms in world controller state: [22] name: [bootflow:bap_signin]
+client level=info t=86547 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:investment_signin' for reason 'unavailable'.
+client level=info t=86547 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=86547 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=86547 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(1)' after '0ms'.
+client level=info t=86547 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=86547 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=86594 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(6)' after '42ms'.
+client level=info t=87485 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(2)' after '938ms'.
+client level=info t=87485 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=87485 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=87485 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(5)' after '0ms'.
+client level=info t=87703 ev=retail site=23 text=world_controller: successfully changed world to: ambient_bootstrap
+client level=info t=87703 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(4)' after '215ms'.
+client level=info t=87719 ev=nettick stage=sample latch=1 callbacks=12000
+client level=info t=87781 ev=lore_visibility result=applied conditions=24
+client level=info t=87781 ev=retail site=24 text=content_table_patching: patch contents have been cleared
+client level=warn t=87860 ev=queuez stage=notification result=skipped reason=null_payload
+client level=info t=87860 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=87875 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(0)' after '1326ms'.
+client level=info t=87875 ev=retail site=26 text=networking:link: Starting port collsion resolution for endpoint type: [2], using port: [2003], max attempts: [100], max upnp attempts: [6]
+client level=info t=87875 ev=retail site=27 text=networking:port_collision_resolver: Starting port collision resolution for endpoint type: [2] port: [2003].
+client level=info t=87875 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=87875 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(7)' after '0ms'.
+client level=info t=87875 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1326] ms in world controller state: [23] name: [bootflow:investment_signin]
+client level=info t=87875 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:prepare_for_orbit' for reason 'unavailable'.
+client level=info t=87891 ev=retail site=28 text=networking:UPnP: Started UPnP client for port: [2003].
+client level=info t=88375 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=89719 ev=nettick stage=sample latch=1 callbacks=12909
+client level=info t=90860 ev=retail site=23 text=world_controller: successfully changed world to: orbit_d2
+client level=info t=91000 ev=retail site=29 text=world_controller:state:prepare_for_orbit: Waiting for bubble host port collision resolution.
+client level=info t=91719 ev=nettick stage=sample latch=1 callbacks=13918
+client level=info t=93719 ev=nettick stage=sample latch=1 callbacks=15098
+client level=info t=93891 ev=retail site=30 text=networking:UPnP: Client completed with status: [2], port: [2003].
+client level=info t=93891 ev=retail site=31 text=networking:port_collision_resolver: Unsuccessful UPnP reservation, UPnP client state: [2], endpoint type: [2] port: [2003].
+client level=info t=93891 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=93891 ev=retail site=32 text=networking:link: Swapping out endpoint type: [2] with collision resolved endpoint using port: [2003]
+client level=info t=93891 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [6017] ms in world controller state: [25] name: [bootflow:prepare_for_orbit]
+client level=info t=93891 ev=retail site=10 text=networking:link: Endpoint traffic is now: [enabled].
+client level=info t=93891 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:rejoin_activity' for reason 'unavailable'.
+client level=info t=93891 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [0] ms in world controller state: [26] name: [bootflow:rejoin_activity]
+client level=info t=93891 ev=retail site=3 text=world_controller:state_manager: Entering state 'character:signin' for reason 'unavailable'.
+client level=info t=93891 ev=bootflow stage=character_select result=held
+client level=warn t=93891 ev=vr.dest forced result=ok name=eden_freeroam bubble=20 slice_set=160 activity=7 spawn=0x0 active=1
+client level=info t=95719 ev=nettick stage=sample latch=1 callbacks=16003
+client level=info t=97719 ev=nettick stage=sample latch=1 callbacks=16889
+client level=info t=99719 ev=nettick stage=sample latch=1 callbacks=17781
+client level=info t=101719 ev=nettick stage=sample latch=1 callbacks=18668
+client level=info t=103719 ev=nettick stage=sample latch=1 callbacks=19550
+client level=info t=105719 ev=nettick stage=sample latch=1 callbacks=20422
+client level=info t=107719 ev=nettick stage=sample latch=1 callbacks=21285
+client level=info t=109719 ev=nettick stage=sample latch=1 callbacks=22128
+client level=info t=111719 ev=nettick stage=sample latch=1 callbacks=22968
+client level=info t=113719 ev=nettick stage=sample latch=1 callbacks=23795
+client level=info t=115719 ev=nettick stage=sample latch=1 callbacks=24613
+client level=info t=117719 ev=nettick stage=sample latch=1 callbacks=25406
+client level=info t=118031 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 1, flags 0x01, object_count 2]
+client level=info t=118047 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [24159] ms in world controller state: [27] name: [character:signin]
+client level=info t=118047 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(15)], took: [24159 ms], average: [24159.000000 ms], min: [24159.000000], max: [24159.000000], count: [1]
+client level=info t=118047 ev=retail site=3 text=world_controller:state_manager: Entering state 'cleanup' for reason 'unavailable'.
+client level=info t=118047 ev=retail site=33 text=world_controller:state:cleanup: Requested task mask: '0x00e0010c30fbdf3c'
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(2)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(5)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=118047 ev=retail site=36 text=networking:session: [fireteam:00000000:00000000] session state is changing from 'none' to 'host-established'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(10)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(11)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(11)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(12)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(12)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(14)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(14)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(15)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(15)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(16)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(16)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(17)'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(19)'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(20)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(20)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(21)'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(28)'.
+client level=info t=118047 ev=retail site=37 text=world_controller:retail_datamine: About to attempt retail log upload. We have '157' events, dropped '0' from THIS session due to upload cap, and have '38' unique event IDs.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(29)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(29)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(34)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(34)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(54)'.
+client level=info t=118047 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(54)' after '0ms'.
+client level=info t=118047 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(55)'.
+client level=info t=118047 ev=retail site=38 text=world_controller:state:cleanup: After 2ms, status: '2', tasks active: '0x00800000102a0100', pending: '0x0020010800c00200', requested: '0x00e0010c30fbdf3c'
+client level=info t=118047 ev=retail site=39 text=networking:session:membership:dump: [fireteam:00000000:00000000] update_number: 7, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118047 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118047 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=            _joining o=-1 j=[07A14537-07FC71CE] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118172 ev=retail site=23 text=world_controller: successfully changed world to:
+client level=info t=118172 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(19)' after '128ms'.
+client level=info t=118172 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(21)' after '128ms'.
+client level=info t=118172 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(22)'.
+client level=info t=118172 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(23)'.
+client level=info t=118172 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(23)' after '0ms'.
+client level=info t=118172 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(28)' after '128ms'.
+client level=info t=118172 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(53)'.
+client level=info t=118172 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(17)' after '130ms'.
+client level=info t=118188 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(55)' after '131ms'.
+client level=info t=118188 ev=retail site=42 text=networking:session:process-pending-joins: [fireteam:2AB3BAEA:7C46D01A] marking all peers in join [07A14537-07FC71CE] as joined
+client level=info t=118188 ev=retail site=39 text=networking:session:membership:dump: [fireteam:2AB3BAEA:7C46D01A] update_number: 11, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118188 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118188 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=            _waiting o=-1 j=[07A14537-07FC71CE] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118188 ev=retail site=43 text=networking:session:process-pending-joins: [fireteam:2AB3BAEA:7C46D01A] marking all peers in join [07A14537-07FC71CE] as ready, [134] ms since peer [0] created, [118503] since join was queued
+client level=info t=118188 ev=retail site=39 text=networking:session:membership:dump: [fireteam:2AB3BAEA:7C46D01A] update_number: 12, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118188 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118188 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=              _ready o=-1 j=[07A14537-07FC71CE] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118188 ev=retail site=44 text=networking:session:process-pending-joins: [fireteam:2AB3BAEA:7C46D01A] marking all peers in join [07A14537-07FC71CE] as established
+client level=info t=118188 ev=retail site=39 text=networking:session:membership:dump: [fireteam:2AB3BAEA:7C46D01A] update_number: 14, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118188 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118188 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118188 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(8)' after '137ms'.
+client level=info t=118188 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=118188 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(9)' after '0ms'.
+client level=info t=118188 ev=retail site=39 text=networking:session:membership:dump: [fireteam:2AB3BAEA:7C46D01A] update_number: 16, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118188 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=118188 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=0
+client level=info t=118297 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(22)' after '122ms'.
+client level=info t=118297 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(35)'.
+client level=info t=118297 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(40)'.
+client level=info t=118297 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(40)' after '0ms'.
+client level=info t=118516 ev=retail site=23 text=world_controller: successfully changed world to: orbit_d2
+client level=info t=118516 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(35)' after '223ms'.
+server level=info t=118531 ev=queuez stage=translate result=paired kind=account identity=0x0110000130AA9EC5 soid=0x9EAA300100100100
+server level=info t=118563 ev=ws701 stage=profile_setup result=complete
+server level=info t=118563 ev=activity stage=writeback result=ok world_state=0
+server level=info t=118578 ev=queuez stage=social_roster result=ok soid=0x9EAA300100100100 objects=2 bytes=176 emblem=1273 hash=0x71B4CC1A
+client level=info t=119031 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(53)' after '856ms'.
+client level=info t=119031 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [984] ms in world controller state: [28] name: [cleanup]
+client level=info t=119031 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:orbit' for reason 'unavailable'.
+client level=info t=119031 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'disabled' to 'fully_enabled'.
+client level=info t=119031 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(14)], took: [42833 ms], average: [42833.000000 ms], min: [42833.000000], max: [42833.000000], count: [1]
+client level=info t=119031 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+client level=info t=119031 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:orbit' to 'PRV24.24 (HASH: 0x841b4ef7)'; token advanced to 001
+client level=info t=119313 ev=bootflow stage=orbit_handoff result=native
+client level=info t=119313 ev=retail site=48 text=world_controller:slice_set_transition_manager: Stopping transition of type 'transitioning:orbit' due to completed
+server level=info t=119485 ev=ws701 stage=profile_setup result=complete
+server level=info t=119500 ev=activity stage=writeback result=ok world_state=0
+client level=info t=119719 ev=nettick stage=sample latch=1 callbacks=26173
+client level=info t=121719 ev=nettick stage=sample latch=1 callbacks=26943
+client level=info t=123719 ev=nettick stage=sample latch=1 callbacks=27703
+client level=info t=125719 ev=nettick stage=sample latch=1 callbacks=28467
+client level=info t=127719 ev=nettick stage=sample latch=1 callbacks=29231
+client level=info t=129719 ev=nettick stage=sample latch=1 callbacks=29998
+client level=info t=131719 ev=nettick stage=sample latch=1 callbacks=30767
+client level=info t=133719 ev=nettick stage=sample latch=1 callbacks=31533
+client level=info t=135719 ev=nettick stage=sample latch=1 callbacks=32277
+client level=info t=137719 ev=nettick stage=sample latch=1 callbacks=33017
+client level=info t=139719 ev=nettick stage=sample latch=1 callbacks=33750
+client level=info t=141719 ev=nettick stage=sample latch=1 callbacks=34487
+client level=info t=143719 ev=nettick stage=sample latch=1 callbacks=35220
+client level=info t=145719 ev=nettick stage=sample latch=1 callbacks=35945
+client level=info t=147719 ev=nettick stage=sample latch=1 callbacks=36674
+client level=info t=149031 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=149516 ev=ws701 stage=profile_setup result=complete
+server level=info t=149531 ev=activity stage=writeback result=ok world_state=0
+client level=info t=149719 ev=nettick stage=sample latch=1 callbacks=37396
+client level=info t=151719 ev=nettick stage=sample latch=1 callbacks=38124
+client level=info t=153719 ev=nettick stage=sample latch=1 callbacks=38849
+client level=info t=155719 ev=nettick stage=sample latch=1 callbacks=39573
+client level=info t=157719 ev=nettick stage=sample latch=1 callbacks=40284
+client level=info t=159719 ev=nettick stage=sample latch=1 callbacks=41010
+client level=info t=161719 ev=nettick stage=sample latch=1 callbacks=41734
+client level=info t=163719 ev=nettick stage=sample latch=1 callbacks=42460
+client level=info t=165719 ev=nettick stage=sample latch=1 callbacks=43186
+client level=info t=167719 ev=nettick stage=sample latch=1 callbacks=43899
+client level=info t=169719 ev=nettick stage=sample latch=1 callbacks=44615
+client level=info t=171719 ev=nettick stage=sample latch=1 callbacks=45334
+client level=info t=173719 ev=nettick stage=sample latch=1 callbacks=46056
+client level=info t=175719 ev=nettick stage=sample latch=1 callbacks=46774
+client level=info t=177719 ev=nettick stage=sample latch=1 callbacks=47494
+client level=info t=179047 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=179563 ev=ws701 stage=profile_setup result=complete
+server level=info t=179563 ev=activity stage=writeback result=ok world_state=0
+client level=info t=179719 ev=nettick stage=sample latch=1 callbacks=48191
+client level=info t=181719 ev=nettick stage=sample latch=1 callbacks=48912
+client level=info t=183719 ev=nettick stage=sample latch=1 callbacks=49631
+client level=info t=185719 ev=nettick stage=sample latch=1 callbacks=50350
+client level=info t=187719 ev=nettick stage=sample latch=1 callbacks=51064
+client level=info t=189719 ev=nettick stage=sample latch=1 callbacks=51608
+client level=info t=191719 ev=nettick stage=sample latch=1 callbacks=52290
+client level=info t=193719 ev=nettick stage=sample latch=1 callbacks=53006
+client level=info t=195719 ev=nettick stage=sample latch=1 callbacks=53722
+client level=info t=197719 ev=nettick stage=sample latch=1 callbacks=54437
+client level=info t=199719 ev=nettick stage=sample latch=1 callbacks=55149
+client level=info t=201719 ev=nettick stage=sample latch=1 callbacks=55863
+client level=info t=203719 ev=nettick stage=sample latch=1 callbacks=56578
+client level=info t=205719 ev=nettick stage=sample latch=1 callbacks=57285
+client level=info t=207719 ev=nettick stage=sample latch=1 callbacks=57982
+client level=info t=209047 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=209594 ev=ws701 stage=profile_setup result=complete
+server level=info t=209610 ev=activity stage=writeback result=ok world_state=0
+client level=info t=209719 ev=nettick stage=sample latch=1 callbacks=58593
+client level=info t=211719 ev=nettick stage=sample latch=1 callbacks=59258
+client level=info t=213719 ev=nettick stage=sample latch=1 callbacks=59903
+client level=info t=215719 ev=nettick stage=sample latch=1 callbacks=60480
+client level=info t=217719 ev=nettick stage=sample latch=1 callbacks=61056
+client level=info t=219719 ev=nettick stage=sample latch=1 callbacks=61632
+client level=info t=221719 ev=nettick stage=sample latch=1 callbacks=62206
+client level=info t=223719 ev=nettick stage=sample latch=1 callbacks=62707
+client level=info t=225719 ev=nettick stage=sample latch=1 callbacks=63203
+client level=info t=227719 ev=nettick stage=sample latch=1 callbacks=63705
+client level=info t=229719 ev=nettick stage=sample latch=1 callbacks=64222
+client level=info t=229875 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [110847] ms in world controller state: [29] name: [setup:orbit]
+client level=info t=229875 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'fully_enabled' to 'disabled'.
+client level=info t=229875 ev=retail site=49 text=networking:online:matchmaking: Active matchmaking interface type: 0
+client level=info t=229875 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_session_creation' for reason 'unavailable'.
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=229875 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=229875 ev=retail site=52 text=world_controller:state:activity_session_creation: Waiting for session peer properties to be in the expected state (no AH ids). FT [EXPECTED], POSSE [WAITING]
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=229906 ev=retail site=49 text=networking:online:matchmaking: Active matchmaking interface type: 0
+client level=info t=229906 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(0)' after '30ms'.
+client level=info t=229906 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+server level=info t=229922 ev=bap svc=42 stage=configuration result=ok activity_hash=0x11882989 type_hash=0x5EC025C8 activity=255 name=nadir_endgame current_activity_policy=0 changed=0
+client level=info t=229922 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(1)' after '16ms'.
+client level=info t=229922 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=230891 ev=retail site=39 text=networking:session:membership:dump: [posse:00000000:00000000] update_number: 2, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230891 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=230891 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=          _connected o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000006
+client level=info t=230891 ev=retail site=36 text=networking:session: [posse:00000000:00000000] session state is changing from 'none' to 'host-established'.
+client level=info t=230891 ev=retail site=53 text=networking:session:create: join-driven session creation (local and remote peers) assigned a promordial join nonce of 5D3380F8-C4E75A1E
+client level=info t=230891 ev=retail site=39 text=networking:session:membership:dump: [posse:00000000:00000000] update_number: 5, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230891 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=230891 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=            _joining o=-1 j=[5D3380F8-C4E75A1E] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000006
+client level=info t=230891 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=230891 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=230891 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(5)' after '1010ms'.
+client level=info t=230891 ev=retail site=54 text=world_controller:session_manager: PRIVATE session [posse:00000000:00000000] unable to get session keys.
+client level=info t=230891 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(2)' after '970ms'.
+client level=info t=230891 ev=retail site=55 text=world_controller:state:activity_session_creation: As HOST, peers done: skill read: , config refresh: 0, reputation read: 0
+client level=info t=230906 ev=retail site=42 text=networking:session:process-pending-joins: [posse:91362D21:327F7DB7] marking all peers in join [5D3380F8-C4E75A1E] as joined
+client level=info t=230906 ev=retail site=39 text=networking:session:membership:dump: [posse:91362D21:327F7DB7] update_number: 8, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230906 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=230906 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=            _waiting o=-1 j=[5D3380F8-C4E75A1E] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000006
+client level=info t=230906 ev=retail site=43 text=networking:session:process-pending-joins: [posse:91362D21:327F7DB7] marking all peers in join [5D3380F8-C4E75A1E] as ready, [11] ms since peer [0] created, [231218] since join was queued
+client level=info t=230906 ev=retail site=39 text=networking:session:membership:dump: [posse:91362D21:327F7DB7] update_number: 9, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230906 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=230906 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=              _ready o=-1 j=[5D3380F8-C4E75A1E] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000006
+client level=info t=230906 ev=retail site=39 text=networking:session:membership:dump: [posse:91362D21:327F7DB7] update_number: 10, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230906 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=230906 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=              _ready o=-1 j=[5D3380F8-C4E75A1E] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+client level=info t=230906 ev=retail site=44 text=networking:session:process-pending-joins: [posse:91362D21:327F7DB7] marking all peers in join [5D3380F8-C4E75A1E] as established
+client level=info t=230906 ev=retail site=39 text=networking:session:membership:dump: [posse:91362D21:327F7DB7] update_number: 12, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230906 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=230906 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+client level=info t=230906 ev=retail site=56 text=world_controller:state:activity_session_creation: Activity session 'posse:91362D21:327F7DB7' successfully created, trying to move on.
+client level=info t=230906 ev=retail site=57 text=world_controller:state_manager: State 'setup:matchmaking' requested for reason 'unavailable', but we can't: 'active outbound FT join [IN-PROGRESS]'.
+server level=info t=230906 ev=ws701 stage=profile_setup result=complete
+client level=info t=230906 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1031] ms in world controller state: [30] name: [setup:activity_session_creation]
+client level=info t=230906 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:matchmaking' for reason 'unavailable'.
+client level=info t=230906 ev=bootflow stage=composition result=zeroed count=1
+client level=info t=230922 ev=retail site=39 text=networking:session:membership:dump: [posse:91362D21:327F7DB7] update_number: 13, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=230922 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=230922 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#c1e67c95213c3e03] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+server level=info t=230922 ev=activity stage=writeback result=ok world_state=1
+client level=info t=230922 ev=bootflow stage=composition result=zeroed count=1
+client level=info t=230922 ev=retail site=58 text=world_controller:state:matchmaking: Teams have been picked for activity: 255, membership update number: 16
+client level=info t=230922 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [8] ms in world controller state: [31] name: [setup:matchmaking]
+client level=info t=230922 ev=retail site=59 text=world_controller:retail_datamine: Timed operation Matchmaking, took: [0 seconds]
+client level=info t=230922 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_host_setup' for reason 'unavailable'.
+client level=info t=230938 ev=retail site=60 text=networking:activity_client:messaging_interface:bap: AH IP resolution successful: 'proxy -> 127.0.0.1:30974'.
+server level=info t=230938 ev=transport stage=accept result=ok conn=2
+server level=warn t=230969 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+client level=info t=230985 ev=retail site=61 text=world_controller:activity_manager: Connected 'PRIVATE CURRENT' activity client.
+client level=info t=230985 ev=retail site=62 text=world_controller:activity_manager: 'PRIVATE CURRENT' activity client requesting activity host startup [activity: 0x00ff (HASH(0x11882989))(type: HASH(0x5ec025c8))(grognok: nadir_endgame)(destination: HASH(0x9bb2169b))(nonce: B021699F-04955724) for reason 'ENUM(0)'(override: nadir_endgame)][reservation count 1].
+server level=info t=230985 ev=bap svc=6 stage=selection result=forced name=eden_freeroam bubble=20 slice_set=160 spawn=0x811C9DC5
+server level=warn t=230985 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623105
+client level=info t=230985 ev=retail site=63 text=networking:activity_client:receive_message_from_host: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] received startup response from AH [id 9EAA3001:00200001][session ]
+client level=info t=231000 ev=retail site=64 text=networking:activity_client: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Sent join request: [AH 9EAA3001:00200001][nonce 358782010] identity:[account -7013740688821976832][character -7013740688821976831][machine B0:A1:25:FC:EC:00:F935][player DD:EB:72:2E:5E:93:39:11] [global resources 0x6c] (part 1/2)
+client level=info t=231000 ev=retail site=65 text=networking:activity_client: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Properties [session Tue_09082026_220607_020744@x64@76561198776753861@B0_A1_25_FC_EC_00_F935][FAH --------:--------][GAH --------:--------][FTID 0xd21d78ddf06b2af2] (part 2/2)
+client level=info t=231000 ev=retail site=66 text=world_controller:activity_manager: 'PRIVATE CURRENT' activity client sent join request to AH 9EAA3001:00200001, host=Tue_09082026_220607_020744@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935
+server level=info t=231031 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200002 group=0x76DFAC9272155FE3 generation=1 port=30976 held=1
+server level=info t=231047 ev=gameplay stage=advertise result=ok region=160 region_source=arrival ambassador_slot=1
+server level=warn t=231047 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200001 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+client level=info t=231047 ev=retail site=67 text=networking:activity_client:receive_message_from_host: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Received join result from AH '9EAA3001:00200001' [nonce 358782010][result 0][session id ][replication epoch 0].
+client level=info t=231047 ev=retail site=68 text=networking:activity_client:activity_host_changed: instance=PRIVATE CURRENT, ah-sid=, zombie-instance-nonce=0
+server level=info t=231047 ev=mission_script stage=open result=no_script session=11433003384888623105 activity_row=8
+client level=info t=231047 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x00FE->0x01FE flag=1
+server level=warn t=231047 ev=mission_script stage=attach result=no_script session=11433003384888623105 activity_row=8
+client level=info t=231047 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=0
+server level=warn t=231047 ev=mission_script stage=attach result=no_activity_link session=11433003384888623106
+client level=info t=231063 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=231063 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=7936 dirty=0 receipt=0
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200003 group=0x680B588200872AC3 generation=2 port=30978 held=2
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200004 group=0x79CF66BE06530A6B generation=3 port=30980 held=3
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200005 group=0x7793346A0C3F6BB3 generation=4 port=30982 held=4
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200006 group=0x8556C226118B48DB generation=5 port=30984 held=5
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200007 group=0x931A91D21754A863 generation=6 port=30986 held=6
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200008 group=0xA0DE5F8E1D20898B generation=7 port=30988 held=7
+server level=info t=231063 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200009 group=0xBEA26DBA228C96D3 generation=8 port=30990 held=8
+client level=info t=231063 ev=retail site=69 text=world_controller:state:activity_setup: 'NOJIP' flow, waiting. posse_peers_not_ready_sanitized=0, posse_peers_not_ready=0
+client level=info t=231094 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=231094 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=0
+client level=info t=231094 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=231094 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=0
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623107
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623108
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623109
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623110
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623111
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623112
+server level=warn t=231094 ev=mission_script stage=attach result=no_activity_link session=11433003384888623113
+client level=info t=231719 ev=nettick stage=sample latch=1 callbacks=64946
+client level=info t=231922 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1003] ms in world controller state: [32] name: [setup:activity_host_setup]
+client level=info t=231922 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:prologue_intro_loading' for reason 'unavailable'.
+client level=info t=231922 ev=retail site=70 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=231969 ev=bubbleauth stage=decode result=ok
+client level=info t=231969 ev=bubbleauth stage=force result=ok
+client level=info t=232000 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=232000 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=0
+client level=info t=232063 ev=retail site=71 text=world_controller:task_manager: Completed task 'ENUM(0)' after '145ms'.
+client level=info t=232063 ev=retail site=70 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=232110 ev=retail site=71 text=world_controller:task_manager: Completed task 'ENUM(1)' after '41ms'.
+client level=info t=232110 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [186] ms in world controller state: [33] name: [setup:prologue_intro_loading]
+client level=info t=232110 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:orbit_outro' for reason 'unavailable'.
+client level=info t=233047 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=233047 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=7936 dirty=0 receipt=0
+client level=info t=233719 ev=nettick stage=sample latch=1 callbacks=65720
+client level=info t=234031 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=234031 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=0
+client level=info t=235047 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=235047 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=7936 dirty=0 receipt=0
+client level=info t=235719 ev=nettick stage=sample latch=1 callbacks=66523
+client level=info t=236875 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [4773] ms in world controller state: [34] name: [setup:orbit_outro]
+client level=info t=236875 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_world_transition' for reason 'unavailable'.
+client level=info t=236875 ev=retail site=72 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=236875 ev=retail site=72 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=236875 ev=retail site=73 text=world_controller:task_manager: Completed task 'ENUM(1)' after '0ms'.
+client level=info t=237141 ev=bootflow stage=owner_slot result=forced was=0 now=1
+client level=info t=237141 ev=retail site=23 text=world_controller: successfully changed world to: eden_freeroam
+client level=info t=237141 ev=retail site=74 text=networking:update: *** it has been 256 milliseconds since the last network update (longest expected: '500')
+client level=info t=237141 ev=retail site=73 text=world_controller:task_manager: Completed task 'ENUM(0)' after '255ms'.
+client level=info t=237141 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [255] ms in world controller state: [35] name: [setup:activity_world_transition]
+client level=info t=237141 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:initial_slice_set_loading' for reason 'unavailable'.
+client level=info t=237141 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=237141 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=237141 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=237141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=237141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=7936 dirty=1 receipt=1
+server level=info t=237156 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=295 b0=0x00
+server level=info t=237156 ev=gameplay stage=response result=ok wordb=1 signon=0
+client level=info t=237156 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(1)' after '6ms'.
+client level=info t=237156 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'disabled' to 'initial_slice_set_precaching'.
+client level=info t=237156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=237156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=237156 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(4)' after '6ms'.
+client level=info t=237156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=237156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=237156 ev=bootflow stage=region result=forced slice_set=160
+client level=info t=237156 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:initial_slice_set' to 'PRV160.1 (HASH: 0x4542380a)'; token advanced to 001
+client level=info t=237156 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=237156 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(0)' after '11ms'.
+client level=info t=237156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+server level=info t=237172 ev=ws701 stage=profile_setup result=complete
+server level=info t=237172 ev=activity stage=writeback result=ok world_state=1
+server level=info t=237188 ev=gameplay stage=advertise result=ok region=160 region_source=reported ambassador_slot=1
+client level=info t=237219 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=237219 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=1
+client level=info t=237219 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=237219 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=1
+server level=info t=237219 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=128 b0=0x00
+server level=info t=237219 ev=gameplay stage=connect result=ok peer=2003 local=0x00000001 remote=0x00000000 rebuilt=0
+server level=info t=237219 ev=gameplay stage=establish result=queued local=0x00000001 remote=0x00000000
+client level=info t=237328 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(6)' after '172ms'.
+client level=info t=237719 ev=nettick stage=sample latch=1 callbacks=67229
+client level=info t=238156 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(5)' after '994ms'.
+server level=info t=238235 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=51 b0=0x00
+server level=info t=238250 ev=gameplay stage=message result=ok id=8 peerstage=5
+server level=info t=238250 ev=gameplay stage=sendqueue result=cleared packet=1 base=5 entries=0
+server level=info t=238266 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=1166 b0=0x00
+server level=info t=238266 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=238266 ev=gameplay stage=view result=queued remote=1 local=1 token=0x9EAA300100200001 list=0
+server level=info t=238328 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238328 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=238328 ev=gameplay stage=view result=queued remote=2 local=2 token=0x9EAA300100200001 list=15
+server level=info t=238328 ev=gameplay stage=sendqueue result=cleared packet=7 base=7 entries=0
+server level=info t=238375 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238375 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=238375 ev=gameplay stage=view result=queued remote=3 local=3 token=0x9EAA300100200001 list=0
+server level=info t=238375 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=238375 ev=gameplay stage=view result=queued remote=4 local=4 token=0x9EAA300100200001 list=0
+server level=info t=238375 ev=gameplay stage=sendqueue result=cleared packet=8 base=8 entries=0
+server level=info t=238438 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238438 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=warn t=238438 ev=gameplay stage=view result=refused remote=5 local=0 token=0x9EAA300100200001 list=0
+server level=info t=238469 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238469 ev=gameplay stage=sendqueue result=cleared packet=9 base=9 entries=0
+server level=info t=238531 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238578 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238641 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238688 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238750 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238797 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238844 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238891 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238938 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239000 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239047 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239110 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+client level=info t=239141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=239141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=239156 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239203 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239250 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239313 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239360 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239406 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239453 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239500 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239578 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239625 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239688 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+client level=info t=239688 ev=retail site=78 text=networking:bandwidth: min_channels: 0 max channels: 1 max bps: 27232 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=239688 ev=retail site=79 text=networking:bandwidth: machine [E3:5F:15:72:92:AC:DF76] longest reception gap [-1ms] longest ack gap [-1ms] pct loss [0.00] disc count [0] sps [13] rps [13] bh: [y].
+client level=info t=239719 ev=nettick stage=sample latch=1 callbacks=67973
+server level=info t=239735 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239781 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239828 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239875 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=198 b0=0x00
+server level=info t=239938 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=198 b0=0x00
+server level=info t=239985 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239985 ev=gameplay stage=message result=ok id=4 peerstage=5
+server level=info t=240047 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240094 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240141 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240203 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240250 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240313 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240360 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240422 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240469 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240516 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240578 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240625 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240656 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240719 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240766 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240860 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=294 b0=0x00
+server level=info t=240906 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240953 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=241000 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=241047 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=241110 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+client level=info t=241141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=241141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=241172 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+client level=info t=241203 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Incoming packet read result summary - 8 ok, 0 discard, 54 discard-expected, 0 corrupt
+client level=info t=241203 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Outgoing packet delivery summary - 57 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=241203 ev=retail site=82 text=networking:stream_manager:retail: # 0 rx18.5/rxbps10.7kb tx18.5/txbps31.8kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=241203 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+server level=info t=241219 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=241266 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=241328 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=241375 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=241469 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=318 b0=0x00
+server level=info t=241656 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=241719 ev=nettick stage=sample latch=1 callbacks=68666
+client level=info t=242156 ev=retail site=84 text=world_controller:state:activity:initial_slice_set_loading: Timeout entering the prologue-filler (given 5000ms).
+client level=info t=242156 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=242375 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(2)' after '5216ms'.
+client level=info t=242563 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(3)' after '5407ms'.
+client level=info t=242563 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'initial_slice_set_precaching' to 'initial_slice_set_instantion'.
+client level=info t=242563 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=242578 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(8)' after '14ms'.
+client level=info t=242578 ev=retail site=48 text=world_controller:slice_set_transition_manager: Stopping transition of type 'transitioning:initial_slice_set' due to completed
+client level=info t=242578 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=242625 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=242625 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=1
+client level=info t=242625 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(9)' after '474ms'.
+client level=info t=242625 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=242625 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(10)' after '0ms'.
+client level=info t=242625 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [5495] ms in world controller state: [36] name: [activity:initial_slice_set_loading]
+client level=info t=242625 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:physics_join' for reason 'unavailable'.
+client level=info t=242625 ev=retail site=85 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=242641 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=242641 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=1
+client level=info t=243141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=243141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=243719 ev=nettick stage=sample latch=1 callbacks=69385
+server level=info t=244266 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=245141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=245141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=245719 ev=nettick stage=sample latch=1 callbacks=70097
+client level=info t=247141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=247141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=247375 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=247719 ev=nettick stage=sample latch=1 callbacks=70809
+client level=info t=248672 ev=retail site=86 text=world_controller:task_manager: Completed task 'ENUM(0)' after '6039ms'.
+client level=info t=248672 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [6039] ms in world controller state: [37] name: [activity:physics_join]
+client level=info t=248672 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:in_world' for reason 'unavailable'.
+client level=info t=248672 ev=retail site=87 text=world_controller:state:in_world: Starting activity '0x00ff (HASH(0x11882989))(type: HASH(0x5ec025c8))(grognok: nadir_endgame)(destination: HASH(0x9bb2169b))(nonce: B021699F-04955724) for reason 'ENUM(0)'(override: nadir_endgame)'.
+client level=info t=248672 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(17)], took: [18790 ms], average: [18790.000000 ms], min: [18790.000000], max: [18790.000000], count: [1]
+client level=info t=248672 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=248719 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'initial_slice_set_instantion' to 'fully_enabled'.
+client level=info t=249141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=249141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=249688 ev=ws701 stage=profile_setup result=complete
+server level=info t=249703 ev=activity stage=writeback result=ok world_state=8
+client level=info t=249719 ev=nettick stage=sample latch=1 callbacks=71508
+server level=info t=250485 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=250688 ev=bootflow stage=region result=forced slice_set=136
+client level=info t=250688 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:normal_z_leg' to 'PRV136.1 (HASH: 0x299009a8)'; token advanced to 002
+server level=info t=250766 ev=gameplay stage=activityhost result=allocated session=0x9EAA30010020000A group=0x5D8C057E611131EB generation=9 port=30992 held=9
+server level=warn t=250781 ev=mission_script stage=attach result=no_activity_link session=11433003384888623114
+client level=info t=251141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=251141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=251719 ev=nettick stage=sample latch=1 callbacks=71997
+server level=info t=252797 ev=gameplay stage=advertise result=ok region=136 region_source=reported ambassador_slot=1
+client level=info t=252828 ev=probe stage=msg12 result=received client=0x17DDE84F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=252828 ev=probe stage=bind client=0x17DDE84F980 established=0x9EAA300100200001 slotrec=0x17DC5D2D9A0 roster=0x17E832DBC80 receipt=1
+client level=info t=252828 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Incoming packet read result summary - 0 ok, 0 discard, 125 discard-expected, 0 corrupt
+client level=info t=252828 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Outgoing packet delivery summary - 127 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=252828 ev=retail site=88 text=networking:channel: channel dir:127.0.0.1(id=0):30976#bh64(id '0') (ra: ''dir:127.0.0.1(id=0):30976'') state change connected -> closed
+client level=info t=252828 ev=retail site=89 text=networking:channel_manager: channel 'dir:127.0.0.1(id=0):30976#bh64' (0): channel closed (reason=channel-manager-owners-released) because 'dir:127.0.0.1(id=0):30976' can't be reached, resetting security
+server level=info t=252828 ev=gameplay stage=peer result=closed reason=10
+server level=info t=252828 ev=gameplay stage=response result=ok wordb=2 signon=0
+server level=info t=252860 ev=gameplay stage=connect result=ok peer=2003 local=0x00000002 remote=0x00000004 rebuilt=0
+server level=info t=252860 ev=gameplay stage=establish result=queued local=0x00000002 remote=0x00000004
+client level=info t=253141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=253141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=253719 ev=nettick stage=sample latch=1 callbacks=72255
+server level=info t=253875 ev=gameplay stage=message result=ok id=8 peerstage=5
+server level=info t=253875 ev=gameplay stage=sendqueue result=cleared packet=1 base=5 entries=0
+server level=info t=253922 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253922 ev=gameplay stage=view result=queued remote=1 local=1 token=0x9EAA300100200001 list=0
+server level=info t=253953 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253953 ev=gameplay stage=view result=queued remote=2 local=2 token=0x9EAA300100200001 list=15
+server level=info t=253953 ev=gameplay stage=sendqueue result=cleared packet=7 base=7 entries=0
+server level=info t=254016 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=254016 ev=gameplay stage=view result=queued remote=3 local=3 token=0x9EAA300100200001 list=0
+server level=info t=254016 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=254016 ev=gameplay stage=view result=queued remote=4 local=4 token=0x9EAA300100200001 list=0
+server level=info t=254016 ev=gameplay stage=sendqueue result=cleared packet=8 base=8 entries=0
+server level=info t=254094 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=warn t=254110 ev=gameplay stage=view result=refused remote=5 local=0 token=0x9EAA300100200001 list=0
+server level=info t=254110 ev=gameplay stage=sendqueue result=cleared packet=9 base=9 entries=0
+client level=info t=255141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=255141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=255610 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=255719 ev=nettick stage=sample latch=1 callbacks=72629
+client level=info t=257141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=257141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=257313 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=257719 ev=nettick stage=sample latch=1 callbacks=73018
+client level=info t=259141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=259141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=259719 ev=nettick stage=sample latch=1 callbacks=73408
+server level=info t=259875 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=261141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=261141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=261719 ev=nettick stage=sample latch=1 callbacks=73706
+server level=info t=262844 ev=gameplay stage=association result=timeout
+server level=info t=262969 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=263141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=263141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=263719 ev=nettick stage=sample latch=1 callbacks=74095
+client level=info t=265141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=265141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=265719 ev=nettick stage=sample latch=1 callbacks=74484
+server level=info t=266078 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=267141 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=267141 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=267719 ev=nettick stage=sample latch=1 callbacks=74873
+client level=info t=268531 ev=retail site=90 text=application_state: Suspend state changed from [active] to [partial]
+client level=info t=269172 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=269172 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=269172 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=269735 ev=nettick stage=sample latch=1 callbacks=75064
+client level=info t=270563 ev=retail site=90 text=application_state: Suspend state changed from [partial] to [active]
+client level=info t=271141 ev=retail site=90 text=application_state: Suspend state changed from [active] to [partial]
+client level=info t=271172 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=271172 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=271735 ev=nettick stage=sample latch=1 callbacks=75211
+server level=info t=272281 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=273172 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=273172 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=273735 ev=nettick stage=sample latch=1 callbacks=75271
+client level=info t=275172 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=275172 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=275375 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=275750 ev=nettick stage=sample latch=1 callbacks=75331
+client level=info t=277188 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=277188 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=277750 ev=nettick stage=sample latch=1 callbacks=75391
+client level=info t=278297 ev=retail site=90 text=application_state: Suspend state changed from [partial] to [active]
+server level=info t=278516 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=279188 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=279188 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=279719 ev=ws701 stage=profile_setup result=complete
+server level=info t=279719 ev=activity stage=writeback result=ok world_state=8
+client level=info t=279750 ev=nettick stage=sample latch=1 callbacks=75680
+client level=info t=280219 ev=retail site=90 text=application_state: Suspend state changed from [active] to [partial]
+client level=info t=281188 ev=probe stage=hosttail client=0x17DDE84F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=281188 ev=probe stage=grant client=0x17DDE84F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=281610 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=281766 ev=nettick stage=sample latch=1 callbacks=75820
+client level=info t=283766 ev=nettick stage=sample latch=1 callbacks=75880
+server level=info t=284719 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=285766 ev=nettick stage=sample latch=1 callbacks=75940
+client level=info t=287766 ev=nettick stage=sample latch=1 callbacks=76000
+server level=info t=287813 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=289766 ev=nettick stage=sample latch=1 callbacks=76060
+server level=info t=290906 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=291781 ev=nettick stage=sample latch=1 callbacks=76120
+client level=info t=293781 ev=nettick stage=sample latch=1 callbacks=76180
+server level=info t=294016 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=295781 ev=nettick stage=sample latch=1 callbacks=76240
+server level=info t=297125 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=297781 ev=nettick stage=sample latch=1 callbacks=76300
+client level=info t=299719 ev=retail site=78 text=networking:bandwidth: min_channels: 0 max channels: 1 max bps: 59936 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=299719 ev=retail site=79 text=networking:bandwidth: machine [EB:31:11:61:7E:05:8C5D] longest reception gap [116ms] longest ack gap [116ms] pct loss [0.00] disc count [0] sps [10] rps [10] bh: [y].
+client level=info t=299781 ev=nettick stage=sample latch=1 callbacks=76360
+server level=info t=300219 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=301219 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Incoming packet read result summary - 8 ok, 0 discard, 506 discard-expected, 0 corrupt
+client level=info t=301219 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Outgoing packet delivery summary - 512 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=301219 ev=retail site=82 text=networking:stream_manager:retail: # 1 rx10.0/rxbps 5.8kb tx10.0/txbps32.6kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=301219 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=info t=301781 ev=nettick stage=sample latch=1 callbacks=76420
+server level=info t=303328 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=303797 ev=nettick stage=sample latch=1 callbacks=76480
+client level=info t=305797 ev=nettick stage=sample latch=1 callbacks=76540
+server level=info t=306438 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=307797 ev=nettick stage=sample latch=1 callbacks=76600
+server level=info t=309547 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=309797 ev=nettick stage=sample latch=1 callbacks=76660
+server level=info t=309985 ev=ws701 stage=profile_setup result=complete
+server level=info t=309985 ev=activity stage=writeback result=ok world_state=8
+client level=info t=311797 ev=nettick stage=sample latch=1 callbacks=76720
+server level=info t=312641 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=313797 ev=nettick stage=sample latch=1 callbacks=76780
+server level=info t=315750 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=315813 ev=nettick stage=sample latch=1 callbacks=76840
+client level=info t=317813 ev=nettick stage=sample latch=1 callbacks=76900
+server level=info t=318860 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=319813 ev=nettick stage=sample latch=1 callbacks=76960
+client level=info t=321813 ev=nettick stage=sample latch=1 callbacks=77020
+server level=info t=321953 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=323813 ev=nettick stage=sample latch=1 callbacks=77080
+server level=info t=325063 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=325828 ev=nettick stage=sample latch=1 callbacks=77140
+client level=info t=327828 ev=nettick stage=sample latch=1 callbacks=77200
+server level=info t=328172 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=329828 ev=nettick stage=sample latch=1 callbacks=77260
+server level=info t=331235 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=331828 ev=nettick stage=sample latch=1 callbacks=77320
+client level=info t=332141 ev=retail site=90 text=application_state: Suspend state changed from [partial] to [active]
+client level=warn t=333094 ev=vr.probe state on=1 yaw=0.0 height=0.00 fov=0.0
+client level=warn t=333094 ev=vr.probe block player=0 addr=0x17DC5C95810
+client level=warn t=333094 ev=vr.xr load path=C:\Games\Sunrise\SunriseVR_MockXR.dll
+client level=warn t=333094 ev=vr.xr unhook module=kernelbase.dll export=LoadLibraryExW result=ok bytes=2
+client level=warn t=333094 ev=vr.xr unhook module=kernel32.dll export=GetProcAddress result=ok bytes=2
+client level=warn t=333094 ev=vr.xr ldr_notify callback=destiny2.exe+0x3AB4B0 foreign=1
+client level=warn t=333094 ev=vr.xr ldr_notify result=ok seen=1 neutralised=1
+client level=warn t=333110 ev=vr.xr load exception label=runtime code=0x40010006 at=KERNELBASE.dll+0xC187A
+client level=warn t=333110 ev=vr.xr load result=ok interface=1 runtime_api=1.0.31
+client level=warn t=333110 ev=vr.xr views count=2 eye=1824x1968 runtime=DishonoredVR Mock Runtime
+client level=warn t=333110 ev=vr.xr bindings profile=/interaction_profiles/oculus/touch_controller count=13 result=0
+client level=warn t=333110 ev=vr.xr bindings profile=/interaction_profiles/khr/simple_controller count=3 result=0
+client level=warn t=333110 ev=vr.xr actions result=ok
+client level=warn t=333110 ev=vr.xr init result=ok runtime=DishonoredVR Mock Runtime
+client level=warn t=333110 ev=vr.xr session state=running
+client level=warn t=333110 ev=vr.xr recentre x=0.000 y=1.600 z=0.000
+client level=warn t=333110 ev=vr.xr swapchain result=ok size=1280x720 source_format=28 format=29 direct=1 images=2
+client level=info t=333828 ev=nettick stage=sample latch=1 callbacks=77569
+server level=info t=334344 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=334563 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.060,-0.998,0.000 out_fov=1.8151
+client level=warn t=335094 ev=vr.xr pose fwd=-0.501,-0.865,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=335094 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=335828 ev=nettick stage=sample latch=1 callbacks=77751
+client level=warn t=336406 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=336531 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.294,-0.956,0.000 out_fov=1.8151
+client level=warn t=337063 ev=vr.xr pose fwd=0.232,-0.973,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=337063 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=337453 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=337828 ev=nettick stage=sample latch=1 callbacks=77934
+client level=warn t=338485 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.452,-0.892,0.000 out_fov=1.8151
+client level=warn t=339016 ev=vr.xr pose fwd=-0.745,-0.668,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=339016 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=339750 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=339828 ev=nettick stage=sample latch=1 callbacks=78109
+server level=info t=339891 ev=ws701 stage=profile_setup result=complete
+server level=info t=339891 ev=activity stage=writeback result=ok world_state=8
+server level=info t=340547 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=340625 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.194,-0.981,0.000 out_fov=1.8151
+client level=warn t=341203 ev=vr.xr pose fwd=0.321,-0.947,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=341203 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=341828 ev=nettick stage=sample latch=1 callbacks=78280
+client level=warn t=342688 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.735,-0.678,0.000 out_fov=1.8151
+client level=warn t=343235 ev=vr.xr pose fwd=-0.638,-0.770,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=343235 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=343235 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=343641 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=343828 ev=nettick stage=sample latch=1 callbacks=78456
+client level=warn t=344688 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.335,-0.942,0.000 out_fov=1.8151
+client level=warn t=345250 ev=vr.xr pose fwd=-0.031,-1.000,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=345250 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=345828 ev=nettick stage=sample latch=1 callbacks=78636
+client level=warn t=346578 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=346719 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.668,-0.745,0.000 out_fov=1.8151
+server level=info t=346735 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=347266 ev=vr.xr pose fwd=-0.195,-0.981,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=347266 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=347828 ev=nettick stage=sample latch=1 callbacks=78814
+client level=warn t=348813 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.025,-1.000,0.000 out_fov=1.8151
+client level=warn t=349360 ev=vr.xr pose fwd=-0.532,-0.847,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=349360 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=349828 ev=nettick stage=sample latch=1 callbacks=78984
+server level=info t=349828 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=350063 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=350860 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.256,-0.967,0.000 out_fov=1.8151
+client level=warn t=351391 ev=vr.xr pose fwd=0.254,-0.967,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=351391 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=351828 ev=nettick stage=sample latch=1 callbacks=79163
+client level=warn t=352828 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.485,-0.875,0.000 out_fov=1.8151
+server level=info t=352938 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=353391 ev=vr.xr pose fwd=-0.748,-0.663,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=353391 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=353391 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=353828 ev=nettick stage=sample latch=1 callbacks=79343
+client level=warn t=354906 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.219,-0.976,0.000 out_fov=1.8151
+client level=warn t=355485 ev=vr.xr pose fwd=0.309,-0.951,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=355485 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=355828 ev=nettick stage=sample latch=1 callbacks=79515
+server level=info t=356031 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=356922 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=357047 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.742,-0.671,0.000 out_fov=1.8151
+client level=warn t=357641 ev=vr.xr pose fwd=-0.616,-0.788,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=357641 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=357828 ev=nettick stage=sample latch=1 callbacks=79681
+client level=warn t=359110 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.327,-0.945,0.000 out_fov=1.8151
+server level=info t=359141 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=359672 ev=vr.xr pose fwd=-0.069,-0.998,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=359672 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=359719 ev=retail site=78 text=networking:bandwidth: min_channels: 1 max channels: 1 max bps: 34033 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=359719 ev=retail site=79 text=networking:bandwidth: machine [EB:31:11:61:7E:05:8C5D] longest reception gap [134ms] longest ack gap [134ms] pct loss [0.00] disc count [0] sps [10] rps [10] bh: [y].
+client level=info t=359828 ev=nettick stage=sample latch=1 callbacks=79857
+client level=warn t=360422 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=361219 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.246,-0.969,-0.031 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.649,-0.761,0.000 out_fov=1.8151
+client level=info t=361219 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Incoming packet read result summary - 0 ok, 0 discard, 600 discard-expected, 0 corrupt
+client level=info t=361219 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Outgoing packet delivery summary - 600 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=361219 ev=retail site=82 text=networking:stream_manager:retail: # 1 rx10.0/rxbps 5.8kb tx10.0/txbps32.8kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=361219 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=warn t=361781 ev=vr.xr pose fwd=-0.156,-0.988,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=361781 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=361828 ev=nettick stage=sample latch=1 callbacks=80029

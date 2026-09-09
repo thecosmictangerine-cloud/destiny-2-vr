@@ -1,0 +1,211 @@
+client level=warn t=32875 ev=queuez stage=notification result=skipped reason=null_payload
+server level=warn t=64578 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=64656 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623105
+server level=warn t=64813 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200001 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=64813 ev=mission_script stage=attach result=no_script session=11433003384888623105 activity_row=11
+server level=warn t=64813 ev=mission_script stage=attach result=no_activity_link session=11433003384888623106
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623107
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623108
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623109
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623110
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623111
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623112
+server level=warn t=64828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623113
+server level=warn t=73563 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=73625 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200002 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=73625 ev=mission_script stage=attach result=no_script session=11433003384888623106 activity_row=11
+server level=warn t=88922 ev=bap svc=25 stage=plaintext result=shape_accepted conn=4 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=88938 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200005 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=88953 ev=mission_script stage=attach result=no_script session=11433003384888623109 activity_row=11
+server level=warn t=108016 ev=mission_script stage=attach result=no_activity_link session=11433003384888623105
+server level=warn t=108016 ev=mission_script stage=attach result=no_activity_link session=11433003384888623106
+server level=warn t=108016 ev=mission_script stage=attach result=no_activity_link session=11433003384888623109
+server level=warn t=110047 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=110063 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623114
+server level=warn t=110109 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020000A public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=110109 ev=mission_script stage=attach result=no_script session=11433003384888623114 activity_row=21
+server level=warn t=110109 ev=mission_script stage=attach result=no_activity_link session=11433003384888623115
+server level=warn t=173016 ev=mission_script stage=attach result=no_activity_link session=11433003384888623114
+server level=warn t=175094 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=175109 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623116
+server level=warn t=175141 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020000C public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=175156 ev=mission_script stage=attach result=no_script session=11433003384888623116 activity_row=11
+server level=warn t=175156 ev=mission_script stage=attach result=no_activity_link session=11433003384888623117
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623118
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623119
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623120
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623121
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623122
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623123
+server level=warn t=175203 ev=mission_script stage=attach result=no_activity_link session=11433003384888623124
+server level=warn t=206922 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=206938 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020000D public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=206953 ev=mission_script stage=attach result=no_script session=11433003384888623117 activity_row=11
+server level=warn t=249906 ev=mission_script stage=attach result=no_activity_link session=11433003384888623116
+server level=warn t=249906 ev=mission_script stage=attach result=no_activity_link session=11433003384888623117
+server level=warn t=251984 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=252000 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623125
+server level=warn t=252031 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200015 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=252047 ev=mission_script stage=attach result=no_script session=11433003384888623125 activity_row=21
+server level=warn t=252047 ev=mission_script stage=attach result=no_activity_link session=11433003384888623126
+server level=warn t=316219 ev=mission_script stage=attach result=no_activity_link session=11433003384888623125
+server level=warn t=318250 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=318266 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623127
+server level=warn t=318313 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200017 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=318328 ev=mission_script stage=attach result=no_script session=11433003384888623127 activity_row=30
+server level=warn t=318328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623128
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623130
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623129
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623131
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623132
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623133
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623134
+server level=warn t=318375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623135
+server level=warn t=326656 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=326672 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200018 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=326688 ev=mission_script stage=attach result=no_script session=11433003384888623128 activity_row=30
+server level=warn t=362578 ev=mission_script stage=attach result=no_activity_link session=11433003384888623127
+server level=warn t=362578 ev=mission_script stage=attach result=no_activity_link session=11433003384888623128
+server level=warn t=364609 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=364625 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623136
+server level=warn t=364688 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200020 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=364688 ev=mission_script stage=attach result=no_script session=11433003384888623136 activity_row=8
+server level=warn t=364688 ev=mission_script stage=attach result=no_activity_link session=11433003384888623137
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623138
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623139
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623140
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623141
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623142
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623143
+server level=warn t=364750 ev=mission_script stage=attach result=no_activity_link session=11433003384888623144
+server level=warn t=396438 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=396453 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200021 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=396453 ev=mission_script stage=attach result=no_script session=11433003384888623137 activity_row=8
+server level=warn t=444953 ev=mission_script stage=attach result=no_activity_link session=11433003384888623136
+server level=warn t=444953 ev=mission_script stage=attach result=no_activity_link session=11433003384888623137
+server level=warn t=449859 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=449938 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623145
+server level=warn t=450047 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200029 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=450047 ev=mission_script stage=attach result=no_script session=11433003384888623145 activity_row=21
+server level=warn t=450047 ev=mission_script stage=attach result=no_activity_link session=11433003384888623146
+server level=warn t=561609 ev=mission_script stage=attach result=no_activity_link session=11433003384888623145
+server level=warn t=564609 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=564672 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623147
+server level=warn t=564828 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020002B public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=564828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623148
+server level=warn t=564828 ev=mission_script stage=attach result=no_script session=11433003384888623147 activity_row=10
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623149
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623150
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623151
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623152
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623153
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623155
+server level=warn t=564844 ev=mission_script stage=attach result=no_activity_link session=11433003384888623154
+server level=warn t=596969 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=597047 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020002C public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=597047 ev=mission_script stage=attach result=no_script session=11433003384888623148 activity_row=10
+server level=warn t=642219 ev=mission_script stage=attach result=no_activity_link session=11433003384888623148
+server level=warn t=642219 ev=mission_script stage=attach result=no_activity_link session=11433003384888623147
+server level=warn t=644203 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=644219 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623156
+server level=warn t=644266 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200034 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=644281 ev=mission_script stage=attach result=no_script session=11433003384888623156 activity_row=31
+server level=warn t=644281 ev=mission_script stage=attach result=no_activity_link session=11433003384888623157
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623164
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623158
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623159
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623160
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623161
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623162
+server level=warn t=644328 ev=mission_script stage=attach result=no_activity_link session=11433003384888623163
+server level=warn t=652625 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=652641 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200035 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=652656 ev=mission_script stage=attach result=no_script session=11433003384888623157 activity_row=31
+server level=warn t=714391 ev=mission_script stage=attach result=no_activity_link session=11433003384888623156
+server level=warn t=714391 ev=mission_script stage=attach result=no_activity_link session=11433003384888623157
+server level=warn t=716438 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=716453 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623165
+server level=warn t=716484 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020003D public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=716484 ev=mission_script stage=attach result=no_script session=11433003384888623165 activity_row=10
+server level=warn t=716484 ev=mission_script stage=attach result=no_activity_link session=11433003384888623166
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623173
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623172
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623167
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623168
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623169
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623171
+server level=warn t=716547 ev=mission_script stage=attach result=no_activity_link session=11433003384888623170
+server level=warn t=748266 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=748281 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020003E public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=748281 ev=mission_script stage=attach result=no_script session=11433003384888623166 activity_row=10
+server level=warn t=777828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623165
+server level=warn t=777828 ev=mission_script stage=attach result=no_activity_link session=11433003384888623166
+server level=warn t=779891 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=779906 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623174
+server level=warn t=779938 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200046 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=779938 ev=mission_script stage=attach result=no_script session=11433003384888623174 activity_row=8
+server level=warn t=779938 ev=mission_script stage=attach result=no_activity_link session=11433003384888623175
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623182
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623179
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623181
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623180
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623176
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623177
+server level=warn t=780000 ev=mission_script stage=attach result=no_activity_link session=11433003384888623178
+server level=warn t=811750 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=811766 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200047 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=811766 ev=mission_script stage=attach result=no_script session=11433003384888623175 activity_row=8
+server level=warn t=845297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623174
+server level=warn t=845297 ev=mission_script stage=attach result=no_activity_link session=11433003384888623175
+server level=warn t=847359 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=847391 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623183
+server level=warn t=847422 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020004F public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=847422 ev=mission_script stage=attach result=no_script session=11433003384888623183 activity_row=10
+server level=warn t=847422 ev=mission_script stage=attach result=no_activity_link session=11433003384888623184
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623187
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623186
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623188
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623189
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623190
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623191
+server level=warn t=847469 ev=mission_script stage=attach result=no_activity_link session=11433003384888623185
+server level=warn t=879250 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=879281 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200050 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=879281 ev=mission_script stage=attach result=no_script session=11433003384888623184 activity_row=10
+server level=warn t=894219 ev=mission_script stage=attach result=no_activity_link session=11433003384888623192
+server level=warn t=896703 ev=bap svc=25 stage=plaintext result=shape_accepted conn=4 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=896719 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200058 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=896734 ev=mission_script stage=attach result=no_script session=11433003384888623192 activity_row=10
+server level=warn t=916516 ev=mission_script stage=attach result=no_activity_link session=11433003384888623183
+server level=warn t=916516 ev=mission_script stage=attach result=no_activity_link session=11433003384888623184
+server level=warn t=916516 ev=mission_script stage=attach result=no_activity_link session=11433003384888623192
+server level=warn t=918594 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=918609 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623193
+server level=warn t=918656 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200059 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=918656 ev=mission_script stage=attach result=no_activity_link session=11433003384888623194
+server level=warn t=918672 ev=mission_script stage=attach result=no_script session=11433003384888623193 activity_row=566
+server level=warn t=1013641 ev=mission_script stage=attach result=no_activity_link session=11433003384888623193
+server level=warn t=1018141 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+server level=warn t=1018203 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623195
+server level=warn t=1018344 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020005B public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=1018344 ev=mission_script stage=attach result=no_activity_link session=11433003384888623196
+server level=warn t=1018359 ev=mission_script stage=attach result=no_script session=11433003384888623195 activity_row=41
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623200
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623202
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623201
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623203
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623198
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623197
+server level=warn t=1018375 ev=mission_script stage=attach result=no_activity_link session=11433003384888623199
+server level=warn t=1050375 ev=bap svc=25 stage=plaintext result=shape_accepted conn=3 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=1050453 ev=activity stage=roster result=no_epoch soid=0x9EAA30010020005C public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=1050453 ev=mission_script stage=attach result=no_script session=11433003384888623196 activity_row=41
+server level=warn t=1065422 ev=mission_script stage=attach result=no_activity_link session=11433003384888623204
+server level=warn t=1067844 ev=bap svc=25 stage=plaintext result=shape_accepted conn=4 len=47 b0=0A b1=20 b34=10 b35=03
+server level=warn t=1067859 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200064 public=1 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=warn t=1067875 ev=mission_script stage=attach result=no_script session=11433003384888623204 activity_row=41
+server level=warn t=1075391 ev=mission_script stage=attach result=no_activity_link session=11433003384888623205
+client level=warn t=1075422 ev=probe stage=sense result=cycle steps=4 head=0x33F26015 h0=0x33F26015 t0=0x00000000 h1=0x00000000 t1=0xDB0FE380 h2=0x00810004 t2=0x00000000 h3=0x00000000 t3=0xDB0FE380
+server level=warn t=1075438 ev=mission_script stage=attach result=no_activity_link session=11433003384888623196
+server level=warn t=1075438 ev=mission_script stage=attach result=no_activity_link session=11433003384888623204
+client level=warn t=1081828 ev=probe stage=stall result=detected idle=6344 count=250742

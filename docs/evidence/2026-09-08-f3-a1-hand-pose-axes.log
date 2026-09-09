@@ -1,0 +1,684 @@
+server level=info t=656 ev=mission_script stage=initialize result=enabled session=0 activity_row=0
+server level=info t=656 ev=transport stage=listen result=ok port=30974
+server level=info t=656 ev=gameplay stage=endpoint result=ok mode=embedded port=30976 ports=16 of=16
+client level=info t=735 ev=package_trust stage=attach result=ok mode=package_integrity_bypass
+client level=info t=735 ev=bootflow_texture stage=attach count=18 result=ok
+client level=info t=735 ev=steam_init result=ok
+client level=info t=735 ev=hook stage=install group=egress count=31 result=ok
+client level=info t=3219 ev=graphics stage=probe result=ok driver=hardware level=0xB000
+client level=info t=3297 ev=cursor stage=install result=ok
+client level=info t=3297 ev=polled_input stage=install result=ok
+client level=info t=3297 ev=activate stage=graphics result=ok
+client level=info t=3328 ev=renderer stage=init result=ok
+client level=info t=3344 ev=activate stage=platform result=ok
+client level=info t=3594 ev=bootstrap stage=token result=ok
+client level=info t=3625 ev=investment stage=family5_commit result=ok
+client level=info t=3625 ev=investment stage=install result=ok
+client level=info t=3625 ev=activate stage=game_network result=ok
+client level=info t=3625 ev=activate stage=package_keys result=ok
+client level=info t=3625 ev=retail stage=install result=ok
+client level=info t=3625 ev=assert stage=install result=ok
+client level=info t=3656 ev=probe stage=hitch result=installed
+client level=info t=3656 ev=probe stage=stall result=installed
+client level=info t=3672 ev=probe stage=sense result=installed
+client level=info t=3719 ev=async_io_guard stage=patch result=ok mode=cached_manager_owner
+client level=info t=3719 ev=config_getter stage=install result=ok
+client level=info t=3797 ev=bootflow stage=character_select result=ok
+client level=info t=3797 ev=bootflow stage=slice_set result=ok
+client level=info t=3797 ev=bootflow stage=composition result=ok
+client level=info t=3797 ev=bootflow stage=orbit_handoff result=ok
+client level=info t=3797 ev=bootflow stage=owner_slot result=ok
+client level=info t=3797 ev=bootflow stage=region result=ok
+client level=info t=3813 ev=bootflow stage=world_step result=ok
+client level=info t=3813 ev=bootflow stage=current_slice result=ok
+client level=info t=3860 ev=teleport stage=install result=ok
+client level=info t=3875 ev=noclip stage=install result=ok
+client level=info t=3906 ev=infinite_ammo stage=install result=ok
+client level=info t=3906 ev=inactivity stage=install result=ok
+client level=info t=3922 ev=queuez stage=notification result=ok
+client level=info t=3938 ev=bitmap stage=ref_guard result=ok
+client level=info t=3938 ev=probe stage=msg12 result=installed
+client level=info t=4110 ev=probe stage=cine result=installed
+client level=info t=4156 ev=probe stage=cine6 result=installed
+client level=info t=4344 ev=world_objects stage=install result=ok
+client level=info t=4344 ev=activate stage=main result=ok
+client level=info t=4360 ev=nettick stage=resolve result=ok latch=0x00007FF6B91E0827
+client level=info t=4360 ev=nettick stage=sample latch=1 callbacks=4
+server level=info t=4360 ev=core stage=pump result=server_thread
+client level=info t=4391 ev=pkg stage=abilities result=ok rows=12
+client level=info t=4391 ev=build_data stage=items result=ok rows=15424
+client level=info t=4406 ev=build_data stage=domains named=1 items=1 details=1 buckets=1 sockets=1 abilities=1 progressions=1 scenarios=1
+client level=info t=4547 ev=inactivity stage=release result=noop
+client level=info t=5563 ev=retail site=5 text=networking:stun: Created stun endpoint, advancing to DNS discovery
+client level=info t=5578 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5594 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5610 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5625 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5641 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5656 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5656 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5672 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5688 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5703 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5719 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5735 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5750 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5766 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5781 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5781 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5797 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5813 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5813 ev=retail site=7 text=networking:stun: Selected stun server: [0] ip address: [127.0.0.1:3074] valid stun server count: [1]
+client level=info t=5844 ev=retail site=8 text=networking:stun: client external ip address: [127.0.0.1:3097]
+client level=info t=5875 ev=retail site=9 text=networking:stun: Reporting NAT type [1] and address [127.0.0.1:3097].
+client level=info t=6360 ev=nettick stage=sample latch=1 callbacks=242
+client level=info t=8360 ev=nettick stage=sample latch=1 callbacks=530
+client level=info t=10360 ev=nettick stage=sample latch=1 callbacks=818
+client level=info t=11453 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:start' for reason 'unavailable'.
+client level=info t=12360 ev=nettick stage=sample latch=1 callbacks=1106
+client level=info t=14360 ev=nettick stage=sample latch=1 callbacks=1394
+client level=info t=16360 ev=nettick stage=sample latch=1 callbacks=1682
+client level=info t=18360 ev=nettick stage=sample latch=1 callbacks=1970
+client level=info t=20360 ev=nettick stage=sample latch=1 callbacks=2258
+client level=info t=22360 ev=nettick stage=sample latch=1 callbacks=2546
+client level=info t=24360 ev=nettick stage=sample latch=1 callbacks=2834
+client level=info t=26360 ev=nettick stage=sample latch=1 callbacks=3122
+client level=info t=28360 ev=nettick stage=sample latch=1 callbacks=3410
+client level=info t=30360 ev=nettick stage=sample latch=1 callbacks=3698
+client level=info t=32360 ev=nettick stage=sample latch=1 callbacks=3986
+client level=info t=34360 ev=nettick stage=sample latch=1 callbacks=4274
+client level=info t=36360 ev=nettick stage=sample latch=1 callbacks=4561
+client level=info t=38360 ev=nettick stage=sample latch=1 callbacks=4845
+client level=info t=40360 ev=nettick stage=sample latch=1 callbacks=5129
+client level=info t=42360 ev=nettick stage=sample latch=1 callbacks=5413
+client level=info t=44360 ev=nettick stage=sample latch=1 callbacks=5700
+client level=info t=46360 ev=nettick stage=sample latch=1 callbacks=5988
+client level=info t=48360 ev=nettick stage=sample latch=1 callbacks=6276
+client level=info t=50360 ev=nettick stage=sample latch=1 callbacks=6564
+client level=info t=52360 ev=nettick stage=sample latch=1 callbacks=6852
+client level=info t=54360 ev=nettick stage=sample latch=1 callbacks=7140
+client level=info t=56360 ev=nettick stage=sample latch=1 callbacks=7428
+client level=info t=58360 ev=nettick stage=sample latch=1 callbacks=7711
+client level=info t=60360 ev=nettick stage=sample latch=1 callbacks=8000
+client level=info t=62360 ev=nettick stage=sample latch=1 callbacks=8279
+client level=info t=64360 ev=nettick stage=sample latch=1 callbacks=8567
+client level=info t=66360 ev=nettick stage=sample latch=1 callbacks=8852
+client level=info t=68360 ev=nettick stage=sample latch=1 callbacks=9140
+client level=info t=74516 ev=nettick stage=sample latch=1 callbacks=9141
+client level=info t=76516 ev=nettick stage=sample latch=1 callbacks=9411
+client level=info t=77469 ev=retail site=10 text=networking:link: Endpoint traffic is now: [disabled].
+client level=info t=77469 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=77469 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_signin' for reason 'unavailable'.
+client level=info t=77469 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(4)], took: [0 ms], average: [0.000000 ms], min: [0.000000], max: [0.000000], count: [1]
+client level=info t=77469 ev=retail site=12 text=networking:logic:session: local user 0 set platform account id=unknown platform account id, live=1, online=1, free=0, user_content=1, friend_content=1
+client level=info t=77469 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(5)], took: [0 ms], average: [0.000000 ms], min: [0.000000], max: [0.000000], count: [1]
+client level=info t=77469 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_account_warnings' for reason 'unavailable'.
+client level=info t=77469 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:enumerate_content_rights' for reason 'unavailable'.
+client level=info t=77485 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:account_signin' for reason 'unavailable'.
+server level=info t=77547 ev=http method=post route=signon result=ok
+client level=info t=77547 ev=retail site=13 text=networking:signon:client: Server environment: live
+client level=info t=77547 ev=retail site=14 text=networking:stun: Client external address from signon: [127.0.0.1:0].
+client level=info t=77563 ev=retail site=15 text=world_controller:state:bootflow_account_signin_handler: Demonware lobby connection not desired, continuing without Demonware lobby connection.
+client level=info t=77563 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(8)], took: [70 ms], average: [70.000000 ms], min: [70.000000], max: [70.000000], count: [1]
+client level=info t=77563 ev=retail site=16 text=networking:stun: Using STUN discovered address and NAT type.
+client level=info t=77563 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [76] ms in world controller state: [7] name: [bootflow:account_signin]
+client level=info t=77563 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:content_check' for reason 'unavailable'.
+client level=info t=77563 ev=content_config stage=get route=manifest bytes=105232 result=ok
+client level=info t=77735 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [167] ms in world controller state: [16] name: [bootflow:content_check]
+client level=info t=77735 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:package_registration' for reason 'unavailable'.
+client level=info t=78516 ev=nettick stage=sample latch=1 callbacks=9684
+client level=info t=80516 ev=nettick stage=sample latch=1 callbacks=9972
+client level=info t=82516 ev=nettick stage=sample latch=1 callbacks=10258
+client level=info t=84516 ev=nettick stage=sample latch=1 callbacks=10547
+client level=info t=86516 ev=nettick stage=sample latch=1 callbacks=10835
+client level=info t=88516 ev=nettick stage=sample latch=1 callbacks=11123
+client level=info t=90516 ev=nettick stage=sample latch=1 callbacks=11411
+client level=info t=92516 ev=nettick stage=sample latch=1 callbacks=11699
+client level=info t=94516 ev=nettick stage=sample latch=1 callbacks=11987
+client level=info t=96516 ev=nettick stage=sample latch=1 callbacks=12274
+client level=info t=98469 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [20733] ms in world controller state: [21] name: [bootflow:package_registration]
+client level=info t=98469 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:bap_signin' for reason 'unavailable'.
+client level=info t=98469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=98469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=98469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=98469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=98469 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=98469 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=98469 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=98469 ev=retail site=20 text=networking:server:bap: primary BAP server IP address: 1.0.0.127, port: 30974
+server level=info t=98469 ev=transport stage=accept result=ok conn=1
+client level=info t=98516 ev=nettick stage=sample latch=1 callbacks=12562
+client level=info t=98578 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(0)' after '112ms'.
+client level=info t=98578 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(13)], took: [112 ms], average: [112.000000 ms], min: [112.000000], max: [112.000000], count: [1]
+client level=info t=98969 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(1)' after '508ms'.
+client level=info t=98969 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(14)'.
+client level=info t=98985 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(14)' after '12ms'.
+client level=info t=100516 ev=nettick stage=sample latch=1 callbacks=12850
+client level=info t=102516 ev=nettick stage=sample latch=1 callbacks=13138
+client level=info t=103594 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(2)' after '5132ms'.
+client level=info t=103594 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=103610 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(5)' after '14ms'.
+client level=info t=103610 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=103610 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=103735 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(6)' after '118ms'.
+client level=info t=103735 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(11)], took: [132 ms], average: [132.000000 ms], min: [132.000000], max: [132.000000], count: [1]
+client level=info t=103797 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(7)' after '194ms'.
+client level=info t=103797 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=103797 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(8)' after '0ms'.
+client level=info t=103797 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=104297 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(9)' after '486ms'.
+client level=info t=104297 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=104297 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(15)'.
+client level=info t=104516 ev=nettick stage=sample latch=1 callbacks=13425
+client level=info t=106078 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(10)' after '1792ms'.
+client level=info t=106078 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(13)'.
+client level=info t=106203 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(13)' after '127ms'.
+client level=info t=106203 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(12)], took: [2405 ms], average: [2405.000000 ms], min: [2405.000000], max: [2405.000000], count: [1]
+client level=info t=106516 ev=nettick stage=sample latch=1 callbacks=13700
+client level=info t=106703 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(15)' after '2410ms'.
+client level=info t=106703 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(16)'.
+client level=info t=106703 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(17)'.
+client level=info t=106703 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(18)'.
+client level=info t=106703 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(18)' after '0ms'.
+client level=info t=106750 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(16)' after '49ms'.
+client level=info t=108203 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(17)' after '1507ms'.
+client level=info t=108203 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [9743] ms in world controller state: [22] name: [bootflow:bap_signin]
+client level=info t=108203 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:investment_signin' for reason 'unavailable'.
+client level=info t=108203 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=108203 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=108203 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(1)' after '0ms'.
+client level=info t=108203 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=108203 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=108250 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(6)' after '42ms'.
+client level=info t=108516 ev=nettick stage=sample latch=1 callbacks=13988
+client level=info t=109297 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(2)' after '1097ms'.
+client level=info t=109297 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=109297 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=109297 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(5)' after '0ms'.
+client level=info t=109531 ev=retail site=23 text=world_controller: successfully changed world to: ambient_bootstrap
+client level=info t=109531 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(4)' after '229ms'.
+client level=info t=109610 ev=lore_visibility result=applied conditions=24
+client level=info t=109610 ev=retail site=24 text=content_table_patching: patch contents have been cleared
+client level=warn t=109735 ev=queuez stage=notification result=skipped reason=null_payload
+client level=info t=109735 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=109735 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(0)' after '1535ms'.
+client level=info t=109735 ev=retail site=26 text=networking:link: Starting port collsion resolution for endpoint type: [2], using port: [2003], max attempts: [100], max upnp attempts: [6]
+client level=info t=109735 ev=retail site=27 text=networking:port_collision_resolver: Starting port collision resolution for endpoint type: [2] port: [2003].
+client level=info t=109735 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=109735 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(7)' after '0ms'.
+client level=info t=109735 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1535] ms in world controller state: [23] name: [bootflow:investment_signin]
+client level=info t=109735 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:prepare_for_orbit' for reason 'unavailable'.
+client level=info t=109781 ev=retail site=28 text=networking:UPnP: Started UPnP client for port: [2003].
+client level=info t=110250 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=110516 ev=nettick stage=sample latch=1 callbacks=14446
+client level=info t=112516 ev=nettick stage=sample latch=1 callbacks=15483
+client level=info t=113266 ev=retail site=23 text=world_controller: successfully changed world to: orbit_d2
+client level=info t=113391 ev=retail site=29 text=world_controller:state:prepare_for_orbit: Waiting for bubble host port collision resolution.
+client level=info t=114516 ev=nettick stage=sample latch=1 callbacks=16484
+client level=info t=115797 ev=retail site=30 text=networking:UPnP: Client completed with status: [2], port: [2003].
+client level=info t=115797 ev=retail site=31 text=networking:port_collision_resolver: Unsuccessful UPnP reservation, UPnP client state: [2], endpoint type: [2] port: [2003].
+client level=info t=115797 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=115797 ev=retail site=32 text=networking:link: Swapping out endpoint type: [2] with collision resolved endpoint using port: [2003]
+client level=info t=115797 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [6057] ms in world controller state: [25] name: [bootflow:prepare_for_orbit]
+client level=info t=115797 ev=retail site=10 text=networking:link: Endpoint traffic is now: [enabled].
+client level=info t=115797 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:rejoin_activity' for reason 'unavailable'.
+client level=info t=115797 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [0] ms in world controller state: [26] name: [bootflow:rejoin_activity]
+client level=info t=115797 ev=retail site=3 text=world_controller:state_manager: Entering state 'character:signin' for reason 'unavailable'.
+client level=info t=115797 ev=bootflow stage=character_select result=held
+client level=warn t=115797 ev=vr.dest forced result=ok name=eden_freeroam bubble=20 slice_set=160 activity=7 spawn=0x0 active=1
+client level=info t=116516 ev=nettick stage=sample latch=1 callbacks=17566
+client level=info t=118516 ev=nettick stage=sample latch=1 callbacks=18490
+client level=info t=119188 ev=retail site=33 text=application_state: Suspend state changed from [active] to [partial]
+client level=info t=120531 ev=nettick stage=sample latch=1 callbacks=18790
+client level=info t=122531 ev=nettick stage=sample latch=1 callbacks=18850
+client level=info t=124531 ev=nettick stage=sample latch=1 callbacks=18910
+client level=info t=126531 ev=nettick stage=sample latch=1 callbacks=18970
+client level=info t=128531 ev=nettick stage=sample latch=1 callbacks=19030
+client level=info t=130531 ev=nettick stage=sample latch=1 callbacks=19090
+client level=info t=132547 ev=nettick stage=sample latch=1 callbacks=19150
+client level=info t=134547 ev=nettick stage=sample latch=1 callbacks=19210
+client level=info t=136547 ev=nettick stage=sample latch=1 callbacks=19270
+client level=info t=138547 ev=nettick stage=sample latch=1 callbacks=19330
+client level=info t=140547 ev=nettick stage=sample latch=1 callbacks=19390
+client level=info t=142563 ev=nettick stage=sample latch=1 callbacks=19450
+server level=info t=143360 ev=ws701 stage=profile_setup result=complete
+client level=info t=144563 ev=nettick stage=sample latch=1 callbacks=19510
+client level=info t=146563 ev=nettick stage=sample latch=1 callbacks=19570
+client level=info t=148563 ev=nettick stage=sample latch=1 callbacks=19630
+client level=info t=150563 ev=nettick stage=sample latch=1 callbacks=19690
+client level=info t=152578 ev=nettick stage=sample latch=1 callbacks=19750
+client level=info t=154578 ev=nettick stage=sample latch=1 callbacks=19810
+client level=info t=156578 ev=nettick stage=sample latch=1 callbacks=19870
+client level=info t=158578 ev=nettick stage=sample latch=1 callbacks=19930
+client level=info t=160578 ev=nettick stage=sample latch=1 callbacks=19990
+client level=info t=162578 ev=nettick stage=sample latch=1 callbacks=20050
+client level=info t=164594 ev=nettick stage=sample latch=1 callbacks=20110
+client level=info t=166594 ev=nettick stage=sample latch=1 callbacks=20170
+client level=info t=168594 ev=nettick stage=sample latch=1 callbacks=20230
+client level=info t=170594 ev=nettick stage=sample latch=1 callbacks=20290
+client level=info t=172594 ev=nettick stage=sample latch=1 callbacks=20350
+server level=info t=173406 ev=ws701 stage=profile_setup result=complete
+client level=info t=174594 ev=nettick stage=sample latch=1 callbacks=20410
+client level=info t=176610 ev=nettick stage=sample latch=1 callbacks=20470
+client level=info t=178610 ev=nettick stage=sample latch=1 callbacks=20530
+client level=info t=180610 ev=nettick stage=sample latch=1 callbacks=20590
+client level=info t=182610 ev=nettick stage=sample latch=1 callbacks=20650
+client level=info t=184610 ev=nettick stage=sample latch=1 callbacks=20710
+client level=info t=186610 ev=nettick stage=sample latch=1 callbacks=20770
+client level=info t=188625 ev=nettick stage=sample latch=1 callbacks=20830
+client level=info t=190625 ev=nettick stage=sample latch=1 callbacks=20890
+client level=info t=192625 ev=nettick stage=sample latch=1 callbacks=20950
+client level=info t=194625 ev=nettick stage=sample latch=1 callbacks=21010
+client level=info t=196625 ev=nettick stage=sample latch=1 callbacks=21070
+client level=info t=198641 ev=nettick stage=sample latch=1 callbacks=21130
+client level=info t=200641 ev=nettick stage=sample latch=1 callbacks=21190
+client level=info t=202641 ev=nettick stage=sample latch=1 callbacks=21250
+server level=info t=203453 ev=ws701 stage=profile_setup result=complete
+client level=info t=204641 ev=nettick stage=sample latch=1 callbacks=21310
+client level=info t=205016 ev=retail site=33 text=application_state: Suspend state changed from [partial] to [active]
+client level=warn t=205953 ev=vr.probe state on=1 yaw=0.0 height=0.00 fov=0.0
+client level=warn t=205953 ev=vr.probe block player=0 addr=0x14A83265810
+client level=warn t=205953 ev=vr.xr load path=C:\Games\Sunrise\SunriseVR_MockXR.dll
+client level=warn t=205969 ev=vr.xr unhook module=kernelbase.dll export=LoadLibraryExW result=ok bytes=2
+client level=warn t=205969 ev=vr.xr unhook module=kernel32.dll export=GetProcAddress result=ok bytes=2
+client level=warn t=205969 ev=vr.xr ldr_notify callback=destiny2.exe+0x3AB4B0 foreign=1
+client level=warn t=205969 ev=vr.xr ldr_notify result=ok seen=1 neutralised=1
+client level=warn t=205969 ev=vr.xr load result=ok interface=1 runtime_api=1.0.31
+client level=warn t=205969 ev=vr.xr views count=2 eye=1824x1968 runtime=DishonoredVR Mock Runtime
+client level=warn t=205969 ev=vr.xr bindings profile=/interaction_profiles/oculus/touch_controller count=15 result=0
+client level=warn t=205969 ev=vr.xr bindings profile=/interaction_profiles/khr/simple_controller count=5 result=0
+client level=warn t=205969 ev=vr.xr actions result=ok spaces=1
+client level=warn t=205969 ev=vr.xr init result=ok runtime=DishonoredVR Mock Runtime
+client level=warn t=205969 ev=vr.xr session state=running
+client level=warn t=205969 ev=vr.xr recentre x=0.000 y=1.600 z=0.000
+client level=warn t=205985 ev=vr.xr swapchain result=ok size=1280x720 source_format=28 format=29 direct=1 images=2
+client level=warn t=206531 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=206594 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.611,-0.792,0.000 out_fov=1.8151
+client level=info t=206641 ev=nettick stage=sample latch=1 callbacks=21713
+client level=warn t=207110 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=207688 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=207688 ev=vr.xr pose fwd=-0.999,-0.053,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=207688 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=208297 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=208360 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.968,0.252,0.000 out_fov=1.8151
+client level=info t=208641 ev=nettick stage=sample latch=1 callbacks=21917
+client level=warn t=208875 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=208875 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=209438 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=209438 ev=vr.xr pose fwd=-0.687,-0.726,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=209438 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=210016 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=210078 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.701,-0.713,0.000 out_fov=1.8151
+client level=warn t=210594 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=210641 ev=nettick stage=sample latch=1 callbacks=22126
+client level=warn t=211141 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=211141 ev=vr.xr pose fwd=-0.966,0.258,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=211141 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=211703 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=211703 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=211766 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.998,-0.070,0.000 out_fov=1.8151
+client level=warn t=212297 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=212641 ev=nettick stage=sample latch=1 callbacks=22337
+client level=warn t=212891 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=212891 ev=vr.xr pose fwd=-0.617,-0.787,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=212891 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=213563 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=213641 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.949,-0.317,0.000 out_fov=1.8151
+client level=warn t=214188 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=214641 ev=nettick stage=sample latch=1 callbacks=22526
+client level=warn t=214781 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=214781 ev=vr.xr pose fwd=-0.994,0.113,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=214781 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=214781 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=215391 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=215453 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.819,-0.574,0.000 out_fov=1.8151
+client level=warn t=215969 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=216547 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=216547 ev=vr.xr pose fwd=-0.854,-0.520,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=216547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=216641 ev=nettick stage=sample latch=1 callbacks=22730
+client level=warn t=217125 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=217188 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.987,0.158,0.000 out_fov=1.8151
+client level=warn t=217719 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=217719 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=218375 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=218375 ev=vr.xr pose fwd=-0.928,-0.372,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=218375 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=218641 ev=nettick stage=sample latch=1 callbacks=22928
+client level=warn t=218969 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=219031 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.605,-0.796,0.000 out_fov=1.8151
+client level=warn t=219547 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=220172 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=220172 ev=vr.xr pose fwd=-1.000,-0.018,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=220172 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=220641 ev=nettick stage=sample latch=1 callbacks=23122
+client level=warn t=220844 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=220844 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=220906 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.970,0.242,0.000 out_fov=1.8151
+client level=warn t=221422 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=222016 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=222016 ev=vr.xr pose fwd=-0.671,-0.742,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=222016 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=222625 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=222641 ev=nettick stage=sample latch=1 callbacks=23322
+client level=warn t=222688 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.720,-0.694,0.000 out_fov=1.8151
+client level=warn t=223235 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=223813 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=223813 ev=vr.xr pose fwd=-0.965,0.264,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=223813 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=223813 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=224438 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=224500 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.993,-0.118,0.000 out_fov=1.8151
+client level=info t=224641 ev=nettick stage=sample latch=1 callbacks=23522
+client level=warn t=225078 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=225719 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=225719 ev=vr.xr pose fwd=-0.627,-0.779,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=225719 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=226281 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=226360 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.964,-0.267,0.000 out_fov=1.8151
+client level=info t=226641 ev=nettick stage=sample latch=1 callbacks=23717
+client level=warn t=226875 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=226875 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=227469 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=227469 ev=vr.xr pose fwd=-0.996,0.085,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=227469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=228094 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=228156 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.798,-0.603,0.000 out_fov=1.8151
+client level=info t=228641 ev=nettick stage=sample latch=1 callbacks=23915
+client level=warn t=228703 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=229297 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=229297 ev=vr.xr pose fwd=-0.873,-0.487,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=229297 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=229891 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=229891 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=229953 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.985,0.173,0.000 out_fov=1.8151
+client level=warn t=230469 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=230641 ev=nettick stage=sample latch=1 callbacks=24119
+client level=warn t=231031 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=231031 ev=vr.xr pose fwd=-0.912,-0.409,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=231031 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=231625 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=231688 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.602,-0.799,0.000 out_fov=1.8151
+client level=warn t=232203 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=232641 ev=nettick stage=sample latch=1 callbacks=24324
+client level=warn t=232813 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=232813 ev=vr.xr pose fwd=-1.000,0.016,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=232813 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=232813 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=233344 ev=ws701 stage=profile_setup result=complete
+client level=warn t=233406 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=233485 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.973,0.230,0.000 out_fov=1.8151
+client level=warn t=234031 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=234625 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=234625 ev=vr.xr pose fwd=-0.655,-0.755,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=234625 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=234641 ev=nettick stage=sample latch=1 callbacks=24522
+client level=warn t=235250 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=235313 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.740,-0.673,0.000 out_fov=1.8151
+client level=warn t=235938 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=235938 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=236547 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=236547 ev=vr.xr pose fwd=-0.964,0.267,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=236547 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=236641 ev=nettick stage=sample latch=1 callbacks=24709
+client level=warn t=237156 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=237219 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.989,-0.145,0.000 out_fov=1.8151
+client level=warn t=237766 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=238360 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=238360 ev=vr.xr pose fwd=-0.639,-0.769,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=238360 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=238641 ev=nettick stage=sample latch=1 callbacks=24909
+client level=warn t=239000 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=239000 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=239047 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.974,-0.228,0.000 out_fov=1.8151
+client level=warn t=239578 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=240141 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=240141 ev=vr.xr pose fwd=-0.998,0.055,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=240141 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=240641 ev=nettick stage=sample latch=1 callbacks=25114
+client level=warn t=240703 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=240766 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.777,-0.629,0.000 out_fov=1.8151
+client level=warn t=241297 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=241922 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=241922 ev=vr.xr pose fwd=-0.892,-0.453,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=241922 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=241922 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=242485 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=242547 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.980,0.199,0.000 out_fov=1.8151
+client level=info t=242641 ev=nettick stage=sample latch=1 callbacks=25316
+client level=warn t=243078 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=243656 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=243656 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=243656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=244219 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=244281 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=244641 ev=nettick stage=sample latch=1 callbacks=25526
+client level=warn t=244781 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=244781 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=245344 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=245344 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=245344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=245891 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=245953 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=246453 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=246641 ev=nettick stage=sample latch=1 callbacks=25739
+client level=warn t=247110 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=247110 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=247110 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=247688 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=247688 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=247750 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=248281 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=248641 ev=nettick stage=sample latch=1 callbacks=25938
+client level=warn t=248860 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=248860 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=248860 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=249438 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=249500 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=250000 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=250563 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.658,-0.753,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=250563 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=250563 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=250563 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=250641 ev=nettick stage=sample latch=1 callbacks=26150
+client level=warn t=251094 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=251156 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=251625 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=252250 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=252250 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=252250 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=252641 ev=nettick stage=sample latch=1 callbacks=26357
+client level=warn t=252875 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=252938 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=253438 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=253438 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=254047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=254047 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=254047 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=254641 ev=nettick stage=sample latch=1 callbacks=26558
+client level=warn t=254672 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.981,0.193,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=254735 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=255266 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=255813 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=255813 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=255813 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=256438 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=256438 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=256500 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=256641 ev=nettick stage=sample latch=1 callbacks=26763
+client level=warn t=257000 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=257578 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=257578 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=257578 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=258219 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=258281 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=258641 ev=nettick stage=sample latch=1 callbacks=26968
+client level=warn t=258766 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,0.500 r_up=0.473,0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=259328 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=259328 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=259328 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=259328 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=259906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=259969 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=260485 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=260641 ev=nettick stage=sample latch=1 callbacks=27177
+client level=warn t=261047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=261047 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=261047 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=261594 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=261656 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=262156 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=262156 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=262641 ev=nettick stage=sample latch=1 callbacks=27389
+client level=warn t=262750 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.819,-0.280,-0.500 r_up=-0.473,-0.162,0.866 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=262750 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=262750 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=263360 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+server level=info t=263375 ev=ws701 stage=profile_setup result=complete
+client level=warn t=263422 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=263906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=264469 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=264469 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=264469 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=264641 ev=nettick stage=sample latch=1 callbacks=27598
+client level=warn t=265047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=265047 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=265110 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=265625 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=266235 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=266235 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=266235 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=266641 ev=nettick stage=sample latch=1 callbacks=27806
+client level=warn t=266766 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.446,0.376,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=266828 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=267328 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=267922 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=267922 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=267922 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=267922 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=268500 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=268563 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=268641 ev=nettick stage=sample latch=1 callbacks=28015
+client level=warn t=269094 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=269688 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=269688 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=269688 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=270250 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=270313 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=270641 ev=nettick stage=sample latch=1 callbacks=28216
+client level=warn t=270906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,0.100 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=270906 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=271485 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=271485 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=271485 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=272047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=272110 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=272610 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=272641 ev=nettick stage=sample latch=1 callbacks=28424
+client level=warn t=273188 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=273188 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=273188 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=273750 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=273750 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=273828 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=274344 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=274641 ev=nettick stage=sample latch=1 callbacks=28632
+client level=warn t=274906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.065,0.189,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=274906 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=274906 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=275469 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=275547 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=276047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=276641 ev=nettick stage=sample latch=1 callbacks=28841
+client level=warn t=276641 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=276641 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=276641 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=276641 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=277219 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=277281 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=277766 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=278344 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=278344 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=278344 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=278641 ev=nettick stage=sample latch=1 callbacks=29052
+client level=warn t=278922 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.517,-0.856,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=278985 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=279500 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=279500 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=280094 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=280094 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=-0.570,0.122,0.000 fov=1.8151 aspect=1.074
+client level=warn t=280094 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=280641 ev=nettick stage=sample latch=1 callbacks=29261
+client level=warn t=280641 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=280703 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.04,1.53,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=281219 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=281797 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=281797 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=-0.570,0.122,0.000 fov=1.8151 aspect=1.074
+client level=warn t=281797 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=282406 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=282406 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=282469 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.04,1.53,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=282641 ev=nettick stage=sample latch=1 callbacks=29465
+client level=warn t=282985 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.349,0.092,-0.200 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=-0.570,0.122,0.000
+client level=warn t=283610 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=283610 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=283610 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=284172 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=284235 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=info t=284641 ev=nettick stage=sample latch=1 callbacks=29671
+client level=warn t=284735 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=285313 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=285313 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=285313 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=285313 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=285906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=285969 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=286500 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=286641 ev=nettick stage=sample latch=1 callbacks=29876
+client level=warn t=287047 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=287047 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=287047 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=287594 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=287672 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=288203 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=288203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=288641 ev=nettick stage=sample latch=1 callbacks=30085
+client level=warn t=288797 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=288797 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=288797 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=289375 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=289438 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=289922 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=290516 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=290516 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=290516 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=290641 ev=nettick stage=sample latch=1 callbacks=30294
+client level=warn t=291156 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=291156 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=291235 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=291860 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=292641 ev=nettick stage=sample latch=1 callbacks=30434
+client level=warn t=292906 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=292906 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=292906 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=293485 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=293547 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+server level=info t=293781 ev=ws701 stage=profile_setup result=complete
+client level=warn t=294078 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=info t=294641 ev=nettick stage=sample latch=1 callbacks=30639
+client level=warn t=294656 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=294656 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=294656 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=294656 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=295297 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=295375 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=296016 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=296594 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=296594 ev=vr.xr pose fwd=-0.946,-0.323,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=296594 ev=vr.pad stats injected=0 held=0 mouse=0,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=296641 ev=nettick stage=sample latch=1 callbacks=30825
+client level=warn t=297172 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=297235 ev=vr.probe pose in_pos=1.61,1.41,1.24 in_fwd=-0.942,-0.322,-0.093 in_fov=0.9568 out_pos=1.61,1.41,1.24 out_fwd=-0.946,-0.323,0.000 out_fov=1.8151
+client level=warn t=298031 ev=vr.xr hand yaw=-2.8122 r_valid=1 r_fwd=-0.946,-0.323,0.000 r_up=0.000,0.000,1.000 r_off=-0.727,-0.037,0.050 l_valid=1 l_fwd=-0.946,-0.323,0.000 l_off=-0.219,-0.286,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=298031 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=298641 ev=nettick stage=sample latch=1 callbacks=30977

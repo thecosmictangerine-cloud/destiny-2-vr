@@ -1,0 +1,1388 @@
+server level=info t=547 ev=mission_script stage=initialize result=enabled session=0 activity_row=0
+server level=info t=547 ev=transport stage=listen result=ok port=30974
+server level=info t=547 ev=gameplay stage=endpoint result=ok mode=embedded port=30976 ports=16 of=16
+client level=info t=625 ev=package_trust stage=attach result=ok mode=package_integrity_bypass
+client level=info t=641 ev=bootflow_texture stage=attach count=18 result=ok
+client level=info t=641 ev=steam_init result=ok
+client level=info t=641 ev=hook stage=install group=egress count=31 result=ok
+client level=info t=2625 ev=graphics stage=probe result=ok driver=hardware level=0xB000
+client level=info t=2703 ev=cursor stage=install result=ok
+client level=info t=2703 ev=polled_input stage=install result=ok
+client level=info t=2703 ev=activate stage=graphics result=ok
+client level=info t=2703 ev=activate stage=platform result=ok
+client level=info t=2719 ev=renderer stage=init result=ok
+client level=info t=2985 ev=bootstrap stage=token result=ok
+client level=info t=3016 ev=investment stage=family5_commit result=ok
+client level=info t=3016 ev=investment stage=install result=ok
+client level=info t=3016 ev=activate stage=game_network result=ok
+client level=info t=3016 ev=activate stage=package_keys result=ok
+client level=info t=3016 ev=retail stage=install result=ok
+client level=info t=3016 ev=assert stage=install result=ok
+client level=info t=3047 ev=probe stage=hitch result=installed
+client level=info t=3047 ev=probe stage=stall result=installed
+client level=info t=3063 ev=probe stage=sense result=installed
+client level=info t=3125 ev=async_io_guard stage=patch result=ok mode=cached_manager_owner
+client level=info t=3125 ev=config_getter stage=install result=ok
+client level=info t=3188 ev=bootflow stage=character_select result=ok
+client level=info t=3188 ev=bootflow stage=slice_set result=ok
+client level=info t=3188 ev=bootflow stage=composition result=ok
+client level=info t=3188 ev=bootflow stage=orbit_handoff result=ok
+client level=info t=3188 ev=bootflow stage=owner_slot result=ok
+client level=info t=3188 ev=bootflow stage=region result=ok
+client level=info t=3203 ev=bootflow stage=world_step result=ok
+client level=info t=3203 ev=bootflow stage=current_slice result=ok
+client level=info t=3250 ev=teleport stage=install result=ok
+client level=info t=3266 ev=noclip stage=install result=ok
+client level=info t=3297 ev=infinite_ammo stage=install result=ok
+client level=info t=3313 ev=inactivity stage=install result=ok
+client level=info t=3328 ev=queuez stage=notification result=ok
+client level=info t=3328 ev=bitmap stage=ref_guard result=ok
+client level=info t=3344 ev=probe stage=msg12 result=installed
+client level=info t=3516 ev=probe stage=cine result=installed
+client level=info t=3563 ev=probe stage=cine6 result=installed
+client level=info t=3766 ev=world_objects stage=install result=ok
+client level=info t=3766 ev=activate stage=main result=ok
+client level=info t=3766 ev=nettick stage=resolve result=ok latch=0x00007FF6B91E0827
+client level=info t=3766 ev=nettick stage=sample latch=1 callbacks=4
+server level=info t=3766 ev=core stage=pump result=server_thread
+client level=info t=3797 ev=pkg stage=abilities result=ok rows=12
+client level=info t=3797 ev=build_data stage=items result=ok rows=15424
+client level=info t=3813 ev=build_data stage=domains named=1 items=1 details=1 buckets=1 sockets=1 abilities=1 progressions=1 scenarios=1
+client level=info t=3953 ev=inactivity stage=release result=noop
+client level=info t=4969 ev=retail site=5 text=networking:stun: Created stun endpoint, advancing to DNS discovery
+client level=info t=4985 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5000 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5016 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5032 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5047 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5063 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5078 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5078 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5094 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5110 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5125 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5141 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5157 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5172 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5188 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5203 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5219 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5219 ev=retail site=6 text=networking:stun: Using lookup type: [0]
+client level=info t=5219 ev=retail site=7 text=networking:stun: Selected stun server: [0] ip address: [127.0.0.1:3074] valid stun server count: [1]
+client level=info t=5250 ev=retail site=8 text=networking:stun: client external ip address: [127.0.0.1:3097]
+client level=info t=5282 ev=retail site=9 text=networking:stun: Reporting NAT type [1] and address [127.0.0.1:3097].
+client level=info t=5766 ev=nettick stage=sample latch=1 callbacks=243
+client level=info t=7766 ev=nettick stage=sample latch=1 callbacks=531
+client level=info t=9766 ev=nettick stage=sample latch=1 callbacks=819
+client level=info t=10844 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:start' for reason 'unavailable'.
+client level=info t=11766 ev=nettick stage=sample latch=1 callbacks=1105
+client level=info t=13766 ev=nettick stage=sample latch=1 callbacks=1392
+client level=info t=15766 ev=nettick stage=sample latch=1 callbacks=1680
+client level=info t=17766 ev=nettick stage=sample latch=1 callbacks=1959
+client level=info t=19766 ev=nettick stage=sample latch=1 callbacks=2246
+client level=info t=21766 ev=nettick stage=sample latch=1 callbacks=2529
+client level=info t=23766 ev=nettick stage=sample latch=1 callbacks=2816
+client level=info t=25766 ev=nettick stage=sample latch=1 callbacks=3101
+client level=info t=27766 ev=nettick stage=sample latch=1 callbacks=3379
+client level=info t=29766 ev=nettick stage=sample latch=1 callbacks=3667
+client level=info t=31766 ev=nettick stage=sample latch=1 callbacks=3949
+client level=info t=33766 ev=nettick stage=sample latch=1 callbacks=4237
+client level=info t=35766 ev=nettick stage=sample latch=1 callbacks=4525
+client level=info t=37766 ev=nettick stage=sample latch=1 callbacks=4803
+client level=info t=39766 ev=nettick stage=sample latch=1 callbacks=5091
+client level=info t=41766 ev=nettick stage=sample latch=1 callbacks=5379
+client level=info t=43766 ev=nettick stage=sample latch=1 callbacks=5656
+client level=info t=45766 ev=nettick stage=sample latch=1 callbacks=5944
+client level=info t=47766 ev=nettick stage=sample latch=1 callbacks=6231
+client level=info t=49766 ev=nettick stage=sample latch=1 callbacks=6515
+client level=info t=51766 ev=nettick stage=sample latch=1 callbacks=6803
+client level=info t=53766 ev=nettick stage=sample latch=1 callbacks=7091
+client level=info t=55766 ev=nettick stage=sample latch=1 callbacks=7368
+client level=info t=57766 ev=nettick stage=sample latch=1 callbacks=7650
+client level=info t=59766 ev=nettick stage=sample latch=1 callbacks=7933
+client level=info t=61766 ev=nettick stage=sample latch=1 callbacks=8221
+client level=info t=63766 ev=nettick stage=sample latch=1 callbacks=8508
+client level=info t=65766 ev=nettick stage=sample latch=1 callbacks=8792
+client level=info t=67766 ev=nettick stage=sample latch=1 callbacks=9079
+client level=info t=69766 ev=nettick stage=sample latch=1 callbacks=9368
+client level=info t=71766 ev=nettick stage=sample latch=1 callbacks=9645
+client level=info t=73766 ev=nettick stage=sample latch=1 callbacks=9934
+client level=info t=75766 ev=nettick stage=sample latch=1 callbacks=10222
+client level=info t=76047 ev=retail site=10 text=networking:link: Endpoint traffic is now: [disabled].
+client level=info t=76047 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=76047 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_signin' for reason 'unavailable'.
+client level=info t=76047 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(4)], took: [0 ms], average: [0.000000 ms], min: [0.000000], max: [0.000000], count: [1]
+client level=info t=76047 ev=retail site=12 text=networking:logic:session: local user 0 set platform account id=unknown platform account id, live=1, online=1, free=0, user_content=1, friend_content=1
+client level=info t=76047 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(5)], took: [0 ms], average: [0.000000 ms], min: [0.000000], max: [0.000000], count: [1]
+client level=info t=76047 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:platform_account_warnings' for reason 'unavailable'.
+client level=info t=76047 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:enumerate_content_rights' for reason 'unavailable'.
+client level=info t=76063 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:account_signin' for reason 'unavailable'.
+server level=info t=76141 ev=http method=post route=signon result=ok
+client level=info t=76157 ev=retail site=13 text=networking:signon:client: Server environment: live
+client level=info t=76157 ev=retail site=14 text=networking:stun: Client external address from signon: [127.0.0.1:0].
+client level=info t=76157 ev=retail site=15 text=world_controller:state:bootflow_account_signin_handler: Demonware lobby connection not desired, continuing without Demonware lobby connection.
+client level=info t=76157 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(8)], took: [90 ms], average: [90.000000 ms], min: [90.000000], max: [90.000000], count: [1]
+client level=info t=76157 ev=retail site=16 text=networking:stun: Using STUN discovered address and NAT type.
+client level=info t=76172 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [97] ms in world controller state: [7] name: [bootflow:account_signin]
+client level=info t=76172 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:content_check' for reason 'unavailable'.
+client level=info t=76172 ev=content_config stage=get route=manifest bytes=105232 result=ok
+client level=info t=76375 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [202] ms in world controller state: [16] name: [bootflow:content_check]
+client level=info t=76375 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:package_registration' for reason 'unavailable'.
+client level=info t=77766 ev=nettick stage=sample latch=1 callbacks=10499
+client level=info t=78922 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [2548] ms in world controller state: [21] name: [bootflow:package_registration]
+client level=info t=78922 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:bap_signin' for reason 'unavailable'.
+client level=info t=78922 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=78922 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=78922 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=78922 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=78922 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=78922 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=78922 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=78922 ev=retail site=20 text=networking:server:bap: primary BAP server IP address: 1.0.0.127, port: 30974
+server level=info t=78922 ev=transport stage=accept result=ok conn=1
+client level=info t=79016 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(0)' after '98ms'.
+client level=info t=79016 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(13)], took: [98 ms], average: [98.000000 ms], min: [98.000000], max: [98.000000], count: [1]
+client level=info t=79422 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(1)' after '501ms'.
+client level=info t=79422 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(14)'.
+client level=info t=79438 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(14)' after '14ms'.
+client level=info t=79766 ev=nettick stage=sample latch=1 callbacks=10787
+client level=info t=81766 ev=nettick stage=sample latch=1 callbacks=11075
+client level=info t=83766 ev=nettick stage=sample latch=1 callbacks=11363
+client level=info t=84032 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(2)' after '5118ms'.
+client level=info t=84032 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=84047 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(5)' after '13ms'.
+client level=info t=84047 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=84047 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=84172 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(6)' after '118ms'.
+client level=info t=84172 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(11)], took: [131 ms], average: [131.000000 ms], min: [131.000000], max: [131.000000], count: [1]
+client level=info t=84235 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(7)' after '189ms'.
+client level=info t=84235 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=84235 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(8)' after '0ms'.
+client level=info t=84235 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=84438 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(9)' after '207ms'.
+client level=info t=84438 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=84438 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(15)'.
+client level=info t=84735 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(10)' after '292ms'.
+client level=info t=84735 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(13)'.
+client level=info t=84860 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(13)' after '125ms'.
+client level=info t=84860 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(12)], took: [624 ms], average: [624.000000 ms], min: [624.000000], max: [624.000000], count: [1]
+client level=info t=85016 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(15)' after '569ms'.
+client level=info t=85016 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(16)'.
+client level=info t=85016 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(17)'.
+client level=info t=85016 ev=retail site=18 text=world_controller:task_manager: Started   task 'ENUM(18)'.
+client level=info t=85016 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(18)' after '0ms'.
+client level=info t=85063 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(16)' after '50ms'.
+client level=info t=85766 ev=nettick stage=sample latch=1 callbacks=11633
+client level=info t=86516 ev=retail site=19 text=world_controller:task_manager: Completed task 'ENUM(17)' after '1500ms'.
+client level=info t=86516 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [7596] ms in world controller state: [22] name: [bootflow:bap_signin]
+client level=info t=86516 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:investment_signin' for reason 'unavailable'.
+client level=info t=86516 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=86516 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=86516 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(1)' after '0ms'.
+client level=info t=86516 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=86516 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=86563 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(6)' after '50ms'.
+client level=info t=87485 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(2)' after '966ms'.
+client level=info t=87485 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=87485 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=87485 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(5)' after '0ms'.
+client level=info t=87688 ev=retail site=23 text=world_controller: successfully changed world to: ambient_bootstrap
+client level=info t=87688 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(4)' after '209ms'.
+client level=info t=87766 ev=lore_visibility result=applied conditions=24
+client level=info t=87766 ev=retail site=24 text=content_table_patching: patch contents have been cleared
+client level=info t=87766 ev=nettick stage=sample latch=1 callbacks=11893
+client level=warn t=87860 ev=queuez stage=notification result=skipped reason=null_payload
+client level=info t=87860 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=87860 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(0)' after '1348ms'.
+client level=info t=87860 ev=retail site=26 text=networking:link: Starting port collsion resolution for endpoint type: [2], using port: [2003], max attempts: [100], max upnp attempts: [6]
+client level=info t=87860 ev=retail site=27 text=networking:port_collision_resolver: Starting port collision resolution for endpoint type: [2] port: [2003].
+client level=info t=87860 ev=retail site=21 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=87860 ev=retail site=22 text=world_controller:task_manager: Completed task 'ENUM(7)' after '0ms'.
+client level=info t=87860 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1348] ms in world controller state: [23] name: [bootflow:investment_signin]
+client level=info t=87860 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:prepare_for_orbit' for reason 'unavailable'.
+client level=info t=87875 ev=retail site=28 text=networking:UPnP: Started UPnP client for port: [2003].
+client level=info t=88344 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 0, flags 0x01, object_count 2]
+client level=info t=89766 ev=nettick stage=sample latch=1 callbacks=12620
+client level=info t=91328 ev=retail site=23 text=world_controller: successfully changed world to: orbit_d2
+client level=info t=91469 ev=retail site=29 text=world_controller:state:prepare_for_orbit: Waiting for bubble host port collision resolution.
+client level=info t=91766 ev=nettick stage=sample latch=1 callbacks=13310
+client level=info t=93766 ev=nettick stage=sample latch=1 callbacks=14163
+client level=info t=93891 ev=retail site=30 text=networking:UPnP: Client completed with status: [2], port: [2003].
+client level=info t=93891 ev=retail site=31 text=networking:port_collision_resolver: Unsuccessful UPnP reservation, UPnP client state: [2], endpoint type: [2] port: [2003].
+client level=info t=93891 ev=retail site=0 text=networking:UPnP: Resetting UPnP client.
+client level=info t=93891 ev=retail site=32 text=networking:link: Swapping out endpoint type: [2] with collision resolved endpoint using port: [2003]
+client level=info t=93891 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [6031] ms in world controller state: [25] name: [bootflow:prepare_for_orbit]
+client level=info t=93891 ev=retail site=10 text=networking:link: Endpoint traffic is now: [enabled].
+client level=info t=93891 ev=retail site=3 text=world_controller:state_manager: Entering state 'bootflow:rejoin_activity' for reason 'unavailable'.
+client level=info t=93891 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [0] ms in world controller state: [26] name: [bootflow:rejoin_activity]
+client level=info t=93891 ev=retail site=3 text=world_controller:state_manager: Entering state 'character:signin' for reason 'unavailable'.
+client level=info t=93891 ev=bootflow stage=character_select result=held
+client level=warn t=93891 ev=vr.dest forced result=ok name=eden_freeroam bubble=20 slice_set=160 activity=7 spawn=0x0 active=1
+client level=info t=95766 ev=nettick stage=sample latch=1 callbacks=14774
+client level=info t=97766 ev=nettick stage=sample latch=1 callbacks=15337
+client level=info t=99766 ev=nettick stage=sample latch=1 callbacks=15885
+client level=info t=101766 ev=nettick stage=sample latch=1 callbacks=16413
+client level=info t=103766 ev=nettick stage=sample latch=1 callbacks=16930
+client level=info t=105766 ev=nettick stage=sample latch=1 callbacks=17434
+client level=info t=107766 ev=nettick stage=sample latch=1 callbacks=17935
+client level=info t=109766 ev=nettick stage=sample latch=1 callbacks=18427
+client level=info t=111766 ev=nettick stage=sample latch=1 callbacks=18886
+client level=info t=113766 ev=nettick stage=sample latch=1 callbacks=19348
+client level=info t=115766 ev=nettick stage=sample latch=1 callbacks=19808
+client level=info t=117766 ev=nettick stage=sample latch=1 callbacks=20268
+client level=info t=117844 ev=retail site=25 text=networking:investment:push:queuez: failed to process update for [family_type ENUM(0), family_root_soid 0x9EAA300100100100, version 1, flags 0x01, object_count 2]
+client level=info t=117875 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [23990] ms in world controller state: [27] name: [character:signin]
+client level=info t=117875 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(15)], took: [23990 ms], average: [23990.000000 ms], min: [23990.000000], max: [23990.000000], count: [1]
+client level=info t=117875 ev=retail site=3 text=world_controller:state_manager: Entering state 'cleanup' for reason 'unavailable'.
+client level=info t=117891 ev=retail site=33 text=world_controller:state:cleanup: Requested task mask: '0x00e0010c30fbdf3c'
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(2)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(5)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=117891 ev=retail site=36 text=networking:session: [fireteam:00000000:00000000] session state is changing from 'none' to 'host-established'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(10)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(11)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(11)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(12)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(12)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(14)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(14)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(15)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(15)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(16)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(16)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(17)'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(19)'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(20)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(20)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(21)'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(28)'.
+client level=info t=117891 ev=retail site=37 text=world_controller:retail_datamine: About to attempt retail log upload. We have '157' events, dropped '0' from THIS session due to upload cap, and have '38' unique event IDs.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(29)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(29)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(34)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(34)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(54)'.
+client level=info t=117891 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(54)' after '0ms'.
+client level=info t=117891 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(55)'.
+client level=info t=117891 ev=retail site=38 text=world_controller:state:cleanup: After 1ms, status: '2', tasks active: '0x00800000102a0100', pending: '0x0020010800c00200', requested: '0x00e0010c30fbdf3c'
+client level=info t=117891 ev=retail site=39 text=networking:session:membership:dump: [fireteam:00000000:00000000] update_number: 7, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=117891 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=117891 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=            _joining o=-1 j=[988B8875-3D08E0DA] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118016 ev=retail site=23 text=world_controller: successfully changed world to:
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(19)' after '132ms'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(21)' after '132ms'.
+client level=info t=118016 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(22)'.
+client level=info t=118016 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(23)'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(23)' after '0ms'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(28)' after '132ms'.
+client level=info t=118016 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(53)'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(17)' after '133ms'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(55)' after '135ms'.
+client level=info t=118016 ev=retail site=42 text=networking:session:process-pending-joins: [fireteam:83F639DD:10C40045] marking all peers in join [988B8875-3D08E0DA] as joined
+client level=info t=118016 ev=retail site=39 text=networking:session:membership:dump: [fireteam:83F639DD:10C40045] update_number: 11, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118016 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118016 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=            _waiting o=-1 j=[988B8875-3D08E0DA] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118016 ev=retail site=43 text=networking:session:process-pending-joins: [fireteam:83F639DD:10C40045] marking all peers in join [988B8875-3D08E0DA] as ready, [136] ms since peer [0] created, [118100] since join was queued
+client level=info t=118016 ev=retail site=39 text=networking:session:membership:dump: [fireteam:83F639DD:10C40045] update_number: 12, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118016 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118016 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=              _ready o=-1 j=[988B8875-3D08E0DA] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118016 ev=retail site=44 text=networking:session:process-pending-joins: [fireteam:83F639DD:10C40045] marking all peers in join [988B8875-3D08E0DA] as established
+client level=info t=118016 ev=retail site=39 text=networking:session:membership:dump: [fireteam:83F639DD:10C40045] update_number: 14, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118016 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=118016 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id= flags=0
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(8)' after '138ms'.
+client level=info t=118016 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=118016 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(9)' after '0ms'.
+client level=info t=118016 ev=retail site=39 text=networking:session:membership:dump: [fireteam:83F639DD:10C40045] update_number: 16, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=118016 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=118016 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=0
+client level=info t=118110 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(22)' after '101ms'.
+client level=info t=118110 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(35)'.
+client level=info t=118110 ev=retail site=34 text=world_controller:task_manager: Started   task 'ENUM(40)'.
+client level=info t=118110 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(40)' after '0ms'.
+client level=info t=118360 ev=retail site=23 text=world_controller: successfully changed world to: orbit_d2
+client level=info t=118360 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(35)' after '236ms'.
+server level=info t=118375 ev=queuez stage=translate result=paired kind=account identity=0x0110000130AA9EC5 soid=0x9EAA300100100100
+server level=info t=118391 ev=ws701 stage=profile_setup result=complete
+server level=info t=118407 ev=queuez stage=social_roster result=ok soid=0x9EAA300100100100 objects=2 bytes=176 emblem=1273 hash=0x71B4CC1A
+client level=info t=118953 ev=retail site=35 text=world_controller:task_manager: Completed task 'ENUM(53)' after '933ms'.
+client level=info t=118953 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1066] ms in world controller state: [28] name: [cleanup]
+client level=info t=118953 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:orbit' for reason 'unavailable'.
+client level=info t=118953 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'disabled' to 'fully_enabled'.
+client level=info t=118953 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(14)], took: [42896 ms], average: [42896.000000 ms], min: [42896.000000], max: [42896.000000], count: [1]
+client level=info t=118953 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+client level=info t=118953 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:orbit' to 'PRV24.24 (HASH: 0x841b4ef7)'; token advanced to 001
+client level=info t=119266 ev=bootflow stage=orbit_handoff result=native
+client level=info t=119266 ev=retail site=48 text=world_controller:slice_set_transition_manager: Stopping transition of type 'transitioning:orbit' due to completed
+server level=info t=119313 ev=ws701 stage=profile_setup result=complete
+server level=info t=119313 ev=activity stage=writeback result=ok world_state=0
+client level=info t=119766 ev=nettick stage=sample latch=1 callbacks=20822
+client level=info t=121766 ev=nettick stage=sample latch=1 callbacks=21331
+client level=info t=123766 ev=nettick stage=sample latch=1 callbacks=21844
+client level=info t=125766 ev=nettick stage=sample latch=1 callbacks=22357
+client level=info t=127766 ev=nettick stage=sample latch=1 callbacks=22870
+client level=info t=129766 ev=nettick stage=sample latch=1 callbacks=23385
+client level=info t=131766 ev=nettick stage=sample latch=1 callbacks=23899
+client level=info t=133766 ev=nettick stage=sample latch=1 callbacks=24413
+client level=info t=135766 ev=nettick stage=sample latch=1 callbacks=24927
+client level=info t=137766 ev=nettick stage=sample latch=1 callbacks=25309
+client level=info t=139766 ev=nettick stage=sample latch=1 callbacks=25759
+client level=info t=141766 ev=nettick stage=sample latch=1 callbacks=26210
+client level=info t=143766 ev=nettick stage=sample latch=1 callbacks=26658
+client level=info t=145766 ev=nettick stage=sample latch=1 callbacks=27106
+client level=info t=147766 ev=nettick stage=sample latch=1 callbacks=27490
+client level=info t=148953 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=149344 ev=ws701 stage=profile_setup result=complete
+server level=info t=149344 ev=activity stage=writeback result=ok world_state=0
+client level=info t=149766 ev=nettick stage=sample latch=1 callbacks=27871
+client level=info t=151766 ev=nettick stage=sample latch=1 callbacks=28252
+client level=info t=153766 ev=nettick stage=sample latch=1 callbacks=28638
+client level=info t=155766 ev=nettick stage=sample latch=1 callbacks=29118
+client level=info t=157766 ev=nettick stage=sample latch=1 callbacks=29533
+client level=info t=159766 ev=nettick stage=sample latch=1 callbacks=29917
+client level=info t=161766 ev=nettick stage=sample latch=1 callbacks=30302
+client level=info t=163766 ev=nettick stage=sample latch=1 callbacks=30684
+client level=info t=165766 ev=nettick stage=sample latch=1 callbacks=31097
+client level=info t=167766 ev=nettick stage=sample latch=1 callbacks=31501
+client level=info t=169766 ev=nettick stage=sample latch=1 callbacks=31885
+client level=info t=171766 ev=nettick stage=sample latch=1 callbacks=32267
+client level=info t=173766 ev=nettick stage=sample latch=1 callbacks=32649
+client level=info t=175766 ev=nettick stage=sample latch=1 callbacks=33030
+client level=info t=177766 ev=nettick stage=sample latch=1 callbacks=33440
+client level=info t=178953 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=179407 ev=ws701 stage=profile_setup result=complete
+server level=info t=179407 ev=activity stage=writeback result=ok world_state=0
+client level=info t=179766 ev=nettick stage=sample latch=1 callbacks=33790
+client level=info t=181766 ev=nettick stage=sample latch=1 callbacks=34221
+client level=info t=183766 ev=nettick stage=sample latch=1 callbacks=34601
+client level=info t=185766 ev=nettick stage=sample latch=1 callbacks=35042
+client level=info t=187766 ev=nettick stage=sample latch=1 callbacks=35390
+client level=info t=189766 ev=nettick stage=sample latch=1 callbacks=35803
+client level=info t=191766 ev=nettick stage=sample latch=1 callbacks=36179
+client level=info t=193766 ev=nettick stage=sample latch=1 callbacks=36615
+client level=info t=195766 ev=nettick stage=sample latch=1 callbacks=36960
+client level=info t=197766 ev=nettick stage=sample latch=1 callbacks=37304
+client level=info t=199766 ev=nettick stage=sample latch=1 callbacks=37681
+client level=info t=201766 ev=nettick stage=sample latch=1 callbacks=38053
+client level=info t=203766 ev=nettick stage=sample latch=1 callbacks=38428
+client level=info t=205766 ev=nettick stage=sample latch=1 callbacks=38798
+client level=info t=207766 ev=nettick stage=sample latch=1 callbacks=39117
+client level=info t=208953 ev=retail site=46 text=world_controller:slice_set_transition_manager: Failed to find the Orbit slice-set name for destination 'HASH(0x13a023bc)', so we're falling back to a new character (Orbit destination 'HASH(0x59ad083e)', slice-set 'HASH(0x841b4ef7)').
+server level=info t=209407 ev=ws701 stage=profile_setup result=complete
+server level=info t=209422 ev=activity stage=writeback result=ok world_state=0
+client level=info t=209766 ev=nettick stage=sample latch=1 callbacks=39499
+client level=info t=211766 ev=nettick stage=sample latch=1 callbacks=40103
+client level=info t=213766 ev=nettick stage=sample latch=1 callbacks=40698
+client level=info t=215766 ev=nettick stage=sample latch=1 callbacks=41206
+client level=info t=217766 ev=nettick stage=sample latch=1 callbacks=41723
+client level=info t=219766 ev=nettick stage=sample latch=1 callbacks=42220
+client level=info t=221766 ev=nettick stage=sample latch=1 callbacks=42720
+client level=info t=223766 ev=nettick stage=sample latch=1 callbacks=43173
+client level=info t=225766 ev=nettick stage=sample latch=1 callbacks=43621
+client level=info t=227766 ev=nettick stage=sample latch=1 callbacks=44053
+client level=info t=229766 ev=nettick stage=sample latch=1 callbacks=44513
+client level=info t=229875 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [110933] ms in world controller state: [29] name: [setup:orbit]
+client level=info t=229875 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'fully_enabled' to 'disabled'.
+client level=info t=229875 ev=retail site=49 text=networking:online:matchmaking: Active matchmaking interface type: 0
+client level=info t=229875 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_session_creation' for reason 'unavailable'.
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=229875 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(4)' after '0ms'.
+client level=info t=229875 ev=retail site=52 text=world_controller:state:activity_session_creation: Waiting for session peer properties to be in the expected state (no AH ids). FT [EXPECTED], POSSE [WAITING]
+client level=info t=229875 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+client level=info t=229907 ev=retail site=49 text=networking:online:matchmaking: Active matchmaking interface type: 0
+client level=info t=229907 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(0)' after '25ms'.
+client level=info t=229907 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+server level=info t=229907 ev=bap svc=42 stage=configuration result=ok activity_hash=0x11882989 type_hash=0x5EC025C8 activity=255 name=nadir_endgame current_activity_policy=0 changed=0
+client level=info t=229922 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(1)' after '14ms'.
+client level=info t=229922 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=229922 ev=retail site=39 text=networking:session:membership:dump: [posse:00000000:00000000] update_number: 2, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229922 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=229922 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=          _connected o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4
+client level=info t=229922 ev=retail site=36 text=networking:session: [posse:00000000:00000000] session state is changing from 'none' to 'host-established'.
+client level=info t=229922 ev=retail site=53 text=networking:session:create: join-driven session creation (local and remote peers) assigned a promordial join nonce of 0DAFCC95-3C91DAAC
+client level=info t=229922 ev=retail site=39 text=networking:session:membership:dump: [posse:00000000:00000000] update_number: 5, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229922 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=229922 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=            _joining o=-1 j=[0DAFCC95-3C91DAAC] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4
+client level=info t=229938 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(5)' after '49ms'.
+client level=info t=229938 ev=retail site=54 text=world_controller:session_manager: PRIVATE session [posse:00000000:00000000] unable to get session keys.
+client level=info t=229938 ev=retail site=50 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=229938 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(3)' after '0ms'.
+client level=info t=229938 ev=retail site=51 text=world_controller:task_manager: Completed task 'ENUM(2)' after '19ms'.
+client level=info t=229938 ev=retail site=55 text=world_controller:state:activity_session_creation: As HOST, peers done: skill read: , config refresh: , reputation read: 0
+client level=info t=229938 ev=retail site=42 text=networking:session:process-pending-joins: [posse:60FC9311:778C71BC] marking all peers in join [0DAFCC95-3C91DAAC] as joined
+client level=info t=229938 ev=retail site=39 text=networking:session:membership:dump: [posse:60FC9311:778C71BC] update_number: 8, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229938 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=229938 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=            _waiting o=-1 j=[0DAFCC95-3C91DAAC] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4
+client level=info t=229938 ev=retail site=43 text=networking:session:process-pending-joins: [posse:60FC9311:778C71BC] marking all peers in join [0DAFCC95-3C91DAAC] as ready, [20] ms since peer [0] created, [230026] since join was queued
+client level=info t=229938 ev=retail site=39 text=networking:session:membership:dump: [posse:60FC9311:778C71BC] update_number: 9, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229938 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=229938 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=              _ready o=-1 j=[0DAFCC95-3C91DAAC] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4
+client level=info t=229953 ev=retail site=39 text=networking:session:membership:dump: [posse:60FC9311:778C71BC] update_number: 10, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229953 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=229953 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=              _ready o=-1 j=[0DAFCC95-3C91DAAC] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+client level=info t=229953 ev=retail site=56 text=world_controller:state:activity_session_creation: Activity session 'posse:60FC9311:778C71BC' successfully created, trying to move on.
+client level=info t=229953 ev=retail site=57 text=world_controller:state_manager: State 'setup:matchmaking' requested for reason 'unavailable', but we can't: 'active outbound FT join [IN-PROGRESS]'.
+client level=info t=229953 ev=retail site=44 text=networking:session:process-pending-joins: [posse:60FC9311:778C71BC] marking all peers in join [0DAFCC95-3C91DAAC] as established
+client level=info t=229953 ev=retail site=39 text=networking:session:membership:dump: [posse:60FC9311:778C71BC] update_number: 12, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229953 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0x1, removed: 0x0; players valid: 0x1, changed: 0x0, removed: 0x0
+client level=info t=229953 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+client level=info t=229969 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [88] ms in world controller state: [30] name: [setup:activity_session_creation]
+client level=info t=229969 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:matchmaking' for reason 'unavailable'.
+client level=info t=229969 ev=bootflow stage=composition result=zeroed count=1
+client level=info t=229969 ev=retail site=39 text=networking:session:membership:dump: [posse:60FC9311:778C71BC] update_number: 15, leader_peer_index: # 0, host_peer_index: # 0
+client level=info t=229969 ev=retail site=40 text=networking:session:membership:dump:   peers valid: 0x1, non-dormant: 0x1, changed: 0xffffffff, removed: 0x0; players valid: 0x1, changed: 0xffffffff, removed: 0x0
+client level=info t=229969 ev=retail site=41 text=networking:session:membership:dump:   peer # 0 a=[steamid:76561198776753861#065caddb4c9b2a87] s=        _established o=-1 j=[XXXXXXXX-XXXXXXXX] amb=[XXXXXXXX-XXXXXXXX] pc=1 peer_name=<UNKNOWN PEER NAME> session_id=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935 flags=4000007
+client level=info t=229985 ev=bootflow stage=composition result=zeroed count=1
+client level=info t=229985 ev=retail site=58 text=world_controller:state:matchmaking: Teams have been picked for activity: 255, membership update number: 16
+client level=info t=229985 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [11] ms in world controller state: [31] name: [setup:matchmaking]
+client level=info t=229985 ev=retail site=59 text=world_controller:retail_datamine: Timed operation Matchmaking, took: [0 seconds]
+client level=info t=229985 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_host_setup' for reason 'unavailable'.
+client level=info t=230016 ev=retail site=60 text=networking:activity_client:messaging_interface:bap: AH IP resolution successful: 'proxy -> 127.0.0.1:30974'.
+server level=info t=230032 ev=transport stage=accept result=ok conn=2
+server level=warn t=230047 ev=bap svc=25 stage=plaintext result=shape_accepted conn=2 len=36 b0=0A b1=20 b34=10 b35=02
+client level=info t=230063 ev=retail site=61 text=world_controller:activity_manager: Connected 'PRIVATE CURRENT' activity client.
+client level=info t=230063 ev=retail site=62 text=world_controller:activity_manager: 'PRIVATE CURRENT' activity client requesting activity host startup [activity: 0x00ff (HASH(0x11882989))(type: HASH(0x5ec025c8))(grognok: nadir_endgame)(destination: HASH(0x9bb2169b))(nonce: 4736013A-A76BAE52) for reason 'ENUM(0)'(override: nadir_endgame)][reservation count 1].
+server level=info t=230063 ev=bap svc=6 stage=selection result=forced name=eden_freeroam bubble=20 slice_set=160 spawn=0x811C9DC5
+server level=warn t=230063 ev=mission_script stage=attach result=activity_join_pending session=11433003384888623105
+client level=info t=230078 ev=retail site=63 text=networking:activity_client:receive_message_from_host: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] received startup response from AH [id 9EAA3001:00200001][session ]
+client level=info t=230078 ev=retail site=64 text=networking:activity_client: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Sent join request: [AH 9EAA3001:00200001][nonce -1130421240] identity:[account -7013740688821976832][character -7013740688821976831][machine B0:A1:25:FC:EC:00:F935][player 45:B8:1A:8D:45:6B:53:C3] [global resources 0x6c] (part 1/2)
+client level=info t=230078 ev=retail site=65 text=networking:activity_client: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Properties [session Wed_09092026_011056_029300@x64@76561198776753861@B0_A1_25_FC_EC_00_F935][FAH --------:--------][GAH --------:--------][FTID 0x88b2ddeda9e63295] (part 2/2)
+client level=info t=230078 ev=retail site=66 text=world_controller:activity_manager: 'PRIVATE CURRENT' activity client sent join request to AH 9EAA3001:00200001, host=Wed_09092026_011056_029300@x64@unknown_pc_user@B0_A1_25_FC_EC_00_F935
+server level=info t=230125 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200002 group=0xA5A634D107A71A4A generation=1 port=30976 held=1
+server level=info t=230125 ev=gameplay stage=advertise result=ok region=160 region_source=arrival ambassador_slot=1
+server level=warn t=230125 ev=activity stage=roster result=no_epoch soid=0x9EAA300100200001 public=0 dest= groups=0 top=0 sub=0 subkeys=0 objects=0 bytes=0 state=0 auth=0 authstate=-1 authfirst=-1:-1:0x0:0x0 authlast=-1:-1:0x0:0x0 sceneempty=0 engageempty=0 keygroup=0x0 grant=-1 region=0 slice=0 spawn=0x0 join=0x9EAA300100100101 player=0x0 pending_region=-1 current_region=-1 client_bubble=-1 held=-1 entered=0 selected=0 hash=0x0000000000000000 force=0x00
+server level=info t=230141 ev=mission_script stage=open result=no_script session=11433003384888623105 activity_row=8
+server level=warn t=230141 ev=mission_script stage=attach result=no_script session=11433003384888623105 activity_row=8
+server level=warn t=230141 ev=mission_script stage=attach result=no_activity_link session=11433003384888623106
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200003 group=0xBB72C0C175356F6A generation=2 port=30978 held=2
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200004 group=0xAAB6FEFD73E14FC2 generation=3 port=30980 held=3
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200005 group=0xA4EAAC29798D2E1A generation=4 port=30982 held=4
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200006 group=0x562F5A6564390D72 generation=5 port=30984 held=5
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200007 group=0x4063099162E6EDCA generation=6 port=30986 held=6
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200008 group=0x73A7C7CD6892CC22 generation=7 port=30988 held=7
+server level=info t=230141 ev=gameplay stage=activityhost result=allocated session=0x9EAA300100200009 group=0x6DDBF5F9573ED37A generation=8 port=30990 held=8
+client level=info t=230141 ev=retail site=67 text=networking:activity_client:receive_message_from_host: [AC PRIVATE CURRENT CON-Y EST-N AH->0 MEM-0] Received join result from AH '9EAA3001:00200001' [nonce -1130421240][result 0][session id ][replication epoch 0].
+client level=info t=230141 ev=retail site=68 text=networking:activity_client:activity_host_changed: instance=PRIVATE CURRENT, ah-sid=, zombie-instance-nonce=0
+client level=info t=230141 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x00FE->0x01FE flag=1
+client level=info t=230141 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=0
+client level=info t=230141 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=230141 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=7936 dirty=0 receipt=0
+client level=info t=230157 ev=retail site=69 text=world_controller:state:activity_setup: 'NOJIP' flow, waiting. posse_peers_not_ready_sanitized=0, posse_peers_not_ready=0
+client level=info t=230172 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=230172 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=0
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623107
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623108
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623109
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623110
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623111
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623112
+server level=warn t=230172 ev=mission_script stage=attach result=no_activity_link session=11433003384888623113
+client level=info t=230172 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=230172 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=0
+server level=info t=230922 ev=ws701 stage=profile_setup result=complete
+server level=info t=230922 ev=activity stage=writeback result=ok world_state=1
+client level=info t=230985 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [1000] ms in world controller state: [32] name: [setup:activity_host_setup]
+client level=info t=230985 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:prologue_intro_loading' for reason 'unavailable'.
+client level=info t=230985 ev=retail site=70 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=231032 ev=bubbleauth stage=decode result=ok
+client level=info t=231032 ev=bubbleauth stage=force result=ok
+client level=info t=231063 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=231063 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=0
+client level=info t=231125 ev=retail site=71 text=world_controller:task_manager: Completed task 'ENUM(0)' after '147ms'.
+client level=info t=231125 ev=retail site=70 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=231172 ev=retail site=71 text=world_controller:task_manager: Completed task 'ENUM(1)' after '45ms'.
+client level=info t=231172 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [192] ms in world controller state: [33] name: [setup:prologue_intro_loading]
+client level=info t=231172 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:orbit_outro' for reason 'unavailable'.
+client level=info t=231766 ev=nettick stage=sample latch=1 callbacks=45006
+client level=info t=232141 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=232141 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=7936 dirty=0 receipt=0
+client level=info t=233125 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=233125 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=0
+client level=info t=233766 ev=nettick stage=sample latch=1 callbacks=45531
+client level=info t=234141 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=234141 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=7936 dirty=0 receipt=0
+client level=info t=235766 ev=nettick stage=sample latch=1 callbacks=45883
+client level=info t=235985 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [4814] ms in world controller state: [34] name: [setup:orbit_outro]
+client level=info t=235985 ev=retail site=3 text=world_controller:state_manager: Entering state 'setup:activity_world_transition' for reason 'unavailable'.
+client level=info t=235985 ev=retail site=72 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=235985 ev=retail site=72 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=235985 ev=retail site=73 text=world_controller:task_manager: Completed task 'ENUM(1)' after '0ms'.
+client level=info t=236250 ev=bootflow stage=owner_slot result=forced was=0 now=1
+client level=info t=236250 ev=retail site=23 text=world_controller: successfully changed world to: eden_freeroam
+client level=info t=236250 ev=retail site=74 text=networking:update: *** it has been 262 milliseconds since the last network update (longest expected: '500')
+client level=info t=236250 ev=retail site=73 text=world_controller:task_manager: Completed task 'ENUM(0)' after '262ms'.
+client level=info t=236250 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [262] ms in world controller state: [35] name: [setup:activity_world_transition]
+client level=info t=236250 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:initial_slice_set_loading' for reason 'unavailable'.
+client level=info t=236250 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=236250 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(1)'.
+client level=info t=236250 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(4)'.
+client level=info t=236250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=236250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=7936 dirty=1 receipt=1
+server level=info t=236266 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=295 b0=0x00
+server level=info t=236266 ev=gameplay stage=response result=ok wordb=1 signon=0
+client level=info t=236266 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(1)' after '6ms'.
+client level=info t=236266 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'disabled' to 'initial_slice_set_precaching'.
+client level=info t=236266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(2)'.
+client level=info t=236266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(3)'.
+client level=info t=236266 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(4)' after '7ms'.
+client level=info t=236266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(6)'.
+client level=info t=236266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(7)'.
+client level=info t=236266 ev=bootflow stage=region result=forced slice_set=160
+client level=info t=236266 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:initial_slice_set' to 'PRV160.1 (HASH: 0x4542380a)'; token advanced to 001
+client level=info t=236266 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=236266 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(0)' after '11ms'.
+client level=info t=236266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(5)'.
+server level=info t=236282 ev=gameplay stage=advertise result=ok region=160 region_source=reported ambassador_slot=1
+server level=info t=236313 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=128 b0=0x00
+server level=info t=236313 ev=gameplay stage=connect result=ok peer=2003 local=0x00000001 remote=0x00000000 rebuilt=0
+server level=info t=236313 ev=gameplay stage=establish result=queued local=0x00000001 remote=0x00000000
+client level=info t=236313 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=236313 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=1
+client level=info t=236313 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=236313 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=1
+server level=info t=236328 ev=ws701 stage=profile_setup result=complete
+server level=info t=236328 ev=activity stage=writeback result=ok world_state=1
+client level=info t=236469 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(6)' after '198ms'.
+client level=info t=237000 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(5)' after '725ms'.
+server level=info t=237328 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=51 b0=0x00
+server level=info t=237328 ev=gameplay stage=message result=ok id=8 peerstage=5
+server level=info t=237328 ev=gameplay stage=sendqueue result=cleared packet=1 base=5 entries=0
+server level=info t=237360 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=1166 b0=0x00
+server level=info t=237360 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=237360 ev=gameplay stage=view result=queued remote=1 local=1 token=0x9EAA300100200001 list=0
+server level=info t=237407 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=237407 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=237407 ev=gameplay stage=view result=queued remote=2 local=2 token=0x9EAA300100200001 list=15
+server level=info t=237407 ev=gameplay stage=sendqueue result=cleared packet=7 base=7 entries=0
+server level=info t=237453 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237453 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=237453 ev=gameplay stage=view result=queued remote=3 local=3 token=0x9EAA300100200001 list=0
+server level=info t=237453 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=237453 ev=gameplay stage=view result=queued remote=4 local=4 token=0x9EAA300100200001 list=0
+server level=info t=237453 ev=gameplay stage=sendqueue result=cleared packet=8 base=8 entries=0
+server level=info t=237516 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=198 b0=0x00
+server level=info t=237516 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=warn t=237532 ev=gameplay stage=view result=refused remote=5 local=0 token=0x9EAA300100200001 list=0
+server level=info t=237563 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=237563 ev=gameplay stage=sendqueue result=cleared packet=9 base=9 entries=0
+server level=info t=237610 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237657 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237719 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+client level=info t=237766 ev=nettick stage=sample latch=1 callbacks=46343
+server level=info t=237782 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237828 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=237875 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237922 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=237985 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238032 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238094 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238141 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238188 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238235 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+client level=info t=238250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=238250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=238297 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238344 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238407 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238453 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238516 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238563 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238610 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238657 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238719 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=238766 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238813 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238875 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=238922 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=238985 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239032 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239094 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=222 b0=0x00
+server level=info t=239094 ev=gameplay stage=message result=ok id=4 peerstage=5
+server level=info t=239157 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=198 b0=0x00
+server level=info t=239203 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239250 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239297 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239360 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239407 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=206 b0=0x00
+server level=info t=239453 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=239516 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=239578 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239625 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=239688 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=286 b0=0x00
+server level=info t=239750 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=214 b0=0x00
+client level=info t=239766 ev=nettick stage=sample latch=1 callbacks=46808
+server level=info t=239813 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=206 b0=0x00
+server level=info t=239907 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=318 b0=0x00
+client level=info t=239938 ev=retail site=78 text=networking:bandwidth: min_channels: 0 max channels: 1 max bps: 37216 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=239938 ev=retail site=79 text=networking:bandwidth: machine [4A:1A:A7:07:D1:34:A6A5] longest reception gap [-1ms] longest ack gap [-1ms] pct loss [0.00] disc count [0] sps [18] rps [18] bh: [y].
+server level=info t=239938 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240016 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240063 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240110 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240157 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240203 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+client level=info t=240250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=240250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=240250 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=174 b0=0x00
+server level=info t=240313 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240375 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240422 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240516 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=310 b0=0x00
+server level=info t=240563 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=182 b0=0x00
+server level=info t=240610 ev=gameplay stage=receive result=ok from=0x7F000001:2003 bytes=190 b0=0x00
+server level=info t=240860 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=241188 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Incoming packet read result summary - 8 ok, 0 discard, 68 discard-expected, 0 corrupt
+client level=info t=241188 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Outgoing packet delivery summary - 71 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=241188 ev=retail site=82 text=networking:stream_manager:retail: # 0 rx17.5/rxbps10.1kb tx17.0/txbps31.9kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=241188 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=info t=241266 ev=retail site=84 text=world_controller:state:activity:initial_slice_set_loading: Timeout entering the prologue-filler (given 5000ms).
+client level=info t=241266 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(9)'.
+client level=info t=241766 ev=nettick stage=sample latch=1 callbacks=47350
+client level=info t=241766 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(2)' after '5501ms'.
+client level=info t=241969 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(3)' after '5701ms'.
+client level=info t=241969 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'initial_slice_set_precaching' to 'initial_slice_set_instantion'.
+client level=info t=241969 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(8)'.
+client level=info t=241985 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(8)' after '16ms'.
+client level=info t=241985 ev=retail site=48 text=world_controller:slice_set_transition_manager: Stopping transition of type 'transitioning:initial_slice_set' due to completed
+client level=info t=241985 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=242016 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=242016 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=1
+client level=info t=242032 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(9)' after '762ms'.
+client level=info t=242032 ev=retail site=75 text=world_controller:task_manager: Started   task 'ENUM(10)'.
+client level=info t=242032 ev=retail site=76 text=world_controller:task_manager: Completed task 'ENUM(10)' after '0ms'.
+client level=info t=242032 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [5785] ms in world controller state: [36] name: [activity:initial_slice_set_loading]
+client level=info t=242032 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:physics_join' for reason 'unavailable'.
+client level=info t=242032 ev=retail site=85 text=world_controller:task_manager: Started   task 'ENUM(0)'.
+client level=info t=242047 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=242047 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=1
+client level=info t=242250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=242250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=243516 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=243766 ev=nettick stage=sample latch=1 callbacks=47923
+client level=info t=244250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=244250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=245766 ev=nettick stage=sample latch=1 callbacks=48517
+client level=info t=246250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=246250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=246641 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=247766 ev=nettick stage=sample latch=1 callbacks=49136
+client level=info t=248078 ev=retail site=86 text=world_controller:task_manager: Completed task 'ENUM(0)' after '6039ms'.
+client level=info t=248078 ev=retail site=17 text=world_controller:retail_datamine: Total time spent: [6039] ms in world controller state: [37] name: [activity:physics_join]
+client level=info t=248078 ev=retail site=3 text=world_controller:state_manager: Entering state 'activity:in_world' for reason 'unavailable'.
+client level=info t=248078 ev=retail site=87 text=world_controller:state:in_world: Starting activity '0x00ff (HASH(0x11882989))(type: HASH(0x5ec025c8))(grognok: nadir_endgame)(destination: HASH(0x9bb2169b))(nonce: 4736013A-A76BAE52) for reason 'ENUM(0)'(override: nadir_endgame)'.
+client level=info t=248078 ev=retail site=11 text=world_controller:retail_datamine: Timed operation: [ENUM(17)], took: [18191 ms], average: [18191.000000 ms], min: [18191.000000], max: [18191.000000], count: [1]
+client level=info t=248078 ev=retail site=77 text=networking:online:matchmaking:bungie: The activity player count '26' > public slice-set player count '9' (this is a content error), fixing up values to avoid asserts but the content needs to be fixed.
+client level=info t=248125 ev=retail site=45 text=world_controller:slice_set_transition_manager: Mode changed from 'initial_slice_set_instantion' to 'fully_enabled'.
+client level=info t=248250 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=248250 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=249110 ev=ws701 stage=profile_setup result=complete
+server level=info t=249110 ev=activity stage=writeback result=ok world_state=8
+server level=info t=249735 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=249766 ev=nettick stage=sample latch=1 callbacks=49518
+client level=info t=250078 ev=retail site=88 text=networking:logic:life_cycle:life_cycle_component_gather: we should be gathering, but our qos has not been set!
+client level=info t=250110 ev=bootflow stage=region result=forced slice_set=136
+client level=info t=250110 ev=retail site=47 text=world_controller:slice_set_transition_manager: Starting a new transition of type 'transitioning:normal_z_leg' to 'PRV136.1 (HASH: 0x299009a8)'; token advanced to 002
+server level=info t=250172 ev=gameplay stage=activityhost result=allocated session=0x9EAA30010020000A group=0x8EF59D3D14A37442 generation=9 port=30992 held=9
+server level=warn t=250188 ev=mission_script stage=attach result=no_activity_link session=11433003384888623114
+client level=info t=250266 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=250266 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=251766 ev=nettick stage=sample latch=1 callbacks=49721
+server level=info t=252219 ev=gameplay stage=advertise result=ok region=136 region_source=reported ambassador_slot=1
+client level=info t=252250 ev=probe stage=msg12 result=received client=0x1981BE1F980 slot=0 label=PRIVATE CURRENT member=0x35F900ECFC25A1B0 status=0x01FE->0x01FE flag=1
+client level=info t=252250 ev=probe stage=bind client=0x1981BE1F980 established=0x9EAA300100200001 slotrec=0x198032FD9A0 roster=0x198C3E6BC80 receipt=1
+client level=info t=252266 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=252266 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=252266 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Incoming packet read result summary - 0 ok, 0 discard, 112 discard-expected, 0 corrupt
+client level=info t=252266 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30976#bh64] Outgoing packet delivery summary - 113 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=252266 ev=retail site=89 text=networking:channel: channel dir:127.0.0.1(id=0):30976#bh64(id '0') (ra: ''dir:127.0.0.1(id=0):30976'') state change connected -> closed
+client level=info t=252266 ev=retail site=90 text=networking:channel_manager: channel 'dir:127.0.0.1(id=0):30976#bh64' (0): channel closed (reason=channel-manager-owners-released) because 'dir:127.0.0.1(id=0):30976' can't be reached, resetting security
+server level=info t=252282 ev=gameplay stage=peer result=closed reason=10
+server level=info t=252282 ev=gameplay stage=response result=ok wordb=2 signon=0
+server level=info t=252313 ev=gameplay stage=connect result=ok peer=2003 local=0x00000002 remote=0x00000004 rebuilt=0
+server level=info t=252313 ev=gameplay stage=establish result=queued local=0x00000002 remote=0x00000004
+server level=info t=253328 ev=gameplay stage=message result=ok id=8 peerstage=5
+server level=info t=253328 ev=gameplay stage=sendqueue result=cleared packet=1 base=5 entries=0
+server level=info t=253375 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253375 ev=gameplay stage=view result=queued remote=1 local=1 token=0x9EAA300100200001 list=0
+server level=info t=253422 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253422 ev=gameplay stage=view result=queued remote=2 local=2 token=0x9EAA300100200001 list=15
+server level=info t=253422 ev=gameplay stage=sendqueue result=cleared packet=7 base=7 entries=0
+server level=info t=253485 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253485 ev=gameplay stage=view result=queued remote=3 local=3 token=0x9EAA300100200001 list=0
+server level=info t=253485 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=info t=253485 ev=gameplay stage=view result=queued remote=4 local=4 token=0x9EAA300100200001 list=0
+server level=info t=253485 ev=gameplay stage=sendqueue result=cleared packet=8 base=8 entries=0
+server level=info t=253547 ev=gameplay stage=message result=ok id=40 peerstage=5
+server level=warn t=253547 ev=gameplay stage=view result=refused remote=5 local=0 token=0x9EAA300100200001 list=0
+server level=info t=253547 ev=gameplay stage=sendqueue result=cleared packet=9 base=9 entries=0
+client level=info t=253766 ev=nettick stage=sample latch=1 callbacks=49933
+client level=info t=254282 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=254282 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=255250 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=255782 ev=nettick stage=sample latch=1 callbacks=50125
+client level=info t=256297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=256297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=257297 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=257782 ev=nettick stage=sample latch=1 callbacks=50325
+client level=info t=258297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=258297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=259782 ev=nettick stage=sample latch=1 callbacks=50515
+client level=info t=260297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=260297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=260407 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=261782 ev=nettick stage=sample latch=1 callbacks=50716
+server level=info t=262282 ev=gameplay stage=association result=timeout
+client level=info t=262297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=262297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=263532 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=263782 ev=nettick stage=sample latch=1 callbacks=50913
+client level=info t=264297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=264297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=265782 ev=nettick stage=sample latch=1 callbacks=51110
+client level=info t=266297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=266297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=266625 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=267797 ev=nettick stage=sample latch=1 callbacks=51320
+client level=info t=268297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=268297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=269750 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=269797 ev=nettick stage=sample latch=1 callbacks=51505
+client level=info t=270297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=270297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=271797 ev=nettick stage=sample latch=1 callbacks=51700
+client level=info t=272297 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=272297 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=272860 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=273797 ev=nettick stage=sample latch=1 callbacks=51943
+client level=info t=274313 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=274313 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=275797 ev=nettick stage=sample latch=1 callbacks=52162
+server level=info t=275953 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=276313 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=276313 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=277797 ev=nettick stage=sample latch=1 callbacks=52358
+client level=info t=278313 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=278313 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+server level=info t=279063 ev=gameplay stage=message result=ok id=4 peerstage=5
+server level=info t=279141 ev=ws701 stage=profile_setup result=complete
+server level=info t=279157 ev=activity stage=writeback result=ok world_state=8
+client level=info t=279797 ev=nettick stage=sample latch=1 callbacks=52529
+client level=info t=280313 ev=probe stage=hosttail client=0x1981BE1F980 b=00000000000000000000000000000000000000000000000000000000000000000000000000000000FFFFFFFF00000000
+client level=info t=280313 ev=probe stage=grant client=0x1981BE1F980 status=0x01FE pending=0 dirty=0 receipt=1
+client level=info t=281797 ev=nettick stage=sample latch=1 callbacks=52678
+server level=info t=282157 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=283797 ev=nettick stage=sample latch=1 callbacks=52920
+server level=info t=285266 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=285797 ev=nettick stage=sample latch=1 callbacks=53115
+client level=info t=287797 ev=nettick stage=sample latch=1 callbacks=53334
+server level=info t=288375 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=289797 ev=nettick stage=sample latch=1 callbacks=53532
+server level=info t=291453 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=291797 ev=nettick stage=sample latch=1 callbacks=53730
+client level=info t=293797 ev=nettick stage=sample latch=1 callbacks=53926
+server level=info t=294563 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=295797 ev=nettick stage=sample latch=1 callbacks=54123
+server level=info t=297672 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=297797 ev=nettick stage=sample latch=1 callbacks=54319
+client level=info t=299797 ev=nettick stage=sample latch=1 callbacks=54585
+client level=info t=299938 ev=retail site=78 text=networking:bandwidth: min_channels: 0 max channels: 1 max bps: 60192 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=299938 ev=retail site=79 text=networking:bandwidth: machine [42:74:A3:14:3D:9D:F58E] longest reception gap [121ms] longest ack gap [121ms] pct loss [0.00] disc count [0] sps [10] rps [9] bh: [y].
+server level=info t=300766 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=301188 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Incoming packet read result summary - 8 ok, 0 discard, 501 discard-expected, 0 corrupt
+client level=info t=301188 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Outgoing packet delivery summary - 507 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=301188 ev=retail site=82 text=networking:stream_manager:retail: # 1 rx10.0/rxbps 5.8kb tx10.0/txbps32.8kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=301188 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=info t=301797 ev=nettick stage=sample latch=1 callbacks=54781
+client level=info t=303797 ev=nettick stage=sample latch=1 callbacks=54977
+server level=info t=303860 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=305797 ev=nettick stage=sample latch=1 callbacks=55172
+server level=info t=306985 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=307797 ev=nettick stage=sample latch=1 callbacks=55369
+server level=info t=309297 ev=ws701 stage=profile_setup result=complete
+server level=info t=309297 ev=activity stage=writeback result=ok world_state=8
+client level=info t=309797 ev=nettick stage=sample latch=1 callbacks=55563
+server level=info t=310078 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=311797 ev=nettick stage=sample latch=1 callbacks=55760
+server level=info t=313172 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=313797 ev=nettick stage=sample latch=1 callbacks=55984
+client level=info t=315797 ev=nettick stage=sample latch=1 callbacks=56181
+server level=info t=316266 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=317797 ev=nettick stage=sample latch=1 callbacks=56351
+server level=info t=319360 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=319797 ev=nettick stage=sample latch=1 callbacks=56575
+client level=info t=321797 ev=nettick stage=sample latch=1 callbacks=56814
+server level=info t=322469 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=323797 ev=nettick stage=sample latch=1 callbacks=57001
+server level=info t=325578 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=325797 ev=nettick stage=sample latch=1 callbacks=57193
+client level=info t=327797 ev=nettick stage=sample latch=1 callbacks=57395
+server level=info t=328657 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=329797 ev=nettick stage=sample latch=1 callbacks=57591
+server level=info t=331766 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=331797 ev=nettick stage=sample latch=1 callbacks=57787
+client level=warn t=333250 ev=vr.probe state on=1 yaw=0.0 height=0.00 fov=0.0
+client level=warn t=333250 ev=vr.probe block player=0 addr=0x19803265810
+client level=warn t=333282 ev=vr.xr load path=C:\Games\Sunrise\SunriseVR_MockXR.dll
+client level=warn t=333282 ev=vr.xr unhook module=kernelbase.dll export=LoadLibraryExW result=ok bytes=2
+client level=warn t=333282 ev=vr.xr unhook module=kernel32.dll export=GetProcAddress result=ok bytes=2
+client level=warn t=333282 ev=vr.xr ldr_notify callback=destiny2.exe+0x3AB4B0 foreign=1
+client level=warn t=333282 ev=vr.xr ldr_notify result=ok seen=1 neutralised=1
+client level=warn t=333282 ev=vr.xr load result=ok interface=1 runtime_api=1.0.31
+client level=warn t=333282 ev=vr.xr views count=2 eye=1824x1968 runtime=DishonoredVR Mock Runtime
+client level=warn t=333282 ev=vr.xr bindings profile=/interaction_profiles/oculus/touch_controller count=15 result=0
+client level=warn t=333282 ev=vr.xr bindings profile=/interaction_profiles/khr/simple_controller count=5 result=0
+client level=warn t=333282 ev=vr.xr actions result=ok spaces=1
+client level=warn t=333282 ev=vr.xr init result=ok runtime=DishonoredVR Mock Runtime
+client level=warn t=333282 ev=vr.xr session state=running
+client level=warn t=333282 ev=vr.xr eyes index=0 pos=-0.0320,1.6000,0.0000 quat=0.00000,0.01200,-0.00000,0.99993 fov_lrud=-0.9076,0.7330,0.8378,-0.8727
+client level=warn t=333282 ev=vr.xr eyes index=1 pos=0.0320,1.6000,0.0000 quat=0.00000,0.01200,-0.00000,0.99993 fov_lrud=-0.7330,0.9076,0.8378,-0.8727
+client level=warn t=333282 ev=vr.xr recentre x=0.000 y=1.600 z=0.000
+client level=warn t=333282 ev=vr.xr recentre_yaw room=0.0240
+client level=warn t=333297 ev=vr.xr swapchain result=ok size=1920x1080 source_format=28 format=29 direct=1 images=2
+client level=warn t=333297 ev=vr.weapon install result=ok getter=0x12D22C0 ptr=0x12D50F0 xform=0xD5D7F0
+client level=warn t=333297 ev=vr.weapon rule path=getter targets=D5D832 source=hand rvas=1 all=0 rules=1
+client level=warn t=333297 ev=vr.weapon defaults applied=1
+client level=info t=333797 ev=nettick stage=sample latch=1 callbacks=57960
+client level=warn t=334235 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=334594 ev=vr.weapon callers path=getter D5D832:83 B363FA:249 B3598D:83
+client level=warn t=334594 ev=vr.weapon callers path=ptr D98F49:415 D7FB5C:34 DB8CB6:83 12B0A09:83 16E8861:83 D8F242:83 D8B348:83 D8B9B5:83 D8492B:20 12B2284:10 D2F672:10 F4276C:2 D7FF2C:5
+client level=warn t=334594 ev=vr.weapon callers path=xform D5896F:83
+client level=warn t=334594 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.324,-0.946,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.325,-0.946,0.000 out_fov=1.8151
+server level=info t=334875 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=335078 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=335797 ev=nettick stage=sample latch=1 callbacks=58097
+client level=warn t=336032 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=336032 ev=vr.xr pose fwd=-0.513,-0.858,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=336032 ev=vr.body anchor=-1.8095 head_yaw=-0.3002 body_yaw=-2.0652 error=-0.0338 counts_per_rad=579 servo=1
+client level=warn t=336032 ev=vr.pad stats injected=0 held=0 mouse=154,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=336953 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=337313 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=337313 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:48 12B2284:22 D2F672:22 F4276C:2 D7FF2C:12
+client level=warn t=337313 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=337313 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.700,-0.714,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.685,-0.728,0.000 out_fov=1.8151
+client level=warn t=337782 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=337782 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=337797 ev=nettick stage=sample latch=1 callbacks=58232
+server level=info t=337969 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=338625 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=338625 ev=vr.xr pose fwd=0.219,-0.976,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=338625 ev=vr.body anchor=-1.8095 head_yaw=0.4594 body_yaw=-1.3810 error=0.0237 counts_per_rad=579 servo=1
+client level=warn t=338625 ev=vr.pad stats injected=0 held=0 mouse=-252,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=339282 ev=ws701 stage=profile_setup result=complete
+server level=info t=339282 ev=activity stage=writeback result=ok world_state=8
+client level=warn t=339469 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=339797 ev=nettick stage=sample latch=1 callbacks=58373
+client level=warn t=339860 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=339860 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:3 D7FF2C:11
+client level=warn t=339860 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=339860 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.058,-0.998,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.027,-1.000,0.000 out_fov=1.8151
+client level=warn t=340360 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=341078 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=341219 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=341219 ev=vr.xr pose fwd=-0.754,-0.657,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=341219 ev=vr.body anchor=-1.8095 head_yaw=-0.6148 body_yaw=-2.4108 error=-0.0113 counts_per_rad=579 servo=1
+client level=warn t=341219 ev=vr.pad stats injected=0 held=0 mouse=350,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=341797 ev=nettick stage=sample latch=1 callbacks=58513
+client level=warn t=342047 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=342047 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=342407 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=342407 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=342407 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=342422 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.319,-0.948,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.286,-0.958,0.000 out_fov=1.8151
+client level=warn t=342891 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=343703 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=343703 ev=vr.xr pose fwd=0.308,-0.951,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=343703 ev=vr.body anchor=-1.8095 head_yaw=0.5522 body_yaw=-1.2427 error=-0.0113 counts_per_rad=579 servo=1
+client level=warn t=343703 ev=vr.pad stats injected=0 held=0 mouse=-326,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=343797 ev=nettick stage=sample latch=1 callbacks=58658
+server level=info t=344172 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=344547 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=344907 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=344907 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:11
+client level=warn t=344907 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=344922 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.452,-0.892,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.482,-0.876,0.000 out_fov=1.8151
+client level=warn t=345407 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=345797 ev=nettick stage=sample latch=1 callbacks=58798
+client level=warn t=346407 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=346407 ev=vr.xr pose fwd=-0.648,-0.761,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=346407 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=346407 ev=vr.body anchor=-1.8095 head_yaw=-0.4666 body_yaw=-2.3071 error=0.0230 counts_per_rad=579 servo=1
+client level=warn t=346407 ev=vr.pad stats injected=0 held=0 mouse=284,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=347266 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=347422 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=347797 ev=nettick stage=sample latch=1 callbacks=58917
+client level=warn t=347797 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=347797 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:72 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:46 12B2284:24 D2F672:24 F4276C:3 D7FF2C:11
+client level=warn t=347797 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=347813 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.168,-0.986,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.195,-0.981,0.000 out_fov=1.8151
+client level=warn t=348282 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=349110 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=349110 ev=vr.xr pose fwd=-0.045,-0.999,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=349110 ev=vr.body anchor=-1.8095 head_yaw=0.1936 body_yaw=-1.5710 error=-0.0337 counts_per_rad=579 servo=1
+client level=warn t=349110 ev=vr.pad stats injected=0 held=0 mouse=-132,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=349797 ev=nettick stage=sample latch=1 callbacks=59061
+client level=warn t=349938 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=350313 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=350313 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=350313 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=350328 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.739,-0.674,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.748,-0.664,0.000 out_fov=1.8151
+server level=info t=350375 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=350797 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=350797 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=351625 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=351625 ev=vr.xr pose fwd=-0.209,-0.978,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=351625 ev=vr.body anchor=-1.8095 head_yaw=0.0283 body_yaw=-1.8285 error=0.0353 counts_per_rad=579 servo=1
+client level=warn t=351625 ev=vr.pad stats injected=0 held=0 mouse=4,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=351797 ev=nettick stage=sample latch=1 callbacks=59203
+client level=warn t=352485 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=352828 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=352828 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:46 12B2284:20 D2F672:20 F4276C:3 D7FF2C:12
+client level=warn t=352828 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=352828 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.324,-0.946,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.318,-0.948,0.000 out_fov=1.8151
+client level=warn t=353297 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=353469 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=353797 ev=nettick stage=sample latch=1 callbacks=59347
+client level=warn t=354141 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=354141 ev=vr.xr pose fwd=-0.543,-0.840,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=354141 ev=vr.body anchor=-1.8095 head_yaw=-0.3354 body_yaw=-2.1015 error=-0.0330 counts_per_rad=579 servo=1
+client level=warn t=354141 ev=vr.pad stats injected=0 held=0 mouse=175,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=354985 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=354985 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=355344 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=355344 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=355344 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=355360 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.683,-0.730,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.668,-0.744,0.000 out_fov=1.8151
+client level=info t=355797 ev=nettick stage=sample latch=1 callbacks=59489
+client level=warn t=355828 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=356578 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=356657 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=356657 ev=vr.xr pose fwd=0.241,-0.970,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=356657 ev=vr.body anchor=-1.8095 head_yaw=0.4822 body_yaw=-1.3568 error=0.0230 counts_per_rad=579 servo=1
+client level=warn t=356657 ev=vr.pad stats injected=0 held=0 mouse=-266,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=357485 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=357797 ev=nettick stage=sample latch=1 callbacks=59633
+client level=warn t=357860 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=357860 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:68 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:11
+client level=warn t=357860 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=357860 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.024,-1.000,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.008,-1.000,0.000 out_fov=1.8151
+client level=warn t=358328 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=359203 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=359203 ev=vr.xr pose fwd=-0.757,-0.653,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=359203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=359203 ev=vr.body anchor=-1.8095 head_yaw=-0.6205 body_yaw=-2.4194 error=-0.0091 counts_per_rad=579 servo=1
+client level=warn t=359203 ev=vr.pad stats injected=0 held=0 mouse=353,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=359672 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=359797 ev=nettick stage=sample latch=1 callbacks=59771
+client level=info t=359953 ev=retail site=78 text=networking:bandwidth: min_channels: 1 max channels: 1 max bps: 35232 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=359953 ev=retail site=79 text=networking:bandwidth: machine [42:74:A3:14:3D:9D:F58E] longest reception gap [128ms] longest ack gap [128ms] pct loss [0.00] disc count [0] sps [10] rps [10] bh: [y].
+client level=warn t=360157 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=360594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=360594 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:70 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:45 12B2284:22 D2F672:22 F4276C:3 D7FF2C:11
+client level=warn t=360594 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=360610 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.281,-0.960,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.248,-0.969,0.000 out_fov=1.8151
+client level=warn t=361141 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=361203 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Incoming packet read result summary - 0 ok, 0 discard, 600 discard-expected, 0 corrupt
+client level=info t=361203 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Outgoing packet delivery summary - 600 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=361203 ev=retail site=82 text=networking:stream_manager:retail: # 1 rx10.0/rxbps 5.8kb tx10.0/txbps32.7kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=361203 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=info t=361797 ev=nettick stage=sample latch=1 callbacks=59897
+client level=warn t=362000 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=362000 ev=vr.xr pose fwd=0.296,-0.955,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=362000 ev=vr.body anchor=-1.8095 head_yaw=0.5396 body_yaw=-1.2548 error=-0.0110 counts_per_rad=579 servo=1
+client level=warn t=362000 ev=vr.pad stats injected=0 held=0 mouse=-319,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=362766 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=362844 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=363219 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=363219 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:47 12B2284:22 D2F672:22 F4276C:2 D7FF2C:12
+client level=warn t=363219 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=363219 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.484,-0.875,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.514,-0.858,0.000 out_fov=1.8151
+client level=warn t=363750 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=363750 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=363797 ev=nettick stage=sample latch=1 callbacks=60034
+client level=warn t=364610 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=364610 ev=vr.xr pose fwd=-0.626,-0.779,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=364610 ev=vr.body anchor=-1.8095 head_yaw=-0.4383 body_yaw=-2.2812 error=0.0248 counts_per_rad=579 servo=1
+client level=warn t=364610 ev=vr.pad stats injected=0 held=0 mouse=268,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=365469 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=365797 ev=nettick stage=sample latch=1 callbacks=60173
+client level=warn t=365844 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=365844 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:3 D7FF2C:11
+client level=warn t=365844 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=365860 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.195,-0.981,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.219,-0.976,0.000 out_fov=1.8151
+server level=info t=365891 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=366344 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=367235 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=367235 ev=vr.xr pose fwd=-0.083,-0.997,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=367235 ev=vr.body anchor=-1.8095 head_yaw=0.1555 body_yaw=-1.6073 error=-0.0352 counts_per_rad=579 servo=1
+client level=warn t=367235 ev=vr.pad stats injected=0 held=0 mouse=-110,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=367797 ev=nettick stage=sample latch=1 callbacks=60309
+client level=warn t=368125 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=368125 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=368500 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=368500 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:67 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:23 D2F672:23 F4276C:3 D7FF2C:11
+client level=warn t=368500 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=368516 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.747,-0.665,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.754,-0.657,0.000 out_fov=1.8151
+server level=info t=368985 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=369063 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=369375 ev=ws701 stage=profile_setup result=complete
+server level=info t=369391 ev=activity stage=writeback result=ok world_state=8
+client level=info t=369797 ev=nettick stage=sample latch=1 callbacks=60430
+client level=warn t=370094 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=370094 ev=vr.xr pose fwd=-0.170,-0.986,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=370094 ev=vr.body anchor=-1.8095 head_yaw=0.0683 body_yaw=-1.7888 error=0.0357 counts_per_rad=579 servo=1
+client level=warn t=370094 ev=vr.pad stats injected=0 held=0 mouse=-19,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=370953 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=371328 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=371328 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:71 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:45 12B2284:22 D2F672:22 F4276C:2 D7FF2C:11
+client level=warn t=371328 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=371328 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.319,-0.948,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.308,-0.951,0.000 out_fov=1.8151
+client level=info t=371797 ev=nettick stage=sample latch=1 callbacks=60568
+client level=warn t=371844 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=372078 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=372703 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=372703 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=372703 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=372703 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.9339 error=0.1004 counts_per_rad=579 servo=1
+client level=warn t=372703 ev=vr.pad stats injected=0 held=0 mouse=52,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=373594 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=373797 ev=nettick stage=sample latch=1 callbacks=60706
+client level=warn t=373938 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=373938 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:47 12B2284:22 D2F672:22 F4276C:3 D7FF2C:12
+client level=warn t=373938 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=373953 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.267,-0.964,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=374407 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=375172 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=375219 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=375219 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=375219 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8406 error=0.0071 counts_per_rad=579 servo=1
+client level=warn t=375219 ev=vr.pad stats injected=0 held=0 mouse=18,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=375797 ev=nettick stage=sample latch=1 callbacks=60853
+client level=warn t=376032 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=376391 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=376391 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=376391 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=376391 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=-0.267,-0.964,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=376844 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=376844 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=377672 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=377672 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=377672 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8406 error=0.0071 counts_per_rad=579 servo=1
+client level=warn t=377672 ev=vr.pad stats injected=0 held=0 mouse=18,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=377797 ev=nettick stage=sample latch=1 callbacks=61000
+server level=info t=378282 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=378485 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=378844 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=378844 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:67 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:11
+client level=warn t=378844 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=378844 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.256,-0.967,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=379297 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=379797 ev=nettick stage=sample latch=1 callbacks=61148
+client level=warn t=380125 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=380125 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=380125 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=380125 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=380953 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=380953 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=381297 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=381297 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:71 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=381297 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=381313 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+server level=info t=381391 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=381750 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=381797 ev=nettick stage=sample latch=1 callbacks=61294
+client level=warn t=382563 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=382563 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=382563 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=382563 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=383532 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=383797 ev=nettick stage=sample latch=1 callbacks=61429
+client level=warn t=383907 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=383907 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:48 12B2284:21 D2F672:21 F4276C:3 D7FF2C:12
+client level=warn t=383907 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=383922 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=384422 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=384500 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=385219 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=385219 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=385219 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=385219 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=385219 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=385797 ev=nettick stage=sample latch=1 callbacks=61574
+client level=warn t=386032 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=386391 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=386391 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=386391 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=386391 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=386860 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=387578 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=387657 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=387657 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=387657 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=387657 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=387797 ev=nettick stage=sample latch=1 callbacks=61721
+client level=warn t=388469 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=388813 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=388813 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:11
+client level=warn t=388813 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=388828 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=389266 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=389266 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=389797 ev=nettick stage=sample latch=1 callbacks=61872
+client level=warn t=390047 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=390047 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=390047 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=390047 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=390703 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=390860 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=391203 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=391203 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:70 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=391203 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=391203 ev=vr.probe pose in_pos=625.50,300.01,41.80 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.50,300.01,41.80 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=391703 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=391797 ev=nettick stage=sample latch=1 callbacks=62018
+client level=warn t=392563 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=392563 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=392563 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=392563 ev=vr.pad stats injected=0 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=393453 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=393453 ev=vr.xr submit layers=1 result=0 fov=1.8151
+server level=info t=393782 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=393797 ev=nettick stage=sample latch=1 callbacks=62152
+client level=warn t=393875 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=393875 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:68 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:47 12B2284:21 D2F672:21 F4276C:3 D7FF2C:11
+client level=warn t=393875 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=393891 ev=vr.probe pose in_pos=625.75,299.75,41.84 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=625.75,299.75,41.84 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=394375 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=395235 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=395235 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=395235 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=395235 ev=vr.pad stats injected=1 held=1 mouse=-588,0 move=0.00,1.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=395797 ev=nettick stage=sample latch=1 callbacks=62291
+client level=warn t=396063 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=396407 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=396407 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:60 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:41 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=396407 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=396407 ev=vr.probe pose in_pos=636.39,291.66,45.47 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=636.39,291.66,45.47 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=396875 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=396891 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=397657 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=397657 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=397657 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=397657 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=397657 ev=vr.pad stats injected=1 held=1 mouse=-588,0 move=0.00,1.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=397797 ev=nettick stage=sample latch=1 callbacks=62441
+client level=warn t=398453 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=398797 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=398797 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:56 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:36 12B2284:20 D2F672:20 F4276C:3 D7FF2C:9
+client level=warn t=398797 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=398813 ev=vr.probe pose in_pos=643.60,280.20,47.50 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=643.60,280.20,47.50 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=399250 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=399360 ev=ws701 stage=profile_setup result=complete
+server level=info t=399360 ev=activity stage=writeback result=ok world_state=8
+client level=info t=399797 ev=nettick stage=sample latch=1 callbacks=62592
+server level=info t=399985 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=400063 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=400063 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=400063 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=400063 ev=vr.pad stats injected=1 held=1 mouse=-588,0 move=0.00,1.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=400891 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=401235 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=401235 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:58 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:40 12B2284:20 D2F672:20 F4276C:2 D7FF2C:9
+client level=warn t=401235 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=401250 ev=vr.probe pose in_pos=643.03,269.48,47.90 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=643.03,269.48,47.90 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=warn t=401703 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=401703 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=401797 ev=nettick stage=sample latch=1 callbacks=62739
+client level=warn t=402516 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=402516 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=402516 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=402516 ev=vr.pad stats injected=2 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=403078 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=403313 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=403657 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=403657 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:12
+client level=warn t=403657 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=403672 ev=vr.probe pose in_pos=642.43,267.25,48.16 in_fwd=0.701,-0.713,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.16 out_fwd=0.706,-0.708,0.000 out_fov=1.8151
+client level=info t=403797 ev=nettick stage=sample latch=1 callbacks=62887
+client level=warn t=404110 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=404891 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=404891 ev=vr.xr pose fwd=0.706,-0.708,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=404891 ev=vr.body anchor=-1.8095 head_yaw=1.0232 body_yaw=-0.7935 error=0.0072 counts_per_rad=579 servo=1
+client level=warn t=404891 ev=vr.pad stats injected=2 held=0 mouse=-588,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=405703 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=405703 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=info t=405797 ev=nettick stage=sample latch=1 callbacks=63038
+client level=warn t=406125 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=406125 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:67 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=406125 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=406141 ev=vr.probe pose in_pos=642.43,267.25,48.16 in_fwd=-0.230,-0.973,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.16 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+server level=info t=406188 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=406657 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=407500 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=407500 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=407500 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=407500 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=407797 ev=nettick stage=sample latch=1 callbacks=63172
+client level=warn t=408328 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=408672 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=408672 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:65 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:41 12B2284:21 D2F672:21 F4276C:3 D7FF2C:10
+client level=warn t=408672 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=408688 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=409141 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=409391 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=409797 ev=nettick stage=sample latch=1 callbacks=63320
+client level=warn t=409953 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=409953 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=409953 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=409953 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=409953 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=410797 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=411141 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=411141 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:46 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=411141 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=411157 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=411610 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=411797 ev=nettick stage=sample latch=1 callbacks=63465
+client level=warn t=412422 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=412422 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=412422 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=412422 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=412485 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=413313 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=413719 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=413719 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:45 12B2284:21 D2F672:21 F4276C:3 D7FF2C:12
+client level=warn t=413719 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=413735 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=info t=413797 ev=nettick stage=sample latch=1 callbacks=63602
+client level=warn t=414250 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=414250 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=415094 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=415094 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=415094 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=415094 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=415610 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=info t=415797 ev=nettick stage=sample latch=1 callbacks=63740
+client level=warn t=415953 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=416313 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=416313 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:70 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=416313 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=416328 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=416797 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=417610 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=417610 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=417610 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=417610 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=417797 ev=nettick stage=sample latch=1 callbacks=63886
+client level=warn t=418438 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=418438 ev=vr.xr submit layers=1 result=0 fov=1.8151
+server level=info t=418703 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=418782 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=418782 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:68 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:3 D7FF2C:11
+client level=warn t=418782 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=418797 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=419266 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=419797 ev=nettick stage=sample latch=1 callbacks=64026
+client level=info t=419953 ev=retail site=78 text=networking:bandwidth: min_channels: 1 max channels: 1 max bps: 35424 avg cong bps: -1 low cong bps: -1 hi cong bps: -1 lat avg: -1 lat hi avg: 0 lat avg var: -1 pct loss: 0.00 pct loss hi avg: [0.00].
+client level=info t=419953 ev=retail site=79 text=networking:bandwidth: machine [42:74:A3:14:3D:9D:F58E] longest reception gap [209ms] longest ack gap [209ms] pct loss [0.00] disc count [0] sps [10] rps [10] bh: [y].
+client level=warn t=420141 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=420141 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=420141 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=420141 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=420985 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=421203 ev=retail site=80 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Incoming packet read result summary - 0 ok, 0 discard, 598 discard-expected, 0 corrupt
+client level=info t=421203 ev=retail site=81 text=networking:channel:packet_loss_stats: [dir:127.0.0.1(id=0):30992#bh64] Outgoing packet delivery summary - 598 delivered, 0 of those out-of-order, 0 lost - highest loss fraction seen 0.000
+client level=info t=421203 ev=retail site=82 text=networking:stream_manager:retail: # 1 rx10.0/rxbps 5.8kb tx10.0/txbps32.8kb cx15.0pkts/33.0cxkbps lat=  0avg,  -1cg to=9999 aloc45.0kb max513.0kbps, loss=0.00pct loss dev 2.00pct rel=N, name=                            bh64
+client level=info t=421203 ev=retail site=83 text=networking:stream_manager:retail: Local peer network quality = 1.000000/1.0, worst_axis = -1
+client level=warn t=421328 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=421328 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:47 12B2284:20 D2F672:20 F4276C:2 D7FF2C:11
+client level=warn t=421328 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=421344 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=info t=421797 ev=nettick stage=sample latch=1 callbacks=64171
+client level=warn t=421797 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=421797 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=422625 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=422625 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=422625 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=422625 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=422625 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=423453 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=423797 ev=nettick stage=sample latch=1 callbacks=64316
+client level=warn t=423813 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=423813 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:45 12B2284:21 D2F672:21 F4276C:3 D7FF2C:11
+client level=warn t=423813 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=423813 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=424266 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=424891 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=425094 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=425094 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=425094 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=425094 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=425797 ev=nettick stage=sample latch=1 callbacks=64463
+client level=warn t=425922 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=426282 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=426282 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:2 D7FF2C:12
+client level=warn t=426282 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=426297 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=426750 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=426750 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=427563 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=427563 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=427578 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=427578 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=427797 ev=nettick stage=sample latch=1 callbacks=64608
+server level=info t=428016 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=428407 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=428797 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=428797 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:10
+client level=warn t=428797 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=428797 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=429282 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=429422 ev=ws701 stage=profile_setup result=complete
+server level=info t=429422 ev=activity stage=writeback result=ok world_state=8
+client level=info t=429797 ev=nettick stage=sample latch=1 callbacks=64743
+client level=warn t=430328 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=430328 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=430328 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=430328 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+server level=info t=431094 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=431203 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=431203 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=431594 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=431594 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:66 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:23 D2F672:23 F4276C:3 D7FF2C:12
+client level=warn t=431594 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=431594 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=info t=431797 ev=nettick stage=sample latch=1 callbacks=64871
+client level=warn t=432094 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=432922 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=432922 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=432922 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=432922 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=warn t=433750 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=info t=433797 ev=nettick stage=sample latch=1 callbacks=65014
+client level=warn t=434110 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=434110 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:70 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:21 D2F672:21 F4276C:2 D7FF2C:11
+client level=warn t=434110 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=434125 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+server level=info t=434203 ev=gameplay stage=message result=ok id=4 peerstage=5
+client level=warn t=434578 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=435422 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=435422 ev=vr.xr pose fwd=-0.260,-0.966,0.000 off=0.000,0.000,0.000 fov=1.8151 aspect=1.074
+client level=warn t=435422 ev=vr.xr submit layers=1 result=0 fov=1.8151
+client level=warn t=435422 ev=vr.body anchor=-1.8095 head_yaw=-0.0240 body_yaw=-1.8268 error=-0.0067 counts_per_rad=579 servo=1
+client level=warn t=435422 ev=vr.pad stats injected=2 held=0 mouse=10,0 move=0.00,0.00 turn=0.00,0.00 trig=0.00,0.00 buttons=0x0
+client level=info t=435797 ev=nettick stage=sample latch=1 callbacks=65156
+client level=warn t=436282 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+client level=warn t=436625 ev=vr.weapon callers path=getter D5D832:180 B363FA:540 B3598D:180
+client level=warn t=436625 ev=vr.weapon callers path=ptr D98F49:900 D7FB5C:68 DB8CB6:180 12B0A09:180 16E8861:180 D8F242:180 D8B348:180 D8B9B5:180 D8492B:44 12B2284:20 D2F672:20 F4276C:3 D7FF2C:11
+client level=warn t=436625 ev=vr.weapon callers path=xform D5896F:180
+client level=warn t=436641 ev=vr.probe pose in_pos=642.43,267.25,48.18 in_fwd=-0.253,-0.967,0.000 in_fov=1.4242 out_pos=642.43,267.25,48.18 out_fwd=-0.260,-0.966,0.000 out_fov=1.8151
+client level=warn t=437078 ev=vr.xr hand yaw=-1.8335 r_valid=1 r_fwd=-0.260,-0.966,0.000 r_up=0.000,0.000,1.000 r_off=-0.271,-0.238,-0.200 l_valid=1 l_fwd=-0.260,-0.966,0.000 l_off=0.115,-0.342,-0.200 h_off=0.000,0.000,0.000
+server level=info t=437297 ev=gameplay stage=message result=ok id=4 peerstage=5

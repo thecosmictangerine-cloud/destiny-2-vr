@@ -1,0 +1,16 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 The Cosmic Tangerine
+
+The documentation in this branch (README.md, CLAUDE.md, docs/ and the logs under docs/evidence/)
+is licensed under the Creative Commons Attribution 4.0 International License.
+
+You are free to share and adapt this material for any purpose, including commercially, provided
+you give appropriate credit, link to the license, and indicate if changes were made.
+
+Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
+Human-readable summary: https://creativecommons.org/licenses/by/4.0/
+
+This license covers the documentation only. The mod source code lives on branch `vr` and is
+GPL-3.0, because it is a derivative work of Project Sunrise (https://github.com/stanuwu/Sunrise).
+See the README for the full licensing breakdown.

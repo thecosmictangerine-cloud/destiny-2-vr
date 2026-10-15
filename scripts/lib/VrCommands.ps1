@@ -16,21 +16,25 @@ function ConvertTo-Invariant([object]$Value) {
 }
 
 # Writes lines to a command file, waiting for the DLL to consume the previous one first so two
-# commands sent back to back cannot overwrite each other.
+# commands sent back to back cannot overwrite each other. File.Exists rather than Test-Path: the DLL
+# deletes the file as it consumes it, and Test-Path throws "access denied" if it looks mid-delete.
 function Send-VrFile([string]$Name, [string[]]$Lines, [int]$TimeoutMs = 4000) {
     $path = Join-Path $script:VrGameDir $Name
     $deadline = (Get-Date).AddMilliseconds($TimeoutMs)
-    while ((Test-Path $path) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 100 }
+    while ([System.IO.File]::Exists($path) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 100 }
     $enc = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($path, (($Lines -join "`n") + "`n"), $enc)
     $deadline = (Get-Date).AddMilliseconds($TimeoutMs)
-    while ((Test-Path $path) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 100 }
-    return -not (Test-Path $path)
+    while ([System.IO.File]::Exists($path) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 100 }
+    return -not [System.IO.File]::Exists($path)
 }
 
 function Send-Gpu([string[]]$Lines) { Send-VrFile 'SVR_Gpu.txt' $Lines }
 function Send-Arms([string[]]$Lines) { Send-VrFile 'SVR_Arms.txt' $Lines }
 function Send-Weapon([string[]]$Lines) { Send-VrFile 'SVR_Weapon.txt' $Lines }
+function Send-Aim([string[]]$Lines) { Send-VrFile 'SVR_Aim.txt' $Lines }
+function Send-Probe([string[]]$Lines) { Send-VrFile 'SVR_Probe.txt' $Lines }
+function Send-Ads([string[]]$Lines) { Send-VrFile 'SVR_Ads.txt' $Lines }
 
 # Reads the log without fighting the writer for the handle.
 function Read-VrLog([int]$Tail = 4000) {

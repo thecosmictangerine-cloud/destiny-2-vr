@@ -251,6 +251,10 @@
     <ClCompile Include="src\client\hooks\vr\vr_camera.cpp" />
     <ClCompile Include="src\client\hooks\vr\vr_gamepad.cpp" />
     <ClCompile Include="src\client\hooks\vr\vr_arms.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_aim.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_ads.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_prehook.cpp" />
+    <ClCompile Include="src\client\hooks\vr\vr_probe.cpp" />
     <ClCompile Include="src\client\hooks\vr\vr_d3d_slots.cpp" />
     <ClCompile Include="src\client\hooks\vr\vr_gpu.cpp" />
     <ClCompile Include="src\client\hooks\vr\vr_destination.cpp" />
@@ -1333,7 +1337,12 @@
     <ClInclude Include="src\client\hooks\vr\runtime.h" />
     <ClInclude Include="src\client\hooks\vr\vr_gamepad.h" />
     <ClInclude Include="src\client\hooks\vr\vr_math.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_two_hand.h" />
     <ClInclude Include="src\client\hooks\vr\vr_arms.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_aim.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_ads.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_prehook.h" />
+    <ClInclude Include="src\client\hooks\vr\vr_probe.h" />
     <ClInclude Include="src\client\hooks\vr\vr_d3d_slots.h" />
     <ClInclude Include="src\client\hooks\vr\vr_gpu.h" />
     <ClInclude Include="src\client\hooks\vr\vr_destination.h" />

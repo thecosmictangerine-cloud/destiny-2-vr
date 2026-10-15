@@ -39,6 +39,7 @@
 #include <string>
 
 #include "../../../core/logging/log.h"
+#include "vr_gpu.h"
 
 namespace sunrise::client::hooks::vr::xr {
 namespace {
@@ -122,6 +123,8 @@ struct Api final {
     PFN_xrGetActionStatePose getActionStatePose{};
     PFN_xrCreateActionSpace createActionSpace{};
     PFN_xrLocateSpace locateSpace{};
+    /** Optional: a runtime without haptics still gives head tracking and every input. */
+    PFN_xrApplyHapticFeedback applyHapticFeedback{};
 };
 
 constexpr std::uint32_t kViewCount = 2;
@@ -196,6 +199,9 @@ struct Actions final {
     XrAction palmR{XR_NULL_HANDLE};
     XrSpace palmSpaceL{XR_NULL_HANDLE};
     XrSpace palmSpaceR{XR_NULL_HANDLE};
+    /** Vibration outputs, one per hand; null when the runtime refused them. */
+    XrAction hapticL{XR_NULL_HANDLE};
+    XrAction hapticR{XR_NULL_HANDLE};
     bool attached{};
 };
 
@@ -285,6 +291,12 @@ bool g_shouldRender{false};
 std::atomic<float> g_renderedFov{0.0F};
 /** Aspect the camera hook left in the engine, read back the same way. */
 std::atomic<float> g_renderedAspect{0.0F};
+/** The vertical half angle the layer last declared, for the log. */
+std::atomic<float> g_declaredHalfVertical{0.0F};
+/** The eye the image is rendered from (set_render_eye), and the one the views in flight used. */
+std::atomic<int> g_renderEye{0};
+int g_pendingEye{0};
+int g_renderedEye{0};
 
 /** Emits one preformatted line on the client channel. */
 void log_line(const char* text) noexcept {
@@ -909,6 +921,7 @@ template <typename T>
 
 /** Defined below, beside the basis conversion; used by the layer submission above it. */
 [[nodiscard]] XrPosef cyclopean(const std::array<XrView, kViewCount>& views) noexcept;
+[[nodiscard]] XrPosef render_pose(const std::array<XrView, kViewCount>& views, int eye) noexcept;
 
 /** Releases one COM object and clears the pointer. */
 template <typename Interface> void release_com(Interface*& object) noexcept {
@@ -958,11 +971,16 @@ struct Binding final {
 
 /** Suggests one profile's bindings. A runtime that lacks the profile refuses; that is not fatal. */
 void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
-    std::array<XrActionSuggestedBinding, 16> suggested{};
+    // Room for every binding a profile declares. This was 16 while the Touch profile declared 17,
+    // and the 17th -- the menu button -- was dropped without a word on every real runtime.
+    std::array<XrActionSuggestedBinding, 32> suggested{};
     std::uint32_t count = 0;
     for (const Binding& binding : bindings) {
         const XrPath path = path_of(binding.path);
-        if (path == XR_NULL_PATH || count >= suggested.size()) {
+        if (binding.action == XR_NULL_HANDLE || path == XR_NULL_PATH || count >= suggested.size()) {
+            if (count >= suggested.size()) {
+                log_fmt("ev=vr.xr bindings profile=%s dropped=%s", profile, binding.path);
+            }
             continue;
         }
         suggested[count++] = XrActionSuggestedBinding{binding.action, path};
@@ -1010,7 +1028,14 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         log_line("ev=vr.xr actions result=fail reason=action");
         return false;
     }
-    const std::array<Binding, 17> touch{{
+    // Vibration is optional, like the grip poses: a refusal costs the confirmation pulses only.
+    if (!make_action(g_actions.hapticL, "haptic_l", XR_ACTION_TYPE_VIBRATION_OUTPUT)) {
+        g_actions.hapticL = XR_NULL_HANDLE;
+    }
+    if (!make_action(g_actions.hapticR, "haptic_r", XR_ACTION_TYPE_VIBRATION_OUTPUT)) {
+        g_actions.hapticR = XR_NULL_HANDLE;
+    }
+    const std::array<Binding, 19> touch{{
         {g_actions.aimL, "/user/hand/left/input/aim/pose"},
         {g_actions.aimR, "/user/hand/right/input/aim/pose"},
         {g_actions.palmL, "/user/hand/left/input/grip/pose"},
@@ -1028,9 +1053,11 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         {g_actions.thumbL, "/user/hand/left/input/thumbstick/click"},
         {g_actions.thumbR, "/user/hand/right/input/thumbstick/click"},
         {g_actions.menu, "/user/hand/left/input/menu/click"},
+        {g_actions.hapticL, "/user/hand/left/output/haptic"},
+        {g_actions.hapticR, "/user/hand/right/output/haptic"},
     }};
     suggest("/interaction_profiles/oculus/touch_controller", touch);
-    const std::array<Binding, 7> simple{{
+    const std::array<Binding, 9> simple{{
         {g_actions.aimL, "/user/hand/left/input/aim/pose"},
         {g_actions.aimR, "/user/hand/right/input/aim/pose"},
         {g_actions.palmL, "/user/hand/left/input/grip/pose"},
@@ -1038,6 +1065,8 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         {g_actions.triggerR, "/user/hand/right/input/select/click"},
         {g_actions.triggerL, "/user/hand/left/input/select/click"},
         {g_actions.menu, "/user/hand/left/input/menu/click"},
+        {g_actions.hapticL, "/user/hand/left/output/haptic"},
+        {g_actions.hapticR, "/user/hand/right/output/haptic"},
     }};
     suggest("/interaction_profiles/khr/simple_controller", simple);
     XrSessionActionSetsAttachInfo attach{XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO};
@@ -1058,7 +1087,8 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
     // The fallback is silent at the point of use, so it is logged loudly here instead.
     const bool palmSpaces = make_action_space(g_actions.palmL, g_actions.palmSpaceL)
                             && make_action_space(g_actions.palmR, g_actions.palmSpaceR);
-    log_fmt("ev=vr.xr actions result=ok spaces=%d palm_spaces=%d", spaces ? 1 : 0, palmSpaces ? 1 : 0);
+    log_fmt("ev=vr.xr actions result=ok spaces=%d palm_spaces=%d haptics=%d", spaces ? 1 : 0, palmSpaces ? 1 : 0,
+            g_actions.hapticL != XR_NULL_HANDLE && g_api.applyHapticFeedback != nullptr ? 1 : 0);
     return true;
 }
 
@@ -1090,6 +1120,38 @@ void suggest(const char* profile, std::span<const Binding> bindings) noexcept {
         return false;
     }
     return state.currentState == XR_TRUE;
+}
+
+/**
+ * Vibration requests, one slot per hand (left, right), raised from any thread and played on the
+ * present thread at the next frame. A newer request replaces an unplayed one: these are
+ * confirmations, and two queued clicks would only blur into one longer one.
+ */
+std::array<std::atomic<float>, 2> g_hapticAmplitude{};
+std::array<std::atomic<float>, 2> g_hapticSeconds{};
+
+void flush_haptics() noexcept {
+    for (std::size_t hand = 0; hand < 2; ++hand) {
+        const float amplitude = g_hapticAmplitude[hand].exchange(0.0F, std::memory_order_acq_rel);
+        if (amplitude <= 0.0F) {
+            continue;
+        }
+        const XrAction action = hand == 0 ? g_actions.hapticL : g_actions.hapticR;
+        if (action == XR_NULL_HANDLE || g_api.applyHapticFeedback == nullptr || !g_actions.attached) {
+            continue;
+        }
+        const float seconds = g_hapticSeconds[hand].load(std::memory_order_relaxed);
+        XrHapticActionInfo info{XR_TYPE_HAPTIC_ACTION_INFO};
+        info.action = action;
+        XrHapticVibration vibration{XR_TYPE_HAPTIC_VIBRATION};
+        vibration.amplitude = std::clamp(amplitude, 0.0F, 1.0F);
+        vibration.duration = static_cast<XrDuration>(std::clamp(seconds, 0.001F, 1.0F) * 1e9F);
+        vibration.frequency = XR_FREQUENCY_UNSPECIFIED;
+        const XrResult result =
+            g_api.applyHapticFeedback(g_session, &info, reinterpret_cast<const XrHapticBaseHeader*>(&vibration));
+        log_fmt("ev=vr.xr haptic hand=%s amplitude=%.2f ms=%.0f result=%d", hand == 0 ? "L" : "R", vibration.amplitude,
+                seconds * 1000.0F, static_cast<int>(result));
+    }
 }
 
 /** Syncs the action set and publishes the controllers. An unfocused session reads as idle. */
@@ -1472,22 +1534,32 @@ void destroy_presentation() noexcept {
             g_api.releaseSwapchainImage(p.swapchain, &release);
         }
         if (submitted) {
-            // The layer has to declare the frustum the engine really rendered: its horizontal FOV
-            // and the vertical implied by the ASPECT read back out of the pose block -- not by the
-            // back buffer's pixel ratio. Once the aspect is written the two differ, and using the
-            // pixel ratio is what declared about 71 degrees vertically where a Quest 3 eye has 98,
-            // which left black bands above and below the image.
-            float horizontal = g_renderedFov.load(std::memory_order_relaxed);
-            if (!(horizontal > 0.0F && horizontal < 3.1F)) {
-                horizontal = 1.5708F;
+            // The layer has to declare the frustum the engine really rendered, and the only ground
+            // truth for that is the projection the GPU received for the world (`vr_gpu.cpp`). The
+            // aspect written into the pose block is NOT it: the engine takes the block's FOV but
+            // keeps the back buffer's aspect, so declaring the written 1.074 told the compositor
+            // the image held +-50 deg vertically when it held +-35.7 -- the world stretched 1.65x
+            // tall in the headset (measured with a GPU capture, 2026-10-15). It is what had
+            // removed the black bands. Without a fresh measurement, the block's FOV and the back
+            // buffer's pixel ratio, which is what the engine renders with.
+            float halfHorizontal = 0.0F;
+            float halfVertical = 0.0F;
+            float p00 = 0.0F;
+            float p11 = 0.0F;
+            if (gpu::world_projection(p00, p11)) {
+                halfHorizontal = std::atan(1.0F / p00);
+                halfVertical = std::atan(1.0F / p11);
+            } else {
+                float horizontal = g_renderedFov.load(std::memory_order_relaxed);
+                if (!(horizontal > 0.0F && horizontal < 3.1F)) {
+                    horizontal = 1.5708F;
+                }
+                const float aspect = static_cast<float>(p.width) / static_cast<float>(p.height);
+                halfHorizontal = horizontal * 0.5F;
+                halfVertical = std::atan(std::tan(halfHorizontal) / aspect);
             }
-            float aspect = g_renderedAspect.load(std::memory_order_relaxed);
-            if (!(aspect > 0.1F && aspect < 10.0F)) {
-                aspect = static_cast<float>(p.width) / static_cast<float>(p.height);
-            }
-            const float halfHorizontal = horizontal * 0.5F;
-            const float halfVertical = std::atan(std::tan(halfHorizontal) / aspect);
-            const XrPosef centre = cyclopean(g_renderedViews);
+            g_declaredHalfVertical.store(halfVertical, std::memory_order_relaxed);
+            const XrPosef centre = render_pose(g_renderedViews, g_renderedEye);
             for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
                 XrCompositionLayerProjectionView& view = views[eye];
                 view = XrCompositionLayerProjectionView{XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW};
@@ -1536,6 +1608,21 @@ void destroy_presentation() noexcept {
  * panels reports a different orientation per eye and taking the left one yaws the whole view by
  * half the cant angle, permanently.
  */
+[[nodiscard]] XrPosef cyclopean(const std::array<XrView, kViewCount>& views) noexcept;
+
+/**
+ * @return The pose the mono image is rendered from: the cyclopean orientation always, and the
+ *         position of the chosen eye -- the midpoint (0), the left eye (1) or the right (2).
+ *         Used both to place the camera and to declare the layer, so the two can never disagree.
+ */
+[[nodiscard]] XrPosef render_pose(const std::array<XrView, kViewCount>& views, int eye) noexcept {
+    XrPosef pose = cyclopean(views);
+    if (eye == 1 || eye == 2) {
+        pose.position = views[static_cast<std::size_t>(eye - 1)].pose.position;
+    }
+    return pose;
+}
+
 [[nodiscard]] XrPosef cyclopean(const std::array<XrView, kViewCount>& views) noexcept {
     const XrQuaternionf& left = views[0].pose.orientation;
     const XrQuaternionf& right = views[1].pose.orientation;
@@ -1731,6 +1818,14 @@ const char* runtime_name() noexcept {
     return g_runtimeName[0] != '\0' ? g_runtimeName.data() : "none";
 }
 
+void set_render_eye(int eye) noexcept {
+    g_renderEye.store(eye == 1 || eye == 2 ? eye : 0, std::memory_order_relaxed);
+}
+
+int render_eye() noexcept {
+    return g_renderEye.load(std::memory_order_relaxed);
+}
+
 /** Takes the next head position as the origin. */
 void recentre() noexcept {
     g_recentreRequested = true;
@@ -1768,6 +1863,10 @@ bool initialize(ID3D11Device* device) noexcept {
     if (!bind_instance()) {
         g_status = Status::instanceFailed;
         return false;
+    }
+    // Not part of the required set: haptics are confirmation, never a reason to refuse a session.
+    if (!bind(g_api.applyHapticFeedback, "xrApplyHapticFeedback", g_instance)) {
+        g_api.applyHapticFeedback = nullptr;
     }
     XrInstanceProperties properties{XR_TYPE_INSTANCE_PROPERTIES};
     if (g_api.getInstanceProperties(g_instance, &properties) == XR_SUCCESS) {
@@ -1858,6 +1957,7 @@ void begin_frame(float roomAnchor) noexcept {
     g_frameOpen = true;
     g_shouldRender = frameState.shouldRender != XR_FALSE;
     sync_actions();
+    flush_haptics();
     if (!g_shouldRender) {
         return;
     }
@@ -1883,6 +1983,7 @@ void begin_frame(float roomAnchor) noexcept {
     }
     // What the camera hook renders next is drawn from these; the layer for that image needs them.
     g_pendingViews = views;
+    g_pendingEye = g_renderEye.load(std::memory_order_relaxed);
     g_havePending = true;
     // Both eyes' geometry, once per session. The mock reports identical orientations and so cannot
     // reproduce a real headset's panel cant; logging it means the next headset session leaves the
@@ -1900,18 +2001,21 @@ void begin_frame(float roomAnchor) noexcept {
                     views[eye].fov.angleUp, views[eye].fov.angleDown);
         }
     }
-    // The head sits midway between the eyes.
+    // The origin is the midpoint of the eyes whichever eye renders, so switching eyes moves the
+    // camera by half the eye distance and nothing else: the hands, measured from the same origin,
+    // stay where they are.
     const XrPosef& left = views[0].pose;
     const XrPosef& right = views[1].pose;
-    const XrVector3f centre{(left.position.x + right.position.x) * 0.5F,
-                            (left.position.y + right.position.y) * 0.5F,
-                            (left.position.z + right.position.z) * 0.5F};
+    const XrVector3f midpoint{(left.position.x + right.position.x) * 0.5F,
+                              (left.position.y + right.position.y) * 0.5F,
+                              (left.position.z + right.position.z) * 0.5F};
+    const XrVector3f centre = render_pose(views, g_pendingEye).position;
     const bool recentring = g_recentreRequested || !g_haveOrigin;
     if (recentring) {
-        g_origin = centre;
+        g_origin = midpoint;
         g_haveOrigin = true;
         g_recentreRequested = false;
-        log_fmt("ev=vr.xr recentre x=%.3f y=%.3f z=%.3f", centre.x, centre.y, centre.z);
+        log_fmt("ev=vr.xr recentre x=%.3f y=%.3f z=%.3f eye=%d", midpoint.x, midpoint.y, midpoint.z, g_pendingEye);
     }
     // The cyclopean orientation, not the left eye's: with canted panels the left eye is off by
     // half the cant angle, and that would yaw the whole view for the entire session.
@@ -2031,15 +2135,16 @@ void end_frame(IDXGISwapChain* swapChain) noexcept {
     // The frame the game draws next uses the views located this frame.
     if (g_havePending) {
         g_renderedViews = g_pendingViews;
+        g_renderedEye = g_pendingEye;
         g_haveRendered = true;
     }
     if ((g_frameIndex % kSubmitReportPeriod) == 0 || result != XR_SUCCESS) {
-        // The aspect goes out beside the FOV because it is the only proof the write landed: the
-        // block is recomputed by the engine every frame, so reading it from outside the process
-        // shows the engine's own value whatever the module did.
-        log_fmt("ev=vr.xr submit layers=%u result=%d fov=%.4f aspect=%.4f",
+        // The written aspect goes out beside the FOV as proof the write landed (the engine does
+        // not render with it, see the layer), and the vertical the layer really declared beside it.
+        log_fmt("ev=vr.xr submit layers=%u result=%d vfov_declared=%.4f fov=%.4f aspect=%.4f",
                 layerCount,
                 static_cast<int>(result),
+                2.0F * g_declaredHalfVertical.load(std::memory_order_relaxed),
                 g_renderedFov.load(std::memory_order_relaxed),
                 g_renderedAspect.load(std::memory_order_relaxed));
     }
@@ -2086,6 +2191,16 @@ void note_rendered_aspect(float aspect) noexcept {
 
 void note_rendered_fov(float horizontalFov) noexcept {
     g_renderedFov.store(horizontalFov, std::memory_order_relaxed);
+}
+
+float rendered_fov() noexcept {
+    return g_renderedFov.load(std::memory_order_relaxed);
+}
+
+void haptic(bool rightHand, float amplitude, float seconds) noexcept {
+    const std::size_t hand = rightHand ? 1 : 0;
+    g_hapticSeconds[hand].store(seconds, std::memory_order_relaxed);
+    g_hapticAmplitude[hand].store(amplitude, std::memory_order_release);
 }
 
 /** Tears the session and instance down and unloads the runtime. */

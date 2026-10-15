@@ -39,6 +39,9 @@
 #include "../../../core/logging/log.h"
 #include "../../hooking/detour.h"
 #include "runtime.h"
+#include "vr_ads.h"
+#include "vr_math.h"
+#include "vr_two_hand.h"
 #include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::weapon {
@@ -103,9 +106,22 @@ struct RuleSet final {
     std::size_t count{0};
 };
 
+/** Return addresses kept per caller, beyond the immediate one: enough to name the subsystem. */
+constexpr std::size_t kTraceDepth = 12;
+
 struct Caller final {
     std::atomic<std::uintptr_t> rva{0};
     std::atomic<std::uint64_t> count{0};
+    /**
+     * The call chain the first time this caller was seen, as absolute addresses, and the thread.
+     * Captured with RtlCaptureStackBackTrace, which walks the unwind tables and raises nothing --
+     * the only kind of stack inspection VMProtect tolerates. Written once by the thread that claimed
+     * the slot, then published through `traced`.
+     */
+    std::array<std::uintptr_t, kTraceDepth> stack{};
+    std::uint32_t thread{0};
+    std::atomic_bool traced{false};
+    std::atomic_bool traceReported{false};
 };
 
 struct Path final {
@@ -212,6 +228,70 @@ void apply_seat_rotation(xr::HandPose& hand) noexcept {
         hand.up[a] = u[a];
     }
 }
+
+/** The arm module's latest two-handed hold, and when it was published (ms). */
+SRWLOCK g_twoHandLock = SRWLOCK_INIT;
+TwoHandGrip g_twoHand{};
+std::uint64_t g_twoHandStamp = 0;
+/** A hold published longer ago than this is stale: the arm module stopped running, so let go. */
+constexpr std::uint64_t kTwoHandStaleMs = 250;
+/**
+ * The left palm in the right controller's frame, as of the last frame the left controller was
+ * tracked. Inside-out tracking loses a controller exactly when two-handing puts it in front of the
+ * other one; holding the left hand where it was RELATIVE TO THE RIGHT keeps the gun rigid in both
+ * hands until it is seen again, where the runtime's last world pose would pin the barrel to a
+ * point in the room and swing it as the right hand moved.
+ */
+thread_local math::V3 t_leftInRight{};
+thread_local bool t_leftInRightValid = false;
+
+math::V3 v3(const xr::Vector& v) noexcept {
+    return math::V3{v[0], v[1], v[2]};
+}
+
+/** The raw controller basis as columns (forward, LEFT, up), which is a proper rotation. */
+math::M3 basis_of(const xr::HandPose& hand) noexcept {
+    return math::orthonormalize(math::M3{{v3(hand.forward), -v3(hand.right), v3(hand.up)}});
+}
+
+/**
+ * Turns the orientation handed to the weapon so the barrel runs through the left hand.
+ *
+ * Applied AFTER the rotational seat, as a world rotation: the seat is a correction that rides with
+ * the controller, this is where the second hand puts the gun. `raw` is the controller before the
+ * seat, which is the basis the foregrip was measured in. Everything downstream -- the pivot term
+ * in the transform detour included -- reads the rotated basis through the latched sample, so the
+ * gun turns rigidly about the right palm.
+ */
+void apply_two_hand(const xr::HandPose& raw, const xr::HandPose& left, xr::HandPose& hand) noexcept {
+    AcquireSRWLockShared(&g_twoHandLock);
+    const TwoHandGrip grip = g_twoHand;
+    const std::uint64_t stamp = g_twoHandStamp;
+    ReleaseSRWLockShared(&g_twoHandLock);
+    const math::M3 c = basis_of(raw);
+    const math::V3 p = v3(raw.palm);
+    if (left.valid && !left.stale) {
+        t_leftInRight = math::transpose(c) * (v3(left.palm) - p);
+        t_leftInRightValid = true;
+    }
+    if (grip.weight <= 0.0F || !grip.aim || GetTickCount64() - stamp > kTwoHandStaleMs || !left.valid) {
+        return;
+    }
+    const math::V3 l = left.stale && t_leftInRightValid ? p + c * t_leftInRight : v3(left.palm);
+    const math::V3 fc{grip.foregrip[0], grip.foregrip[1], grip.foregrip[2]};
+    const two_hand::Swing s = two_hand::swing(c, p, l, fc, grip.slideMin, grip.slideMax);
+    if (!std::isfinite(s.angle) || s.angle < 1e-6F) {
+        return;
+    }
+    const math::M3 d = math::axis_angle(s.axis, s.angle * std::clamp(grip.weight, 0.0F, 1.0F));
+    const math::V3 f = d * v3(hand.forward);
+    const math::V3 r = d * v3(hand.right);
+    const math::V3 u = d * v3(hand.up);
+    hand.forward = {f.x, f.y, f.z};
+    hand.right = {r.x, r.y, r.z};
+    hand.up = {u.x, u.y, u.z};
+}
+
 /**
  * Which of the controller's two OpenXR poses anchors the weapon's position.
  *
@@ -278,10 +358,28 @@ std::array<std::atomic<float>, 3> g_handOffset{};
  */
 struct Sample final {
     xr::HeadPose head{};
+    /** The weapon basis as intended: controller, rotational seat, second hand. The gun frame. */
     xr::HandPose hand{};
+    /**
+     * The basis actually handed to the engine: `hand` turned by the inverse of the ADS animation's
+     * rotation so far (vr_ads.h). Equal to `hand` whenever nothing is being compensated.
+     */
+    xr::HandPose drawn{};
+    /** The ADS animation's translation so far, local frame; the transform detour takes it back out. */
+    math::V3 compShift{};
     bool valid{};
 };
 thread_local Sample t_sample{};
+/**
+ * The same sample, published for readers on other threads: the aim line is drawn on the present
+ * thread and must describe the very orientation the weapon was handed, seat and second hand
+ * included, not a fresh controller read that skips them.
+ */
+SRWLOCK g_publishedLock = SRWLOCK_INIT;
+Sample g_published{};
+/** The frame the transform detour really handed the engine, for the ADS learner on the render thread. */
+SRWLOCK g_drawnLock = SRWLOCK_INIT;
+DrawnFrame g_drawn{};
 std::uintptr_t g_base = 0;
 std::uint32_t g_frame = 0;
 /** Fake pose regions for the pointer path, one per player index the accessor is asked about. */
@@ -306,7 +404,19 @@ void count_caller(Path& path, std::uintptr_t rva) noexcept {
         std::uintptr_t current = caller.rva.load(std::memory_order_acquire);
         if (current == 0) {
             std::uintptr_t expected = 0;
-            current = caller.rva.compare_exchange_strong(expected, rva, std::memory_order_acq_rel) ? rva : expected;
+            if (caller.rva.compare_exchange_strong(expected, rva, std::memory_order_acq_rel)) {
+                current = rva;
+                std::array<void*, kTraceDepth> frames{};
+                const USHORT got =
+                    RtlCaptureStackBackTrace(0, static_cast<DWORD>(frames.size()), frames.data(), nullptr);
+                for (std::size_t i = 0; i < got && i < caller.stack.size(); ++i) {
+                    caller.stack[i] = reinterpret_cast<std::uintptr_t>(frames[i]);
+                }
+                caller.thread = GetCurrentThreadId();
+                caller.traced.store(true, std::memory_order_release);
+            } else {
+                current = expected;
+            }
         }
         if (current == rva) {
             caller.count.fetch_add(1, std::memory_order_relaxed);
@@ -361,12 +471,36 @@ bool hand_pose_for(Pose& out) noexcept {
     if (!hand.valid) {
         return false;
     }
+    const xr::HandPose raw = hand;
     apply_seat_rotation(hand);
+    apply_two_hand(raw, left, hand);
+    // The ADS compensation, last, and only on what the engine is handed. The game's ADS animation
+    // moves the viewmodel's local pose by `delta` (learned, scaled by the engine's own ADS progress
+    // this frame); handing the engine a frame turned by delta's inverse leaves the drawn hand -- and
+    // the gun in it -- exactly where the hip pose would have put it. The gun frame everything else
+    // reads (the shot, the sight, the arms) stays `hand`: the gun does not move, so neither does
+    // anything measured from it.
+    xr::HandPose drawn = hand;
+    math::V3 compShift{};
+    math::Affine delta{};
+    if (ads::compensation(delta)) {
+        const math::M3 b = basis_of(hand);
+        const math::M3 turned = b * math::transpose(delta.m);
+        drawn.forward = {turned.c[0].x, turned.c[0].y, turned.c[0].z};
+        drawn.right = {-turned.c[1].x, -turned.c[1].y, -turned.c[1].z};
+        drawn.up = {turned.c[2].x, turned.c[2].y, turned.c[2].z};
+        compShift = delta.t;
+    }
     // Latched for the transform detour, which runs later on this same thread and must correct for
     // the very orientation being handed over here.
     t_sample.head = head;
     t_sample.hand = hand;
+    t_sample.drawn = drawn;
+    t_sample.compShift = compShift;
     t_sample.valid = true;
+    AcquireSRWLockExclusive(&g_publishedLock);
+    g_published = t_sample;
+    ReleaseSRWLockExclusive(&g_publishedLock);
     const Pose engine = engine_pose();
     // The position is filled in for completeness only: the weapon's draw ignores the position half
     // of this pose entirely (measured -- see the note on kXformRva), and its position is set through
@@ -375,8 +509,8 @@ bool hand_pose_for(Pose& out) noexcept {
     for (std::size_t lane = 0; lane < out.position.size(); ++lane) {
         out.position[lane] = engine.position[lane] + hand.offset[lane];
     }
-    out.forward = hand.forward;
-    out.up = hand.up;
+    out.forward = drawn.forward;
+    out.up = drawn.up;
     out.horizontalFov = engine.horizontalFov;
     out.aspect = engine.aspect;
     return true;
@@ -465,13 +599,18 @@ void __fastcall xform_replacement(void* out) noexcept {
         // worth knowing about.
         xr::HeadPose head{};
         xr::HandPose hand{};
+        xr::HandPose drawn{};
+        math::V3 compShift{};
         if (t_sample.valid) {
             head = t_sample.head;
             hand = t_sample.hand;
+            drawn = t_sample.drawn;
+            compShift = t_sample.compShift;
             t_sample.valid = false;
         } else {
             xr::HandPose left{};
             xr::frame_sample(head, left, hand);
+            drawn = hand;
             g_latchMissed.store(true, std::memory_order_relaxed);
         }
         if (hand.valid && head.valid) {
@@ -508,12 +647,35 @@ void __fastcall xform_replacement(void* out) noexcept {
                 if (lane < 0 || lane >= static_cast<int>(kXformFloats)) {
                     continue;
                 }
-                // R(q) * pivot, without a matrix: the basis handed to the getter IS R(q)'s
-                // columns, so the correction rotates rigidly with the gun at any orientation.
+                // R(q) * pivot, without a matrix: the gun basis' columns, so the correction rotates
+                // rigidly with the gun at any orientation. It is the INTENDED basis, not the one
+                // handed over: the pivot places the hip pose, and the ADS compensation is a
+                // separate term, below.
                 const float correction = pivotForward * hand.forward[axis] + pivotRight * hand.right[axis]
                                          + pivotUp * hand.up[axis];
-                lanes[static_cast<std::size_t>(lane)] += anchor[axis] - head.offset[axis] + correction
+                // The ADS animation's translation taken back out, in the basis the engine was handed:
+                // the engine draws `lanes + B' * local`, the animation made local = delta * hip, and
+                // B' = B * delta.m^-1, so `- B' * delta.t` leaves exactly `B * hip` at the gun frame.
+                const float adsShift = compShift.x * drawn.forward[axis] - compShift.y * drawn.right[axis]
+                                  + compShift.z * drawn.up[axis];
+                lanes[static_cast<std::size_t>(lane)] += anchor[axis] - head.offset[axis] + correction - adsShift
                                                          + g_handOffset[axis].load(std::memory_order_relaxed);
+            }
+            // What the engine was really handed, for the ADS learner: the drawn hand only means
+            // something relative to it.
+            if (g_xformLanes[0].load(std::memory_order_relaxed) == 4 && g_xformLanes[1].load(std::memory_order_relaxed) == 5
+                && g_xformLanes[2].load(std::memory_order_relaxed) == 6) {
+                DrawnFrame f{};
+                f.local.m = math::orthonormalize(math::M3{{math::V3{drawn.forward[0], drawn.forward[1], drawn.forward[2]},
+                                                           math::V3{-drawn.right[0], -drawn.right[1], -drawn.right[2]},
+                                                           math::V3{drawn.up[0], drawn.up[1], drawn.up[2]}}});
+                f.local.t = math::V3{lanes[4], lanes[5], lanes[6]};
+                f.lanesIn = {before[4], before[5], before[6]};
+                f.valid = true;
+                AcquireSRWLockExclusive(&g_drawnLock);
+                f.serial = g_drawn.serial + 1;
+                g_drawn = f;
+                ReleaseSRWLockExclusive(&g_drawnLock);
             }
         }
     }
@@ -597,6 +759,31 @@ void report_callers(const char* name, Path& path) noexcept {
     if (used > 0) {
         core::log::write(core::log::Channel::client, core::log::Level::warn,
                          {line.data(), static_cast<std::size_t>(used)});
+    }
+    // Each caller's chain once: the immediate return address names a call site, the chain names
+    // the subsystem, which is what tells a shot apart from a sound or a culling query. Addresses
+    // outside the executable (this DLL, the detour trampolines) are printed as `-`.
+    for (Caller& caller : path.callers) {
+        if (!caller.traced.load(std::memory_order_acquire) || caller.traceReported.exchange(true)) {
+            continue;
+        }
+        std::array<char, core::log::kLineCapacity> trace{};
+        int n = std::snprintf(trace.data(), trace.size(), "ev=vr.weapon trace path=%s caller=%llX thread=%u stack=",
+                              name, static_cast<unsigned long long>(caller.rva.load(std::memory_order_relaxed)),
+                              caller.thread);
+        for (const std::uintptr_t address : caller.stack) {
+            if (address == 0 || n < 0 || static_cast<std::size_t>(n) >= trace.size() - 20) {
+                break;
+            }
+            const bool inExe = address > g_base && address - g_base < 0x10000000;
+            n += inExe ? std::snprintf(trace.data() + n, trace.size() - static_cast<std::size_t>(n), "%llX,",
+                                       static_cast<unsigned long long>(address - g_base))
+                       : std::snprintf(trace.data() + n, trace.size() - static_cast<std::size_t>(n), "-,");
+        }
+        if (n > 0) {
+            core::log::write(core::log::Channel::client, core::log::Level::warn,
+                             {trace.data(), static_cast<std::size_t>(n)});
+        }
     }
 }
 
@@ -914,10 +1101,10 @@ bool block_position_enabled() noexcept {
 }
 
 void seat_error(float forward, float right, float up) noexcept {
-    // A slow integrator: about a third of a second to settle at 90 Hz, so recoil and other fast
-    // animation still read, while anything held -- a weapon's grip offset, a sprint pose -- is
-    // cancelled. Large errors are animation transitions (a weapon being swapped out, the hand off
-    // the gun) and are ignored rather than chased.
+    // A slow integrator: about a third of a second to settle at 90 Hz. The arm module only calls it
+    // while the game's animation is at rest in the hand (ads::animation_at_rest), so recoil, reloads
+    // and swaps are never chased, while anything held -- a weapon's grip offset, a sprint pose -- is
+    // cancelled. Large errors are ignored rather than chased, as a second line of defence.
     constexpr float kGain = 0.04F;
     constexpr float kIgnoreAbove = 0.25F;
     constexpr float kLimit = 0.35F;
@@ -945,9 +1132,62 @@ void seat_reset() noexcept {
     set_seat_rotation({0.0F, 0.0F, 0.0F, 1.0F});
 }
 
+void set_two_hand(const TwoHandGrip& grip) noexcept {
+    AcquireSRWLockExclusive(&g_twoHandLock);
+    g_twoHand = grip;
+    g_twoHandStamp = GetTickCount64();
+    ReleaseSRWLockExclusive(&g_twoHandLock);
+}
+
+bool weapon_sample(xr::HeadPose& head, xr::HandPose& hand) noexcept {
+    AcquireSRWLockShared(&g_publishedLock);
+    const Sample s = g_published;
+    ReleaseSRWLockShared(&g_publishedLock);
+    head = s.head;
+    hand = s.hand;
+    return s.valid && s.hand.valid && s.head.valid;
+}
+
 std::array<float, 3> seat_correction() noexcept {
     return {g_seat[0].load(std::memory_order_relaxed), g_seat[1].load(std::memory_order_relaxed),
             g_seat[2].load(std::memory_order_relaxed)};
+}
+
+bool gun_frame(math::Affine& frame, xr::HeadPose& head, xr::HandPose* hand) noexcept {
+    AcquireSRWLockShared(&g_publishedLock);
+    const Sample s = g_published;
+    ReleaseSRWLockShared(&g_publishedLock);
+    if (!s.valid || !s.hand.valid || !s.head.valid) {
+        return false;
+    }
+    head = s.head;
+    if (hand != nullptr) {
+        *hand = s.hand;
+    }
+    const math::V3 f = v3(s.hand.forward);
+    const math::V3 r = v3(s.hand.right);
+    const math::V3 u = v3(s.hand.up);
+    frame.m = math::orthonormalize(math::M3{{f, -r, u}});
+    // The same composition the transform detour writes, minus the head offset (the detour works
+    // camera-relative, this is eye-relative) and minus the ADS term (this is the frame as intended).
+    const bool palmAnchor = g_palmAnchor.load(std::memory_order_relaxed);
+    const xr::Vector& anchor = palmAnchor ? s.hand.palm : s.hand.offset;
+    const bool seat = g_seatOn.load(std::memory_order_relaxed);
+    const math::V3 pivot{
+        g_pivot[0].load(std::memory_order_relaxed) + (seat ? g_seat[0].load(std::memory_order_relaxed) : 0.0F),
+        g_pivot[1].load(std::memory_order_relaxed) + (seat ? g_seat[1].load(std::memory_order_relaxed) : 0.0F),
+        g_pivot[2].load(std::memory_order_relaxed) + (seat ? g_seat[2].load(std::memory_order_relaxed) : 0.0F)};
+    frame.t = v3(anchor) + f * pivot.x + r * pivot.y + u * pivot.z
+              + math::V3{g_handOffset[0].load(std::memory_order_relaxed), g_handOffset[1].load(std::memory_order_relaxed),
+                         g_handOffset[2].load(std::memory_order_relaxed)};
+    return math::finite(frame.t) && math::finite(frame.m.c[0]);
+}
+
+DrawnFrame drawn_frame() noexcept {
+    AcquireSRWLockShared(&g_drawnLock);
+    const DrawnFrame f = g_drawn;
+    ReleaseSRWLockShared(&g_drawnLock);
+    return f;
 }
 
 void retake_reference() noexcept {

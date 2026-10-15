@@ -203,8 +203,36 @@ void note_rendered_fov(float horizontalFov) noexcept;
  */
 void note_rendered_aspect(float aspect) noexcept;
 
+/**
+ * @return The horizontal FOV (radians) last read back from the pose block, or 0 before the camera
+ *         hook has run. The world is rendered with it while the module is on (the aspect is not).
+ */
+[[nodiscard]] float rendered_fov() noexcept;
+
 /** Takes the next head position as the origin, so the player can re-seat themselves. */
 void recentre() noexcept;
+
+/**
+ * Asks for one vibration pulse on a controller, played at the next frame on the present thread.
+ * Safe from any thread; a request not yet played is replaced, not queued. Does nothing on a
+ * runtime without haptics.
+ * @param rightHand True for the right controller, false for the left.
+ * @param amplitude 0..1.
+ * @param seconds Duration.
+ */
+void haptic(bool rightHand, float amplitude, float seconds) noexcept;
+
+/**
+ * The eye the single (mono) image is rendered from: 0 the midpoint of the eyes, 1 the left eye,
+ * 2 the right. One pose for both views either way -- the image is still declared identically to
+ * both eyes, so this cannot reintroduce the double vision per-eye poses caused. What it changes is
+ * where a sight lines up: in front of the nose, or in front of the shooting eye as with a real gun.
+ * The orientation stays the average of both eyes'. Any thread; takes effect next frame.
+ */
+void set_render_eye(int eye) noexcept;
+
+/** @return The eye the image is rendered from (see set_render_eye). */
+[[nodiscard]] int render_eye() noexcept;
 
 /** @return A short, stable name for the runtime in use, for the log. */
 [[nodiscard]] const char* runtime_name() noexcept;

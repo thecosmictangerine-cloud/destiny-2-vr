@@ -49,4 +49,7 @@ void release_all() noexcept;
 /** @return Counters since start. */
 [[nodiscard]] Stats stats() noexcept;
 
+/** @return True while the injector holds the aim button (right mouse) down. Any thread. */
+[[nodiscard]] bool aim_held() noexcept;
+
 } // namespace sunrise::client::hooks::vr::gamepad

@@ -9,6 +9,7 @@ struct Slots final {
     std::size_t createBuffer{};
     std::size_t createInputLayout{};
     std::size_t createVertexShader{};
+    std::size_t createPixelShader{};
     std::size_t createComputeShader{};
     std::size_t createDeferredContext{};
 

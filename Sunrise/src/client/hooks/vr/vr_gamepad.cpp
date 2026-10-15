@@ -6,13 +6,21 @@
  *
  * Default PC bindings of the target build, as mapped here:
  *   left stick      W A S D           right stick       mouse motion (look, turns the body)
- *   right trigger   left mouse (fire) left trigger      right mouse (aim)
+ *   right trigger   left mouse (fire) left trigger      Q (grenade)
  *   A               Space (jump)      B                 Ctrl (crouch)
  *   X               R (reload)        Y                 1 / 2 alternating (weapon slot)
- *   left grip       Q (grenade)       right grip        C (melee)
+ *   left grip       hold the weapon                     right grip        C (melee)
  *   left stick click  Shift (sprint)  right stick click F (super)
  *   menu            F1 (menu)
+ *   right mouse (aim) is held by the physical ADS detector while the sight is at the eye (vr_ads.cpp)
  * Interact (E, hold) is deliberately unmapped until there is something to interact with.
+ *
+ * The grenade is the left trigger, except while the left hand holds the gun: the index finger rests
+ * on that trigger round a foregrip, and a firm grip squeezes it, so a press that STARTS while holding
+ * is ignored until it is let go. The left grip is then only the hold.
+ *
+ * `ads mode button` (SVR_Ads.txt) restores the earlier mapping: left trigger = right mouse (aim), and
+ * the left grip contextual -- on the handguard it takes hold, away from it it is the grenade.
  */
 
 #include "vr_gamepad.h"
@@ -25,8 +33,11 @@
 #include <cmath>
 #include <cstdint>
 
+#include "../../../core/logging/log.h"
 #include "../../../core/ui/runtime/ui_visibility_runtime.h"
 #include "../../input/window_focus.h"
+#include "vr_ads.h"
+#include "vr_arms.h"
 #include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::gamepad {
@@ -90,6 +101,10 @@ constexpr float kMaxStepSeconds = 0.05F;
 std::array<bool, static_cast<std::size_t>(Key::count)> g_keyDown{};
 bool g_leftMouseDown{false};
 bool g_rightMouseDown{false};
+std::atomic_bool g_aimHeld{false};
+/** The left trigger as a button, and whether the press in progress began while holding the gun. */
+bool g_leftTriggerDown{false};
+bool g_leftTriggerBlocked{false};
 bool g_nextWeaponSlotTwo{true};
 bool g_lastY{false};
 float g_lookRemainderX{0.0F};
@@ -205,6 +220,9 @@ void release_all() noexcept {
     }
     (void)hold_mouse(g_leftMouseDown, false, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP);
     (void)hold_mouse(g_rightMouseDown, false, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
+    g_aimHeld.store(false, std::memory_order_relaxed);
+    g_leftTriggerDown = false;
+    g_leftTriggerBlocked = false;
     g_lookRemainderX = 0.0F;
     g_lookRemainderY = 0.0F;
     g_lastPump = LARGE_INTEGER{};
@@ -258,21 +276,36 @@ void pump(bool enabled) noexcept {
         }
     }
 
-    // Triggers onto the mouse buttons.
+    // Right trigger: fire.
     sent |= hold_mouse(g_leftMouseDown,
                        digital(in.triggerR, g_leftMouseDown, kTriggerPress, kTriggerRelease),
                        MOUSEEVENTF_LEFTDOWN,
                        MOUSEEVENTF_LEFTUP);
-    sent |= hold_mouse(g_rightMouseDown,
-                       digital(in.triggerL, g_rightMouseDown, kTriggerPress, kTriggerRelease),
-                       MOUSEEVENTF_RIGHTDOWN,
-                       MOUSEEVENTF_RIGHTUP);
+    // Aim and grenade, by mode. Physical ADS (the default) holds right mouse while the sight is at
+    // the eye and frees the left trigger for the grenade.
+    const ads::Mode mode = ads::mode();
+    const bool leftTrigger = digital(in.triggerL, g_leftTriggerDown, kTriggerPress, kTriggerRelease);
+    if (leftTrigger && !g_leftTriggerDown) {
+        // Classified once, where the press starts: a squeeze that begins with the gun in both hands
+        // is the grip tightening round the foregrip, not a throw.
+        g_leftTriggerBlocked = arms::holding();
+        if (mode != ads::Mode::button) {
+            core::log::write(core::log::Channel::client, core::log::Level::warn,
+                             g_leftTriggerBlocked ? "ev=vr.pad left_trigger action=ignored reason=holding"
+                                                  : "ev=vr.pad left_trigger action=grenade");
+        }
+    }
+    g_leftTriggerDown = leftTrigger;
+    const bool aim = mode == ads::Mode::button ? leftTrigger : ads::want_ads();
+    const bool grenade = mode == ads::Mode::button ? arms::grenade() : (leftTrigger && !g_leftTriggerBlocked);
+    sent |= hold_mouse(g_rightMouseDown, aim, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP);
+    g_aimHeld.store(g_rightMouseDown, std::memory_order_relaxed);
 
     // Buttons and grips onto the default bindings.
     sent |= hold_key(Key::space, (in.buttons & xr::kButtonA) != 0);
     sent |= hold_key(Key::ctrl, (in.buttons & xr::kButtonB) != 0);
     sent |= hold_key(Key::r, (in.buttons & xr::kButtonX) != 0);
-    sent |= hold_key(Key::q, digital(in.gripL, held(Key::q), kTriggerPress, kTriggerRelease));
+    sent |= hold_key(Key::q, grenade);
     sent |= hold_key(Key::c, digital(in.gripR, held(Key::c), kTriggerPress, kTriggerRelease));
     sent |= hold_key(Key::shift, (in.buttons & xr::kButtonThumbL) != 0);
     sent |= hold_key(Key::f, (in.buttons & xr::kButtonThumbR) != 0);
@@ -304,6 +337,10 @@ Stats stats() noexcept {
     result.mouseCountsX = g_mouseX.load(std::memory_order_relaxed);
     result.mouseCountsY = g_mouseY.load(std::memory_order_relaxed);
     return result;
+}
+
+bool aim_held() noexcept {
+    return g_aimHeld.load(std::memory_order_relaxed);
 }
 
 } // namespace sunrise::client::hooks::vr::gamepad

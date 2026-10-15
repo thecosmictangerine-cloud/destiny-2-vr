@@ -44,6 +44,22 @@
  *   twist <forearm> <wrist>      share of the hand's roll each forearm bone takes (0.45 0.9)
  *   rig <L|R> <clav> <upperTwist> <upper> <fore> <foreTwist> <hand>     override the labels
  *   relearn                      forget the left hand's learned grip
+ *   twohand on|off               the two-handed hold as a whole (off: the left grip is the grenade)
+ *   twohand aim on|off           let a foregrip steer the barrel (off: every hold is visual only)
+ *   twohand engage <take> <grenade>   radii, metres (default 0.10 0.25)
+ *   twohand slide <back> <fwd>   the handguard around the learned foregrip (default 0.12 0.10)
+ *   twohand pistol <m>           foregrip nearer the right palm than this is a support hand (0.18)
+ *   twohand blend <s>            seconds to take hold or let go (default 0.12)
+ *   twohand relearn | dump
+ *
+ * The two-handed hold (docs/TWO-HANDS.md). The game's own animated LEFT hand sits on the weapon's
+ * foregrip for every weapon, as Bungie authored it, so that is where the left hand takes hold --
+ * but learned relative to the right hand while steady, never followed live: reload, inspect and
+ * sprint take the animated hand off the gun, and a held hand that flew off with it would be
+ * absurd. Squeezing the left grip near the handguard takes hold; away from the gun it is the
+ * grenade. While a foregrip is held the weapon module turns the gun about the right palm so the
+ * handguard runs exactly through the left palm (vr_two_hand.h), and the hand slides along it. A
+ * foregrip close to the right palm is a pistol's support hand: held, drawn, never steering.
  */
 
 #include "vr_arms.h"
@@ -67,8 +83,10 @@
 #include "../../../core/logging/log.h"
 #include "../graphics/renderer/world_lines.h"
 #include "runtime.h"
+#include "vr_ads.h"
 #include "vr_gpu.h"
 #include "vr_math.h"
+#include "vr_two_hand.h"
 #include "vr_weapon.h"
 #include "xr_runtime.h"
 
@@ -149,6 +167,8 @@ struct Rig final {
     std::array<V3, kMaxBones> cen{};
     /** For each left finger bone, the right finger bone that mirrors it (-1 if none). */
     std::array<int, kMaxBones> mirrorOf{};
+    /** One past the highest hand or finger bone: a palette this long carries every finger. */
+    std::size_t fingerSpan{};
 };
 
 /** Tunables, published as one block so a draw never reads half an update. */
@@ -174,6 +194,18 @@ struct Overlay final {
     std::array<float, 2> twist{};
     std::array<float, 2> wristError{};
     std::array<bool, 2> slid{};
+    /** The hold as drawn: weight, the handguard on the drawn gun, and where the left palm went. */
+    float holdW{};
+    bool holdAim{};
+    bool foreValid{};
+    V3 guardA{};
+    V3 guardB{};
+    V3 snapPalm{};
+    V3 ctrlPalmL{};
+    /** Left controller palm to the drawn handguard line, and to the drawn left palm, metres. */
+    float lineError{};
+    float handError{};
+    float slide{};
 };
 
 SRWLOCK g_lock = SRWLOCK_INIT;
@@ -211,8 +243,14 @@ float g_seatError = 0.0F;
  * The canonical right-hand grip: the hand's rotation in the controller's (forward, left, up)
  * frame when holding the hand cannon at rest -- the pistol hold Bungie animated, with the barrel
  * along the controller's aim. Every weapon is turned (through the weapon module's rotational seat)
- * until the right hand holds it this way, which points every weapon where the controller points.
- * Measured in Io on the mock (2026-10-15); `canon learn` re-measures it from the weapon in hand.
+ * until the right hand holds it this way. Measured in Io on the mock (2026-10-15); `canon learn`
+ * re-measures it from the weapon in hand.
+ *
+ * On its own that does NOT point every weapon where the controller points: each weapon's animation
+ * holds it in the hand at its own angle, and the auto rifle came out 13 deg off (9 sideways, 7 up).
+ * So once a weapon's sight is learned (vr_ads.cpp), the seat's target is swung by the smallest
+ * rotation that lays the SIGHT along the controller's aim, as VR shooters align a weapon with the
+ * pointing ray; the canonical hand only decides the roll about it, and the hand fits the gun.
  */
 M3 g_canon = mat_of({0.08357F, -0.35772F, -0.02561F, 0.92973F});
 bool g_canonSet = true;
@@ -221,10 +259,147 @@ M3 g_seatQ{};
 float g_seatAngle = 0.0F;
 std::uint64_t g_seatBadSince = 0;
 std::atomic_bool g_rotSeat{true};
+/**
+ * The sight's pitch relative to the controller's aim ray, radians, positive up: the "grip angle" VR
+ * shooters let players set, because people disagree about how a Touch controller is held. 0 = the
+ * runtime's own pointing ray. `canon aim <deg>`.
+ */
+std::atomic<float> g_aimPitch{0.0F};
 Overlay g_overlayData{};
 /** Body yaw, smoothed on the present thread and read by the draws. */
 std::atomic<float> g_bodyYaw{0.0F};
 std::atomic_bool g_bodyYawValid{false};
+/** Whether the right controller was still in the last frame the grip block ran. */
+bool g_ctrlSteady = false;
+
+// ---------------------------------------------------------------------------------------------
+// The two-handed hold: state
+// ---------------------------------------------------------------------------------------------
+
+/** Tunables of the hold, `twohand ...` in SVR_Arms.txt. Under g_lock. */
+struct HoldParams final {
+    bool on{true};
+    /** Let a foregrip steer the barrel. Off, every hold is a support hand: drawn, never steering. */
+    bool aim{true};
+    /** Squeezing within this of the handguard takes hold, metres. */
+    float engage{0.10F};
+    /**
+     * Squeezing beyond this throws a grenade. In between the press is the hold's and waits for the
+     * hand to arrive -- a hand closes as it reaches, and that must not lob a grenade.
+     */
+    float grenade{0.25F};
+    /** The handguard: how far the hand may slide back towards the right hand, and forward. */
+    float slideBack{0.12F};
+    float slideFwd{0.10F};
+    /** A foregrip nearer the right palm than this is a support hand under a pistol, not a foregrip. */
+    float pistol{0.18F};
+    /** A support hand lets go when its controller strays this far from it, metres. */
+    float releaseSupport{0.18F};
+    /** A foregrip lets go when the hand slides this far past either end of the handguard... */
+    float releaseSlide{0.12F};
+    /** ... or when keeping it would turn the gun further than this from the right hand's aim (75 deg)... */
+    float maxSwing{1.31F};
+    /** ... or when the hands come closer than this. */
+    float minLever{0.10F};
+    /** Seconds to take hold, and to let go. */
+    float blend{0.12F};
+};
+
+/**
+ * Where the left hand holds THIS weapon, learned from the game's own animation. Under g_lock.
+ *
+ * `rel` is the animated left hand's frame in the animated right hand's: rigid on the gun while the
+ * left hand is on it, so it follows the gun through recoil, bob and the seat loops with no thread
+ * timing anywhere in it. It is only ever taken from a hand that has been STILL on the gun for a
+ * while: a reload moves the left hand continuously, a weapon swap leaves a new, steady grip.
+ */
+struct Foregrip final {
+    bool valid{};
+    /** Confirmed since the last thing that may have changed the weapon (a swap, a melee, a super). */
+    bool fresh{};
+    /**
+     * When (ms) that last thing happened. Nothing is confirmed for a while after it: a swap LOWERS
+     * the old gun with both hands still rigidly on it, so for the first part of the animation the
+     * old foregrip reads as perfectly still and would confirm itself straight back.
+     */
+    std::uint64_t doubtSince{};
+    /** Counts foregrips adopted; a hold notices the weapon changed under it by this. */
+    std::uint32_t generation{};
+    Affine rel{};
+    Affine prev{};
+    bool prevValid{};
+    std::uint64_t stillSince{};
+    /** The foregrip's palm in the right controller's raw (forward, LEFT, up) basis, from its palm. */
+    V3 fc{};
+    bool fcValid{};
+    /** The fingers around the foregrip, relative to the left hand frame, as the game animated them. */
+    std::array<Affine, kMaxBones> fingers{};
+    std::array<bool, kMaxBones> fingerSet{};
+};
+
+enum class Hold : std::uint8_t { free, pending, held, grenade, suspended };
+
+const char* hold_name(Hold h) noexcept {
+    switch (h) {
+    case Hold::free: return "free";
+    case Hold::pending: return "pending";
+    case Hold::held: return "held";
+    case Hold::grenade: return "grenade";
+    default: return "suspended";
+    }
+}
+
+/** The hold's state machine. Present thread only; what others need is published below. */
+struct HoldMachine final {
+    Hold state{Hold::free};
+    bool down{};
+    bool lastY{};
+    bool lastMelee{};
+    bool lastSuper{};
+    /** Frozen when hold is taken: the mode, the foregrip and the handguard it steers by. */
+    bool aim{};
+    std::uint32_t generation{};
+    V3 fc{};
+    float sMin{};
+    float sMax{};
+    /** Linear 0..1 progress of taking hold; the published weight is it eased. */
+    float ramp{};
+    std::uint64_t suspendedAt{};
+    LARGE_INTEGER last{};
+    /** Left palm in the right controller's frame while tracked (see vr_weapon.cpp, same idea). */
+    V3 leftInRight{};
+    bool leftInRightValid{};
+    float dist{};
+    float swingAngle{};
+    float slide{};
+    float lever{};
+    std::uint32_t grabs{};
+    std::uint32_t releases{};
+    std::uint32_t grenades{};
+    const char* lastReason{"none"};
+};
+
+HoldParams g_hold{};
+Foregrip g_fore{};
+HoldMachine g_machine{};
+/** Eased weight of the hold, its mode and handguard, read by the draws. */
+std::atomic<float> g_holdW{0.0F};
+std::atomic_bool g_holdAim{false};
+std::atomic<float> g_holdSlideMin{0.0F};
+std::atomic<float> g_holdSlideMax{0.0F};
+std::atomic_bool g_grenadeHeld{false};
+/** A squeeze away from the gun is a grenade (`ads mode button`) or just waits to take hold (default). */
+std::atomic_bool g_gripGrenade{false};
+/**
+ * Until when (ms) the learning loops must treat the gun as two-handed: while the second hand turns
+ * it, the right hand on the gun no longer sits the way the right controller alone would put it,
+ * and a loop that learned from that would undo the hold or learn the hold as the grip.
+ */
+std::atomic<std::uint64_t> g_twoHandedUntil{0};
+std::atomic<std::uint32_t> g_foreFrame{0xFFFFFFFFU};
+
+/** The hold's line in the log; defined beside the state machine. Present thread. */
+void report_hold() noexcept;
 
 void report(const char* text) noexcept {
     core::log::write(core::log::Channel::client, core::log::Level::warn, text);
@@ -398,6 +573,11 @@ void rebuild_rig() noexcept {
         }
     }
     rig.shoulderMid = (rig.s[0] + rig.s[1]) * 0.5F;
+    for (std::size_t b = 0; b < kMaxBones; ++b) {
+        if (rig.seg[b] == segHand) {
+            rig.fingerSpan = b + 1;
+        }
+    }
     // Left fingers to right fingers, by the bind pose's mirror symmetry: the bone whose centroid
     // sits closest to this one's reflection across the body's midplane (the game's Y = 0).
     for (std::size_t b = 0; b < kMaxBones; ++b) {
@@ -560,6 +740,100 @@ M3 yaw_matrix(float yaw) noexcept {
     return M3{{V3{c, s, 0}, V3{-s, c, 0}, V3{0, 0, 1}}};
 }
 
+/** Angle of the rotation taking `b` to `a`, radians. */
+float angle_between(const M3& a, const M3& b) noexcept {
+    const M3 d = a * transpose(b);
+    return std::acos(std::clamp((d.at(0, 0) + d.at(1, 1) + d.at(2, 2) - 1.0F) * 0.5F, -1.0F, 1.0F));
+}
+
+/** How long after a swap, melee or super nothing about the foregrip may be confirmed, ms. */
+constexpr std::uint64_t kDoubtMs = 800;
+
+bool two_handed(std::uint64_t nowMs) noexcept {
+    return nowMs < g_twoHandedUntil.load(std::memory_order_relaxed);
+}
+
+/**
+ * Learns where the left hand holds the weapon in hand. Once a frame, from a palette that carries
+ * every finger, under the exclusive lock.
+ *
+ * Three ways a measurement is treated:
+ *   - close to what is already learned: blended in slowly, the fingers recaptured, and -- once the
+ *     hands have been still a quarter of a second with the weapon seated -- confirmed fresh again
+ *     after anything that put it in doubt;
+ *   - far from it, but still for a full second and where a foregrip can be: a different weapon,
+ *     adopted outright. The first one only needs 0.3 s;
+ *   - anything else (a reload, an inspect, sprinting): ignored.
+ *
+ * The foregrip in the right CONTROLLER's frame, which is what the hold and the weapon module steer
+ * by, is measured separately on the drawn gun, and only while the controller is still and the gun
+ * held one-handed: a moving controller puts the render latency into the measurement, and a gun
+ * turned by the second hand no longer sits where the controller alone puts it.
+ */
+void learn_foregrip(const Rig& rig, int handL, const float* bones, std::size_t boneCount,
+                    const std::array<Affine, 2>& animated, const Affine& ctrlR, bool rightValid,
+                    std::uint64_t nowMs) noexcept {
+    Foregrip& f = g_fore;
+    const V3 palmOffsetL = rig.palm[left] - rig.w[left];
+    const Affine meas = inverse_rigid(animated[right]) * animated[left];
+    const bool still = f.prevValid && length(meas.t - f.prev.t) < 0.004F && angle_between(meas.m, f.prev.m) < 0.035F;
+    f.prev = meas;
+    f.prevValid = true;
+    if (!still) {
+        f.stillSince = 0;
+    } else if (f.stillSince == 0) {
+        f.stillSince = nowMs;
+    }
+    const std::uint64_t stillMs = f.stillSince == 0 ? 0 : nowMs - f.stillSince;
+    const bool seated = g_seatError < 0.03F && (g_seatAngle < 0.09F || !g_rotSeat.load(std::memory_order_relaxed));
+    // Where a foregrip can be, in the controller's frame: ahead of the right palm at most an arm's
+    // length, near the barrel's vertical plane, neither over the head nor at the belt.
+    const V3 fcCandidate = g_grip.valid ? g_grip.rel * (meas * palmOffsetL) : V3{};
+    const bool plausible = g_grip.valid && fcCandidate.x > -0.15F && fcCandidate.x < 0.75F
+                           && std::fabs(fcCandidate.y) < 0.25F && fcCandidate.z > -0.30F && fcCandidate.z < 0.25F;
+    const bool matches = f.valid && length(meas.t - f.rel.t) < 0.02F && angle_between(meas.m, f.rel.m) < 0.17F;
+    bool capture = false;
+    if (matches) {
+        f.rel.t = f.rel.t + (meas.t - f.rel.t) * 0.05F;
+        f.rel.m = orthonormalize(blend(f.rel.m, meas.m, 0.05F));
+        capture = true;
+        if (!f.fresh && stillMs > 250 && seated && nowMs - f.doubtSince > kDoubtMs) {
+            f.fresh = true;
+            report("ev=vr.arms foregrip event=confirmed");
+        }
+    } else if (plausible && stillMs > (f.valid ? 1000U : 300U)) {
+        f.rel = meas;
+        f.valid = true;
+        f.fresh = seated && nowMs - f.doubtSince > kDoubtMs;
+        f.fcValid = false;
+        ++f.generation;
+        capture = true;
+        reportf("ev=vr.arms foregrip event=learned rel_t=%.3f,%.3f,%.3f approx_fc=%.3f,%.3f,%.3f seated=%d", meas.t.x,
+                meas.t.y, meas.t.z, fcCandidate.x, fcCandidate.y, fcCandidate.z, seated ? 1 : 0);
+    }
+    if (capture) {
+        for (std::size_t b = 0; b < boneCount && b < kMaxBones; ++b) {
+            if (rig.seg[b] == segHand && rig.side[b] == left && static_cast<int>(b) != handL) {
+                f.fingers[b] = inverse_rigid(animated[left]) * read_rows(bones + b * 12);
+                f.fingerSet[b] = true;
+            }
+        }
+    }
+    // Only from a gun that is confirmed and seated: during a swap the right hand carries the old gun
+    // away from the controller, and a foregrip measured against the controller then is nonsense.
+    if (f.valid && f.fresh && seated && rightValid && g_ctrlSteady && !two_handed(nowMs)) {
+        const V3 palmOnGun = animated[right] * (f.rel * palmOffsetL);
+        const V3 m = transpose(ctrlR.m) * (palmOnGun - ctrlR.t);
+        if (!f.fcValid) {
+            f.fc = m;
+            f.fcValid = true;
+            reportf("ev=vr.arms foregrip event=measured fc=%.3f,%.3f,%.3f lever=%.3f", m.x, m.y, m.z, length(m));
+        } else {
+            f.fc = f.fc + (m - f.fc) * 0.1F;
+        }
+    }
+}
+
 } // namespace
 
 // ---------------------------------------------------------------------------------------------
@@ -712,7 +986,32 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
     const std::uint32_t frame = g_frame.load(std::memory_order_relaxed);
     ReleaseSRWLockShared(&g_lock);
 
-    if (in.right.valid) {
+    // The ADS learner reads the hand exactly as the game animated it, before anything here moves it.
+    Affine gunRoot{};
+    std::uint32_t gunBones = 0;
+    const bool gunSeen = gpu::weapon_root(animated[right].t, gunRoot, &gunBones);
+    ads::observe(animated[right], gunSeen ? &gunRoot : nullptr, gunBones, ctrlR);
+
+    const std::uint64_t tick = GetTickCount64();
+    // While the second hand turns the gun, the right hand on it is no longer where the right
+    // controller alone would put it: nothing below may learn from it, or the loops would undo the
+    // hold (the rotational seat) or learn the hold as the grip (the left hand's orientation).
+    const bool twoHanded = two_handed(tick);
+    // In ADS the game re-grips the hand on the gun (about 2 degrees on the hand cannon) while the ADS
+    // compensation holds the GUN where the hip pose has it -- the gun is what the sight is on and what
+    // the controller stands for. Nothing that learns from the drawn hand may learn from that: the
+    // seat would turn the gun to chase the re-grip, the grip and the foregrip would learn it.
+    // Only while the compensation holds the gun: a weapon not yet learned is left to the seat, which
+    // drags it back into the hand as before.
+    math::Affine unusedDelta{};
+    const bool inAds = ads::compensation(unusedDelta);
+    // And only while the game's animation is at rest in the hand. Everything below learns a STATIC
+    // property of the weapon's hold; a recoil, a reload, a swap or a walk cycle is animation, and a
+    // loop that chases it turns the gun in the hand on its own -- measured before this gate: the
+    // hand cannon pointed 3.5-4 deg low after every shot (and the next round went there), and a
+    // reload swung the sight up to 70 deg off the controller.
+    const bool atRest = ads::animation_at_rest();
+    if (in.right.valid && !inAds) {
         AcquireSRWLockExclusive(&g_lock);
         if (g_grip.frame != frame) {
             g_grip.frame = frame;
@@ -720,7 +1019,9 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
             if (!g_grip.valid) {
                 g_grip.rel = now;
                 g_grip.valid = true;
-            } else {
+            } else if (twoHanded) {
+                g_grip.strikeSince = 0;
+            } else if (atRest) {
                 // Learned slowly and only from a steady grip: recoil and reload animations move
                 // the right hand on the gun, and a left hand that echoed them would look wrong.
                 const float jump = length(now.t - g_grip.rel.t);
@@ -745,15 +1046,27 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
             // steady: a moving hand puts its own latency into the measurement.
             const float moved = length(ctrlR.t - g_lastCtrlR);
             g_lastCtrlR = ctrlR.t;
-            if (moved < 0.004F) {
-                const V3 e = transpose(ctrlR.m) * (palmDrawn[right] - ctrlR.t);
+            g_ctrlSteady = moved < 0.004F;
+            if (moved < 0.004F && atRest) {
+                V3 e = transpose(ctrlR.m) * (palmDrawn[right] - ctrlR.t);
+                if (twoHanded) {
+                    // The weapon module applies this correction in the basis it hands the engine,
+                    // which the second hand has turned. Measure it in that basis too -- the drawn
+                    // right hand's, taken back through the grip it holds the gun with -- or the
+                    // integrator would be steering through a rotated gain.
+                    e = g_grip.rel.m * (transpose(animated[right].m) * (palmDrawn[right] - ctrlR.t));
+                }
                 weapon::seat_error(e.x, -e.y, e.z);
                 g_seatError = length(e);
+                V3 sightDir{};
+                const ads::SightKnown sight = ads::sight_direction(sightDir);
                 // The rotational seat. With the viewmodel turned by Q in the controller frame, the
                 // hand's rotation there is Rrel = Q V (V: the weapon's own authored hold), so the Q
                 // that makes it canonical is canon * Rrel^T * Q.
                 const M3 relNow = transpose(ctrlR.m) * animated[right].m;
-                if (!g_canonSet) {
+                if (twoHanded) {
+                    g_canonSteadySince = 0;
+                } else if (!g_canonSet) {
                     const std::uint64_t nowMs = GetTickCount64();
                     if (g_canonSteadySince == 0) {
                         g_canonSteadySince = nowMs;
@@ -763,12 +1076,28 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
                         const auto q = quat_of(g_canon);
                         reportf("ev=vr.arms canon learned q=%.5f,%.5f,%.5f,%.5f", q[0], q[1], q[2], q[3]);
                     }
-                } else if (g_rotSeat.load(std::memory_order_relaxed) && g_seatError < 0.15F) {
+                } else if (g_rotSeat.load(std::memory_order_relaxed) && g_seatError < 0.15F
+                           && sight != ads::SightKnown::pending) {
                     // Only while the palm is already near the controller: that is the weapon
                     // actually being held. Turning the gun on the strength of a hand that is
                     // somewhere else (a draw animation, the first frames) is how a seat loop
-                    // talks itself into a wrong pose.
-                    const M3 qTarget = orthonormalize(g_canon * transpose(relNow) * g_seatQ);
+                    // talks itself into a wrong pose. And not while a learned weapon is about to be
+                    // identified: its target is about to change, so hold rather than wander.
+                    M3 qTarget = orthonormalize(g_canon * transpose(relNow) * g_seatQ);
+                    if (sight == ads::SightKnown::known) {
+                        // The sight along the aim: qTarget maps the gun frame to the controller's, so
+                        // the swing that takes the sight there is applied on the left, in the
+                        // controller's frame. Its fixed point is a constant per weapon (the hand's
+                        // relation to the controller cancels out of g_canon * relNow^T * Q).
+                        const float pitch = g_aimPitch.load(std::memory_order_relaxed);
+                        const V3 want{std::cos(pitch), 0.0F, std::sin(pitch)};
+                        const V3 v = normalize(qTarget * sightDir);
+                        const V3 axis = cross(v, want);
+                        const float sine = length(axis);
+                        if (sine > 1e-6F) {
+                            qTarget = orthonormalize(axis_angle(axis * (1.0F / sine), std::atan2(sine, dot(v, want))) * qTarget);
+                        }
+                    }
                     const M3 d = qTarget * transpose(g_seatQ);
                     const float c = std::clamp((d.at(0, 0) + d.at(1, 1) + d.at(2, 2) - 1.0F) * 0.5F, -1.0F, 1.0F);
                     g_seatAngle = std::acos(c);
@@ -783,7 +1112,7 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
             }
             // Escape hatch: a palm that stays far from the controller for two seconds while the
             // controller is still means the corrections themselves are wrong. Start over.
-            if (moved < 0.004F && g_seatError > 0.25F) {
+            if (moved < 0.004F && atRest && g_seatError > 0.25F && !twoHanded) {
                 if (g_seatBadSince == 0) {
                     g_seatBadSince = GetTickCount64();
                 } else if (GetTickCount64() - g_seatBadSince > 2000) {
@@ -798,6 +1127,13 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         }
         ReleaseSRWLockExclusive(&g_lock);
     }
+    // The foregrip, from the first palette of the frame that carries every finger (the gloves; the
+    // gauntlet layers stop at bone 52).
+    if (!inAds && boneCount >= rig.fingerSpan && g_foreFrame.exchange(frame, std::memory_order_relaxed) != frame) {
+        AcquireSRWLockExclusive(&g_lock);
+        learn_foregrip(g_rig, handL, bones, boneCount, animated, ctrlR, in.right.valid, tick);
+        ReleaseSRWLockExclusive(&g_lock);
+    }
     AcquireSRWLockShared(&g_lock);
     const bool leftDriven = in.left.valid && g_grip.valid;
     const float grip = std::clamp(xr::input_state().gripL, 0.0F, 1.0F);
@@ -808,6 +1144,36 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         // wherever a particular weapon happens to put the right one.
         const M3 r = ctrlL.m * mirror(g_grip.rel).m;
         target[left] = Affine{r, ctrlL.t - r * palmOffsetL};
+    }
+
+    // The hold: the left hand on the weapon's handguard, blended in from the controller by the
+    // hold's weight. Everything about WHERE comes from this palette -- the learned foregrip carried
+    // by the drawn right hand -- so the hand lands on the gun exactly as drawn, whatever frame the
+    // weapon's orientation was computed in. Along the handguard it slides to the point nearest
+    // the controller, which, with the barrel steered through the left palm, is the palm itself.
+    const float holdW = leftDriven && g_fore.valid ? g_holdW.load(std::memory_order_relaxed) : 0.0F;
+    const bool holdAim = g_holdAim.load(std::memory_order_relaxed);
+    V3 snapPalm{};
+    V3 guardA{};
+    V3 guardB{};
+    float slide = 0.0F;
+    float lineError = 0.0F;
+    if (holdW > 0.0F) {
+        const Affine foreFrame = animated[right] * g_fore.rel;
+        const V3 palmOnGun = foreFrame * palmOffsetL;
+        // The controller's forward as the drawn gun carries it: the hand's rotation taken back
+        // through the grip it holds the gun with. The rotational seat makes that the barrel.
+        const V3 axis = normalize(animated[right].m * (transpose(g_grip.rel.m) * V3{1.0F, 0.0F, 0.0F}));
+        const float sMin = holdAim ? g_holdSlideMin.load(std::memory_order_relaxed) : 0.0F;
+        const float sMax = holdAim ? g_holdSlideMax.load(std::memory_order_relaxed) : 0.0F;
+        const V3 toCtrl = ctrlL.t - palmOnGun;
+        slide = std::clamp(dot(toCtrl, axis), sMin, sMax);
+        lineError = length(toCtrl - axis * dot(toCtrl, axis));
+        const Affine snap{foreFrame.m, foreFrame.t + axis * slide};
+        target[left] = blend_about(target[left], snap, holdW, palmOffsetL);
+        snapPalm = palmOnGun + axis * slide;
+        guardA = palmOnGun + axis * sMin;
+        guardB = palmOnGun + axis * sMax;
     }
 
     // Solve both arms.
@@ -869,7 +1235,13 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         }
         case segHand:
             if (s == left && leftDriven && static_cast<int>(b) != labels.side[left].hand) {
-                m = target[left] * left_finger(rig, bones, boneCount, animated[right], b, grip);
+                Affine rel = left_finger(rig, bones, boneCount, animated[right], b, grip);
+                if (holdW > 0.0F && g_fore.fingerSet[b]) {
+                    // Around the handguard: the fingers the game wrapped round this weapon's
+                    // foregrip, captured with it, so a reload's fingers never leak in.
+                    rel = blend_about(rel, g_fore.fingers[b], holdW, rig.cen[b]);
+                }
+                m = target[left] * rel;
                 break;
             }
             // Carried rigidly with the hand: target * animated^-1 * game's own bone. Identity for
@@ -902,6 +1274,25 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         }
         o.controller[left] = ctrlL;
         o.controller[right] = ctrlR;
+        o.holdW = holdW;
+        o.holdAim = holdAim;
+        o.foreValid = g_fore.valid;
+        o.ctrlPalmL = ctrlL.t;
+        if (holdW > 0.0F) {
+            o.guardA = guardA;
+            o.guardB = guardB;
+            o.snapPalm = snapPalm;
+            o.lineError = lineError;
+            o.handError = length(snapPalm - ctrlL.t);
+            o.slide = slide;
+        } else if (g_fore.valid) {
+            // Not held: where the handguard is, so the overlay shows what there is to take hold of.
+            const V3 palmOnGun = (animated[right] * g_fore.rel) * palmOffsetL;
+            const V3 axis = normalize(animated[right].m * (transpose(g_grip.rel.m) * V3{1.0F, 0.0F, 0.0F}));
+            o.guardA = palmOnGun - axis * g_hold.slideBack;
+            o.guardB = palmOnGun + axis * g_hold.slideFwd;
+            o.snapPalm = palmOnGun;
+        }
         ReleaseSRWLockShared(&g_lock);
         AcquireSRWLockExclusive(&g_lock);
         g_overlayData = o;
@@ -996,10 +1387,12 @@ void poll_commands() noexcept {
         } else if (std::strcmp(verb, "relearn") == 0) {
             g_grip = Grip{};
         } else if (std::strcmp(verb, "canon") == 0 && n >= 2) {
-            // canon learn|on|off|reset
+            // canon learn|on|off|reset|aim <deg>
             if (std::strcmp(a, "learn") == 0) {
                 g_canonSet = false;
                 g_canonSteadySince = 0;
+            } else if (std::strcmp(a, "aim") == 0 && sscanf_s(line.data(), "%*s %*s %f", &v[0]) == 1) {
+                g_aimPitch.store(std::clamp(v[0], -45.0F, 45.0F) * 0.0174533F, std::memory_order_relaxed);
             } else if (std::strcmp(a, "reset") == 0) {
                 g_seatQ = M3{};
                 weapon::set_seat_rotation(quat_of(g_seatQ));
@@ -1010,6 +1403,29 @@ void poll_commands() noexcept {
                     weapon::set_seat_rotation(quat_of(g_seatQ));
                 }
             }
+        } else if (std::strcmp(verb, "twohand") == 0 && n >= 2) {
+            HoldParams& h = g_hold;
+            char b[16] = {};
+            const bool hasB = sscanf_s(line.data(), "%*s %*s %15s", b, static_cast<unsigned>(sizeof b)) == 1;
+            if (std::strcmp(a, "on") == 0 || std::strcmp(a, "off") == 0) {
+                h.on = std::strcmp(a, "on") == 0;
+            } else if (std::strcmp(a, "aim") == 0 && hasB) {
+                h.aim = std::strcmp(b, "off") != 0;
+            } else if (std::strcmp(a, "engage") == 0 && sscanf_s(line.data(), "%*s %*s %f %f", &v[0], &v[1]) == 2) {
+                h.engage = std::clamp(v[0], 0.02F, 0.30F);
+                h.grenade = std::clamp(v[1], h.engage, 1.0F);
+            } else if (std::strcmp(a, "slide") == 0 && sscanf_s(line.data(), "%*s %*s %f %f", &v[0], &v[1]) == 2) {
+                h.slideBack = std::clamp(v[0], 0.0F, 0.4F);
+                h.slideFwd = std::clamp(v[1], 0.0F, 0.4F);
+            } else if (std::strcmp(a, "pistol") == 0 && sscanf_s(line.data(), "%*s %*s %f", &v[0]) == 1) {
+                h.pistol = std::clamp(v[0], 0.0F, 1.0F);
+            } else if (std::strcmp(a, "blend") == 0 && sscanf_s(line.data(), "%*s %*s %f", &v[0]) == 1) {
+                h.blend = std::clamp(v[0], 0.0F, 1.0F);
+            } else if (std::strcmp(a, "relearn") == 0) {
+                g_fore = Foregrip{};
+            }
+            reportf("ev=vr.arms twohand on=%d aim=%d engage=%.3f grenade=%.3f slide=%.3f,%.3f pistol=%.3f blend=%.3f",
+                    h.on ? 1 : 0, h.aim ? 1 : 0, h.engage, h.grenade, h.slideBack, h.slideFwd, h.pistol, h.blend);
         } else if (std::strcmp(verb, "rig") == 0) {
             char sideName[4] = {};
             int b[6] = {};
@@ -1025,40 +1441,13 @@ void poll_commands() noexcept {
         if (std::strcmp(verb, "dump") == 0) {
             dump_rig();
         }
+        if (std::strcmp(verb, "dump") == 0 || (std::strcmp(verb, "twohand") == 0 && std::strcmp(a, "dump") == 0)) {
+            report_hold();
+        }
         reportf("ev=vr.arms command %s", verb);
     }
     std::fclose(file);
     DeleteFileW(path.data());
-}
-
-/** The back buffer's render target view, cached against the texture it was made for. */
-ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
-    static ID3D11Texture2D* s_texture = nullptr;
-    static ID3D11RenderTargetView* s_view = nullptr;
-    ID3D11Texture2D* texture = nullptr;
-    if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&texture)))
-        || texture == nullptr) {
-        return nullptr;
-    }
-    if (texture != s_texture) {
-        if (s_view != nullptr) {
-            s_view->Release();
-            s_view = nullptr;
-        }
-        D3D11_TEXTURE2D_DESC desc{};
-        texture->GetDesc(&desc);
-        D3D11_RENDER_TARGET_VIEW_DESC viewDesc{};
-        viewDesc.Format = desc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS   ? DXGI_FORMAT_R8G8B8A8_UNORM
-                          : desc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS ? DXGI_FORMAT_B8G8R8A8_UNORM
-                                                                         : desc.Format;
-        viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        if (FAILED(device->CreateRenderTargetView(texture, &viewDesc, &s_view))) {
-            s_view = nullptr;
-        }
-        s_texture = texture;
-    }
-    texture->Release();
-    return s_view;
 }
 
 void add_frame(std::vector<wl::Edge>& edges, const Affine& frame, float size) {
@@ -1093,7 +1482,7 @@ void draw_overlay(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapC
     if (!o.valid) {
         return;
     }
-    ID3D11RenderTargetView* const target = back_buffer_view(device, swapChain);
+    ID3D11RenderTargetView* const target = gpu::back_buffer_view(device, swapChain);
     if (target == nullptr) {
         return;
     }
@@ -1108,6 +1497,21 @@ void draw_overlay(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapC
         spheres.push_back(wl::Sphere{{o.s[s].x, o.s[s].y, o.s[s].z}, 0.02F, 12, wl::Color{255, 230, 0, 255}});
         spheres.push_back(wl::Sphere{{o.e[s].x, o.e[s].y, o.e[s].z}, 0.015F, 12, wl::Color{255, 230, 0, 255}});
         spheres.push_back(wl::Sphere{{o.w[s].x, o.w[s].y, o.w[s].z}, 0.012F, 12, wl::Color{255, 255, 255, 255}});
+    }
+    // The handguard on the drawn gun: cyan while free, amber while taking hold, green when held,
+    // with the palm on it; magenta from the left controller to that palm, which is the residue a
+    // held foregrip should have none of.
+    if (o.foreValid) {
+        const wl::Color guard = o.holdW > 0.99F  ? wl::Color{40, 255, 120, 255}
+                                : o.holdW > 0.0F ? wl::Color{255, 190, 0, 255}
+                                                 : wl::Color{0, 200, 255, 255};
+        edges.push_back(wl::Edge{{o.guardA.x, o.guardA.y, o.guardA.z}, {o.guardB.x, o.guardB.y, o.guardB.z}, guard});
+        spheres.push_back(wl::Sphere{{o.snapPalm.x, o.snapPalm.y, o.snapPalm.z}, 0.018F, 12, guard});
+        if (o.holdW > 0.0F) {
+            edges.push_back(wl::Edge{{o.ctrlPalmL.x, o.ctrlPalmL.y, o.ctrlPalmL.z},
+                                     {o.snapPalm.x, o.snapPalm.y, o.snapPalm.z},
+                                     wl::Color{255, 0, 255, 255}});
+        }
     }
     teleport::CameraPose pose{};
     pose.position = {0.0F, 0.0F, 0.0F};
@@ -1187,6 +1591,258 @@ void present(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain*
     if (frame % kReportPeriod == 0 && g_rig.valid) {
         report_state();
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// The two-handed hold: the state machine
+// ---------------------------------------------------------------------------------------------
+
+namespace {
+
+/** The gamepad's own thresholds for a grip as a button, so a press means the same in both places. */
+constexpr float kGripPress = 0.55F;
+constexpr float kGripRelease = 0.35F;
+
+bool pressed(float value, bool held) noexcept {
+    return held ? value > kGripRelease : value > kGripPress;
+}
+
+void take_hold(HoldMachine& h, bool aim, const V3& fc, float sMin, float sMax, std::uint32_t generation) noexcept {
+    h.state = Hold::held;
+    h.aim = aim;
+    h.generation = generation;
+    h.fc = fc;
+    h.sMin = sMin;
+    h.sMax = sMax;
+    ++h.grabs;
+    // A short, firm click in the left hand: the one confirmation a player needs that the gun is
+    // now in both hands, and the convention of every shooter that has a foregrip.
+    xr::haptic(false, 0.55F, 0.025F);
+    reportf("ev=vr.arms hold event=grab mode=%s dist=%.3f fc=%.3f,%.3f,%.3f lever=%.3f slide=%.2f..%.2f",
+            aim ? "aim" : "support", h.dist, fc.x, fc.y, fc.z, length(fc), sMin, sMax);
+}
+
+/**
+ * @param pulse True when the game or the geometry took the hold away rather than the player
+ *              opening their hand: a player letting go knows they did, one losing the gun should feel it.
+ */
+void let_go(HoldMachine& h, Hold next, const char* reason, bool pulse) noexcept {
+    h.state = next;
+    h.lastReason = reason;
+    ++h.releases;
+    if (pulse) {
+        xr::haptic(false, 0.25F, 0.012F);
+    }
+    reportf("ev=vr.arms hold event=release reason=%s next=%s swing_deg=%.1f slide=%.3f lever=%.3f dist=%.3f", reason,
+            hold_name(next), h.swingAngle * 57.2958F, h.slide, h.lever, h.dist);
+}
+
+void report_hold() noexcept {
+    const HoldMachine& h = g_machine;
+    AcquireSRWLockShared(&g_lock);
+    const Foregrip& f = g_fore;
+    const bool valid = f.valid;
+    const bool fresh = f.fresh;
+    const bool fcValid = f.fcValid;
+    const V3 fc = f.fc;
+    const Overlay o = g_overlayData;
+    ReleaseSRWLockShared(&g_lock);
+    reportf("ev=vr.arms hold state=%s mode=%s w=%.2f dist=%.3f swing_deg=%.2f slide=%.3f lever=%.3f fore=%d fresh=%d "
+            "fc_ok=%d fc=%.3f,%.3f,%.3f fc_len=%.3f line_err=%.4f hand_err=%.4f drawn_slide=%.3f grabs=%u "
+            "releases=%u grenades=%u last=%s",
+            hold_name(h.state), h.aim ? "aim" : "support", g_holdW.load(std::memory_order_relaxed), h.dist,
+            h.swingAngle * 57.2958F, h.slide, h.lever, valid ? 1 : 0, fresh ? 1 : 0, fcValid ? 1 : 0, fc.x, fc.y, fc.z,
+            length(fc), o.lineError, o.handError, o.slide, h.grabs, h.releases, h.grenades, h.lastReason);
+}
+
+} // namespace
+
+void update_hold() noexcept {
+    HoldMachine& h = g_machine;
+    LARGE_INTEGER now{};
+    LARGE_INTEGER frequency{};
+    QueryPerformanceCounter(&now);
+    QueryPerformanceFrequency(&frequency);
+    float dt = 0.0F;
+    if (h.last.QuadPart != 0 && frequency.QuadPart != 0) {
+        dt = static_cast<float>(now.QuadPart - h.last.QuadPart) / static_cast<float>(frequency.QuadPart);
+    }
+    h.last = now;
+    dt = std::clamp(dt, 0.0F, 0.05F);
+    const std::uint64_t nowMs = GetTickCount64();
+
+    xr::HeadPose head{};
+    xr::HandPose l{};
+    xr::HandPose r{};
+    xr::frame_sample(head, l, r);
+    const xr::InputState in = xr::input_state();
+
+    AcquireSRWLockShared(&g_lock);
+    const HoldParams hp = g_hold;
+    // Known: there is a foregrip to measure against, if perhaps of the weapon being swapped away.
+    // Ok: confirmed since, so it may be taken hold of.
+    const bool foreKnown = g_fore.valid && g_fore.fcValid;
+    const bool foreOk = foreKnown && g_fore.fresh;
+    const V3 fcNow = g_fore.fc;
+    const std::uint32_t foreGen = g_fore.generation;
+    ReleaseSRWLockShared(&g_lock);
+
+    // Nothing to hold (arms off, rig unknown, a controller missing): every squeeze is the grenade,
+    // which is exactly what the left grip did before the hold existed.
+    const bool live = hp.on && ready() && in.valid && l.valid && r.valid;
+    const bool zoneKnown = live && foreKnown;
+    const bool zoneOk = live && foreOk;
+    const bool support = length(fcNow) < hp.pistol;
+    const bool aimNow = hp.aim && !support;
+    const float sMinNow = aimNow ? -hp.slideBack : 0.0F;
+    const float sMaxNow = aimNow ? hp.slideFwd : 0.0F;
+    const M3 c = orthonormalize(M3{{to_v3(r.forward), -to_v3(r.right), to_v3(r.up)}});
+    const V3 p = to_v3(r.palm);
+    if (l.valid && !l.stale && r.valid) {
+        h.leftInRight = transpose(c) * (to_v3(l.palm) - p);
+        h.leftInRightValid = true;
+    }
+    // Tracking loss: the left hand held where it last was relative to the right, as the weapon
+    // module does, so the two agree about where the hand is.
+    const V3 lp = l.stale && h.leftInRightValid ? p + c * h.leftInRight : to_v3(l.palm);
+    if (h.state != Hold::held) {
+        h.dist = zoneKnown ? two_hand::zone_distance(c, p, lp, fcNow, sMinNow, sMaxNow) : 99.0F;
+    }
+
+    // The actions whose animation takes the gun out of the hands: a weapon swap (Y), a melee (right
+    // grip), a super (right stick click). The hold is suspended -- the hand comes back by itself
+    // if the grip is still squeezed when the gun is -- and the foregrip has to be confirmed again,
+    // because after a swap it belongs to a different weapon.
+    const bool y = (in.buttons & xr::kButtonY) != 0;
+    const bool melee = pressed(in.gripR, h.lastMelee);
+    const bool superPress = (in.buttons & xr::kButtonThumbR) != 0;
+    const bool away = in.valid && ((y && !h.lastY) || (melee && !h.lastMelee) || (superPress && !h.lastSuper));
+    const char* awayReason = y && !h.lastY ? "swap" : (melee && !h.lastMelee ? "melee" : "super");
+    h.lastY = y;
+    h.lastMelee = melee;
+    h.lastSuper = superPress;
+    if (away) {
+        AcquireSRWLockExclusive(&g_lock);
+        g_fore.fresh = false;
+        g_fore.doubtSince = nowMs;
+        g_fore.stillSince = 0;
+        ReleaseSRWLockExclusive(&g_lock);
+        if (h.state == Hold::held) {
+            let_go(h, Hold::suspended, awayReason, false);
+            h.suspendedAt = nowMs;
+        }
+    }
+
+    const bool wasDown = h.down;
+    h.down = in.valid && pressed(in.gripL, h.down);
+    if (!h.down) {
+        if (h.state == Hold::held) {
+            let_go(h, Hold::free, "grip", false);
+        }
+        h.state = Hold::free;
+    } else if (!wasDown) {
+        // The squeeze is classified once, where it starts: on the handguard it takes hold, near it
+        // it waits for the hand to arrive, anywhere else it is a grenade for as long as it lasts.
+        // Near a foregrip still in doubt (the moments after a swap) it waits too: reaching for the
+        // new gun as it comes up must not throw a grenade. With the grenade on the left trigger
+        // (physical ADS, the default) there is no grenade here at all: a squeeze anywhere waits,
+        // and takes hold when the hand reaches the handguard.
+        if (g_gripGrenade.load(std::memory_order_relaxed) && (!zoneKnown || h.dist > hp.grenade)) {
+            h.state = Hold::grenade;
+            ++h.grenades;
+            reportf("ev=vr.arms hold event=grenade dist=%.3f zone=%d", h.dist, zoneKnown ? 1 : 0);
+        } else if (zoneOk && h.dist <= hp.engage) {
+            take_hold(h, aimNow, fcNow, sMinNow, sMaxNow, foreGen);
+        } else {
+            h.state = Hold::pending;
+        }
+    } else {
+        switch (h.state) {
+        case Hold::pending:
+            if (zoneOk && h.dist <= hp.engage) {
+                take_hold(h, aimNow, fcNow, sMinNow, sMaxNow, foreGen);
+            }
+            break;
+        case Hold::suspended:
+            if (zoneOk && nowMs - h.suspendedAt > 400 && h.dist <= hp.engage) {
+                take_hold(h, aimNow, fcNow, sMinNow, sMaxNow, foreGen);
+            }
+            break;
+        case Hold::held:
+            if (!live) {
+                let_go(h, Hold::pending, "lost", true);
+            } else if (foreGen != h.generation) {
+                // The weapon changed under the hand without a button saying so (ammo ran out, a
+                // pickup): the hold steers by a foregrip that is no longer there. Take it again
+                // on the new one.
+                let_go(h, Hold::suspended, "regrip", true);
+                h.suspendedAt = nowMs;
+            } else if (h.aim) {
+                // The barrel follows the hand, so the hand is always on the line; what can break
+                // the hold is how far the gun would have to turn, the hands meeting, or the hand
+                // sliding off either end of the handguard.
+                const two_hand::Swing sw = two_hand::swing(c, p, lp, h.fc, h.sMin, h.sMax);
+                h.swingAngle = sw.angle;
+                h.slide = sw.s;
+                h.lever = sw.lever;
+                h.dist = std::fabs(sw.sRaw - sw.s);
+                if (sw.angle > hp.maxSwing) {
+                    let_go(h, Hold::pending, "swing", true);
+                } else if (sw.lever < hp.minLever) {
+                    let_go(h, Hold::pending, "close", true);
+                } else if (sw.sRaw > h.sMax + hp.releaseSlide || sw.sRaw < h.sMin - hp.releaseSlide) {
+                    let_go(h, Hold::pending, "slide", true);
+                }
+            } else {
+                h.dist = length(lp - (p + c * h.fc));
+                h.swingAngle = 0.0F;
+                h.lever = length(lp - p);
+                if (h.dist > hp.releaseSupport) {
+                    let_go(h, Hold::pending, "range", true);
+                }
+            }
+            break;
+        default: break;
+        }
+    }
+
+    // The weight: real time, not frames (the mock runs near 190 fps, a headset at 72 to 120), eased
+    // so the hand arrives on the gun and the barrel swings onto the line without a kink.
+    const float target = h.state == Hold::held ? 1.0F : 0.0F;
+    const float step = hp.blend > 1e-3F ? dt / hp.blend : 1.0F;
+    h.ramp = target > h.ramp ? std::min(target, h.ramp + step) : std::max(target, h.ramp - step);
+    const float w = h.ramp * h.ramp * (3.0F - 2.0F * h.ramp);
+    g_holdW.store(w, std::memory_order_relaxed);
+    g_holdAim.store(h.aim, std::memory_order_relaxed);
+    g_holdSlideMin.store(h.sMin, std::memory_order_relaxed);
+    g_holdSlideMax.store(h.sMax, std::memory_order_relaxed);
+    if (w > 0.0F) {
+        // A little past the end of the ramp: the palettes still in flight were posed with it.
+        g_twoHandedUntil.store(nowMs + 200, std::memory_order_relaxed);
+    }
+    g_grenadeHeld.store(h.state == Hold::grenade, std::memory_order_relaxed);
+    weapon::TwoHandGrip grip{};
+    grip.weight = w;
+    grip.aim = h.aim;
+    grip.foregrip = {h.fc.x, h.fc.y, h.fc.z};
+    grip.slideMin = h.sMin;
+    grip.slideMax = h.sMax;
+    weapon::set_two_hand(grip);
+    if (g_frame.load(std::memory_order_relaxed) % kReportPeriod == 0 && g_rig.valid) {
+        report_hold();
+    }
+}
+
+bool grenade() noexcept {
+    return g_grenadeHeld.load(std::memory_order_relaxed);
+}
+
+void set_grip_grenade(bool on) noexcept {
+    g_gripGrenade.store(on, std::memory_order_relaxed);
+}
+
+bool holding() noexcept {
+    return g_holdW.load(std::memory_order_relaxed) > 0.0F;
 }
 
 } // namespace sunrise::client::hooks::vr::arms

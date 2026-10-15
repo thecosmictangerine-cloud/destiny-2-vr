@@ -45,4 +45,29 @@ void observe(const float* bones, std::size_t boneCount) noexcept;
 /** Once per present: commands, the periodic report, and the verification overlay. */
 void present(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain* swapChain) noexcept;
 
+/**
+ * The two-handed hold, once per OpenXR frame, after the actions were synced and before the
+ * controllers are turned into keys: decides what the left grip means this frame (take hold of the
+ * weapon, keep holding it, or throw a grenade), ramps the hold in and out, publishes it to the
+ * weapon module and pulses the left controller on taking hold. Present thread.
+ */
+void update_hold() noexcept;
+
+/**
+ * @return True while the left grip is being held as a GRENADE press: squeezed away from the
+ *         weapon, or with nothing to hold. A squeeze on (or on its way to) the handguard is the
+ *         hold's, and never reaches the game.
+ */
+[[nodiscard]] bool grenade() noexcept;
+
+/**
+ * Whether a left-grip squeeze away from the weapon throws a grenade (true, the `ads mode button`
+ * mapping) or waits for the hand to reach the handguard and takes hold there (false, the default:
+ * the grenade is on the left trigger, and the grip is only the hold).
+ */
+void set_grip_grenade(bool on) noexcept;
+
+/** @return True while the left hand holds the weapon, or is still letting go of it. Any thread. */
+[[nodiscard]] bool holding() noexcept;
+
 } // namespace sunrise::client::hooks::vr::arms

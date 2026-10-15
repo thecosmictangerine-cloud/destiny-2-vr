@@ -1,10 +1,14 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
+
+#include "vr_math.h"
 
 struct ID3D11Device;
 struct ID3D11DeviceContext;
 struct IDXGISwapChain;
+struct ID3D11RenderTargetView;
 
 namespace sunrise::client::hooks::vr::gpu {
 
@@ -29,7 +33,28 @@ struct ViewCamera final {
 /** @return False until a viewmodel view has been seen. */
 [[nodiscard]] bool viewmodel_camera(ViewCamera& out) noexcept;
 
+/**
+ * The projection scales the world was really rendered with (1/tan of the half angles), as the GPU
+ * received them -- the ground truth for what the image contains, whatever was written upstream.
+ * @return False until the world camera has been seen, or when it was last seen over 0.5 s ago.
+ */
+[[nodiscard]] bool world_projection(float& p00, float& p11) noexcept;
+
+/**
+ * The back buffer's render target view, cached against the texture it was made for, so the debug
+ * overlays can draw into the frame the desktop and the headset both receive. Present thread only.
+ * @return The view, owned here, or null.
+ */
+[[nodiscard]] ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept;
+
 /** @return The immediate context the game draws on, without a reference, or null. */
 [[nodiscard]] ID3D11DeviceContext* immediate_context() noexcept;
+
+/**
+ * The root bone of the small skinned palette (the weapon's: a handful of bones, camera-relative)
+ * seen most recently nearest to `around`, within half a metre and the last 100 ms.
+ * @return False when none qualifies.
+ */
+[[nodiscard]] bool weapon_root(const math::V3& around, math::Affine& out, std::uint32_t* bones = nullptr) noexcept;
 
 } // namespace sunrise::client::hooks::vr::gpu

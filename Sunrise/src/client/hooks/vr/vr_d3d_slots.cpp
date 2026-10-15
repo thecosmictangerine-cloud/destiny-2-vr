@@ -31,6 +31,7 @@ Slots slots() noexcept {
     out.createBuffer = SVR_SLOT(ID3D11DeviceVtbl, CreateBuffer);
     out.createInputLayout = SVR_SLOT(ID3D11DeviceVtbl, CreateInputLayout);
     out.createVertexShader = SVR_SLOT(ID3D11DeviceVtbl, CreateVertexShader);
+    out.createPixelShader = SVR_SLOT(ID3D11DeviceVtbl, CreatePixelShader);
     out.createComputeShader = SVR_SLOT(ID3D11DeviceVtbl, CreateComputeShader);
     out.createDeferredContext = SVR_SLOT(ID3D11DeviceVtbl, CreateDeferredContext);
 

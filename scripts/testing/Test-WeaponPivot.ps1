@@ -100,12 +100,36 @@ $env:SVR_TEMPLATE_BOX = $TemplateBox
 $index = 0
 $rows = New-Object System.Collections.Generic.List[object]
 
+<#
+The mock turns a controller about its AIM origin, and its grip pose sits 7 cm behind and 3 cm below
+that, in the controller's frame (mock_runtime.cpp). So a 15 degree yaw there really moves the grip
+point by about 2 cm -- and a gun anchored on the palm rightly follows it, which this test then read
+as "rotation translated the weapon" (yaw 22-29 px, pitch 34 px, each matching the palm's own
+projected travel to within a few pixels). A wrist turns the grip about itself. With the palm anchor,
+the aim origin is shifted by `o - R o` so the grip stays put and the rotation really is pure.
+Same composition as the mock: q = yaw(Y) * pitch(X) * roll(Z), OpenXR axes.
+#>
+function Add-PalmPivot([hashtable]$m) {
+    if ($Anchor -ne 'palm') { return }
+    $o = @(0.0, -0.03, 0.07)
+    $r = [double]$m['HandRoll'] * [Math]::PI / 180.0
+    $p = [double]$m['HandPitch'] * [Math]::PI / 180.0
+    $y = [double]$m['HandYaw'] * [Math]::PI / 180.0
+    $v = @(($o[0] * [Math]::Cos($r) - $o[1] * [Math]::Sin($r)), ($o[0] * [Math]::Sin($r) + $o[1] * [Math]::Cos($r)), $o[2])
+    $v = @($v[0], ($v[1] * [Math]::Cos($p) - $v[2] * [Math]::Sin($p)), ($v[1] * [Math]::Sin($p) + $v[2] * [Math]::Cos($p)))
+    $v = @(($v[0] * [Math]::Cos($y) + $v[2] * [Math]::Sin($y)), $v[1], (-$v[0] * [Math]::Sin($y) + $v[2] * [Math]::Cos($y)))
+    $m['HandX'] = [double]$m['HandX'] + $o[0] - $v[0]
+    $m['HandY'] = [double]$m['HandY'] + $o[1] - $v[1]
+    $m['HandZ'] = [double]$m['HandZ'] + $o[2] - $v[2]
+}
+
 # Applies one input state, waits for it to reach the screen, and captures. Returns the file name.
 function Capture {
     param([string]$Name, [hashtable]$Changes = @{})
     $script:index++
     $mock = $zero.Clone()
     foreach ($k in $Changes.Keys) { $mock[$k] = $Changes[$k] }
+    Add-PalmPivot $mock
     Set-MockInput @mock | Out-Null
     Start-Sleep -Seconds $SettleSeconds
     # Throws rather than capturing whatever window happens to be in front. A shot of the wrong
@@ -295,6 +319,12 @@ $still = [Math]::Max(25.0, 3.0 * $noise)
 # it exists to catch a pivot that passes the two regressions by killing the response altogether.
 $moved = 60.0
 
+# The same two regressions measured a second way, with no camera in it: the ADS module's trace logs
+# the drawn gun relative to the controller every frame, which is constant if the gun stays in the
+# hand -- at any controller rotation and any anchor turn. Judged after REGRESSION 2.
+[IO.File]::WriteAllText((Join-Path $GameDir 'SVR_Ads.txt'), "trace 600`n", (New-Object System.Text.UTF8Encoding($false)))
+Start-Sleep -Seconds 1
+
 Write-Output ''
 Write-Output '== REGRESSION 1: pure rotation must not translate the weapon =='
 foreach ($case in @(
@@ -328,6 +358,29 @@ Send-Weapon -Quiet @(('turn {0}' -f (Fmt (-$TurnDegrees))))
 $back = Capture 'turn_back'
 Judge 'turn_back' (Measure-Shift $rest $back) 'still' $still
 
+Write-Output ''
+Write-Output '== IN THE HAND: the drawn gun relative to the controller, every settled frame of both regressions =='
+[IO.File]::WriteAllText((Join-Path $GameDir 'SVR_Ads.txt'), "trace stop`n", (New-Object System.Text.UTF8Encoding($false)))
+Start-Sleep -Seconds 4
+$traceCopy = Join-Path $shots ("{0}_inhand_trace.csv" -f $Tag)
+Copy-Item (Join-Path $GameDir 'SVR_AdsTrace.csv') $traceCopy -Force
+$inHand = python (Join-Path $PSScriptRoot 'in_hand.py') $traceCopy
+$inHand | ForEach-Object { "  $_" }
+$ih = $inHand | Where-Object { $_ -match '^INHAND ' } | Select-Object -Last 1
+if ($ih -and ($ih -split '\s+').Count -ge 4) {
+    $parts = $ih -split '\s+'
+    $mm = [double]::Parse($parts[1], $inv); $deg = [double]::Parse($parts[2], $inv)
+    $ok = $mm -le 3.0 -and $deg -le 0.5
+    $verdicts.Add([pscustomobject]@{ Check = 'in_hand'; dx = 0; dy = 0; Mag = [int]$mm; Peak = 'trace'
+            Rule = 'still'; Limit = 3; Verdict = $(if ($ok) { 'PASS' } else { 'FAIL' }) })
+    Write-Output ("  [{0}] in_hand  worst settled frame {1} mm, {2} deg from the median ({3} frames)" -f
+        $(if ($ok) { 'PASS' } else { 'FAIL' }), $parts[1], $parts[2], $parts[3])
+} else {
+    $verdicts.Add([pscustomobject]@{ Check = 'in_hand'; dx = 0; dy = 0; Mag = 0; Peak = 'n/a'
+            Rule = 'still'; Limit = 3; Verdict = 'NO MATCH' })
+    Write-Output "  [ -- ] in_hand  trace unreadable"
+}
+
 if (-not $Quick) {
     Write-Output ''
     Write-Output '== SANITY: the weapon must still MOVE when the hand really moves =='
@@ -341,9 +394,12 @@ if (-not $Quick) {
     Write-Output ''
     Write-Output '== SANITY: the head moving must leave the weapon in the WORLD =='
     # Which reads on screen as the gun sliding the opposite way. Same bar as above: it has to move.
+    # Vertical, not a lean in: leaning 15 cm towards a gun 0.43 m away draws it 1.5 times bigger,
+    # which template matching cannot follow (it reported 46 px for a gun that, by eye, stayed put in
+    # the world and grew). Lowering the head moves it on screen without changing its size.
     foreach ($case in @(
             @{ n = 'head_right'; c = @{ HeadX = 0.12 } },
-            @{ n = 'head_lean_in'; c = @{ HeadZ = -0.15 } })) {
+            @{ n = 'head_down'; c = @{ HeadY = -0.10 } })) {
         $shot = Capture $case.n $case.c
         Judge-Tolerant $case.n $back $shot 'moves' $moved
     }

@@ -26,6 +26,13 @@
  *   hide chk <8 hex>       skip every draw whose vertex shader's DXBC checksum starts with this
  *   hide none              clear every rule
  *   stats                  draw counts per context type, into the log
+ *   hide pchk <8 hex>      skip every draw whose PIXEL shader's checksum starts with this
+ *   hide cchk <8 hex>      skip every dispatch of a compute shader with this checksum
+ *   hide range <a> <b>     skip the immediate context's draws a..b-1 of each frame
+ *   patch <psh> <row> <x> <y> <z> <w> | patch off
+ *                          overwrite one row of the constant buffer a pixel shader reads at slot 0
+ *   reticle hide|show      the ADS centre dot (default hidden while VR is on)
+ *   snap                   the back buffer, as sent to the headset, to SVR_BackBuffer.bmp
  */
 
 #include "vr_gpu.h"
@@ -51,8 +58,10 @@
 #include "../../../core/logging/log.h"
 #include "../../hooking/detour.h"
 #include "runtime.h"
+#include "vr_aim.h"
 #include "vr_arms.h"
 #include "vr_d3d_slots.h"
+#include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::gpu {
 namespace {
@@ -329,11 +338,51 @@ thread_local bool t_inside = false;
 // Hide rules
 // ---------------------------------------------------------------------------------------------
 
-enum HideKind : std::size_t { hideVs, hidePs, hideSrv, hideCb, hideVb, hideIb, hideChk, hideKinds };
+enum HideKind : std::size_t { hideVs, hidePs, hideSrv, hideCb, hideVb, hideIb, hideChk, hidePchk, hideCchk, hideKinds };
 std::array<std::array<std::atomic<std::uintptr_t>, kMaxHide>, hideKinds> g_hide{};
 std::array<std::atomic<std::size_t>, hideKinds> g_hideCount{};
 std::atomic_bool g_anyHide{false};
 std::atomic<std::uint64_t> g_hidden{0};
+/**
+ * `hide range <from> <to>`: skip the immediate context's draws whose ordinal in the frame falls in
+ * [from, to). A bisection over the frame, for a draw that no shader or buffer rule finds -- halve
+ * the range until the thing on screen goes, then read its shaders out of a capture at that ordinal.
+ */
+std::atomic<std::uint32_t> g_rangeFrom{0};
+std::atomic<std::uint32_t> g_rangeTo{0};
+/** Immediate-context draws so far this frame; reset at present. Present and render on one thread. */
+std::atomic<std::uint32_t> g_ordinal{0};
+thread_local std::uint32_t t_ordinal = 0;
+
+/**
+ * `patch <psh> <row> <x> <y> <z> <w>`: overwrite one float4 row of the constant buffer a pixel shader
+ * reads at slot 0, in place at Unmap, every frame. The buffer is learned from a draw that binds that
+ * shader. How a value the game sets only in a state (ADS) is found to be the switch for something on
+ * screen; `patch off` stops it. The proven rule is compiled in below (kReticlePsh).
+ */
+std::atomic<std::uint32_t> g_patchPsh{0};
+std::atomic<UINT> g_patchRow{0};
+std::array<std::atomic<float>, 4> g_patchValue{};
+std::atomic<ID3D11Resource*> g_patchBuffer{nullptr};
+std::atomic<std::uint64_t> g_patchCount{0};
+/** Set every few seconds: the next draw with the shader re-reads its buffer (resources can be recreated). */
+std::atomic_bool g_patchRelearn{false};
+
+/**
+ * The ADS centre dot. Destiny's final composite (vertex shader 7BDCE58C, pixel shader BDF29159, a
+ * full-screen quad onto the back buffer) paints the iron sight's dot at the exact centre of the screen
+ * itself -- where, in the flat game, the ADS animation has put the front sight. Its constant buffer 0
+ * row 3 is (0,0,0,0) at the hip and (1,1,1,1) in ADS: zeroed, the dot is gone from the back buffer and
+ * nothing else in the frame changes (measured: outside the dot, the before/after difference equals a
+ * null pair's). In VR the screen centre is where the HEAD points, not the gun, so while VR is on the
+ * row is held at zero (`reticle show` gives it back). Found 2026-10-15, docs/ADS.md section 5; no
+ * vertex or pixel shader hide could remove it because the dot is not a draw of its own.
+ */
+constexpr std::uint32_t kReticlePsh = 0xBDF29159U;
+constexpr UINT kReticleRow = 3;
+std::atomic_bool g_reticleHidden{true};
+bool g_reticlePatchActive = false;
+
 
 bool hide_matches(HideKind kind, std::uintptr_t value) noexcept {
     const std::size_t count = g_hideCount[kind].load(std::memory_order_acquire);
@@ -478,6 +527,20 @@ void record_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instan
     }
     std::array<ID3D11ShaderResourceView*, kVsSrvSlots> srvs{};
     context->VSGetShaderResources(0, kVsSrvSlots, srvs.data());
+    // The pixel stage too: a full-screen composite carries its parameters there, not in the VS.
+    std::array<ID3D11Buffer*, kVsCbSlots> pcbs{};
+    std::array<UINT, kVsCbSlots> pfirsts{};
+    std::array<UINT, kVsCbSlots> pnums{};
+    ID3D11DeviceContext1* pcontext1 = nullptr;
+    if (SUCCEEDED(context->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&pcontext1)))
+        && pcontext1 != nullptr) {
+        pcontext1->PSGetConstantBuffers1(0, kVsCbSlots, pcbs.data(), pfirsts.data(), pnums.data());
+        pcontext1->Release();
+    } else {
+        context->PSGetConstantBuffers(0, kVsCbSlots, pcbs.data());
+    }
+    std::array<ID3D11ShaderResourceView*, 16> psrvs{};
+    context->PSGetShaderResources(0, static_cast<UINT>(psrvs.size()), psrvs.data());
     std::array<ID3D11RenderTargetView*, 2> rtvs{};
     ID3D11DepthStencilView* dsv = nullptr;
     context->OMGetRenderTargets(2, rtvs.data(), &dsv);
@@ -493,6 +556,10 @@ void record_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instan
         g_referencedShaders.insert(vs);
         appendf(line, " vsh=%08X", shader_checksum(vs));
     }
+    if (ps != nullptr) {
+        appendf(line, " psh=%08X", shader_checksum(ps));
+    }
+    appendf(line, " ord=%u", t_ordinal);
     if (layout != nullptr) {
         g_referencedShaders.insert(layout);
     }
@@ -563,6 +630,40 @@ void record_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instan
             resource->Release();
         }
     }
+    for (UINT slot = 0; slot < kVsCbSlots; ++slot) {
+        if (pcbs[slot] == nullptr) {
+            continue;
+        }
+        D3D11_BUFFER_DESC desc{};
+        pcbs[slot]->GetDesc(&desc);
+        const UINT offset = pfirsts[slot] * 16U;
+        const UINT length = pnums[slot] != 0 ? pnums[slot] * 16U : desc.ByteWidth;
+        const std::uint32_t blob = take_blob(pcbs[slot], desc.ByteWidth, offset, length);
+        appendf(line, " pcb%u=%p:%u:%u:%u:u%d:b%u", slot, static_cast<void*>(pcbs[slot]), pfirsts[slot], pnums[slot],
+                desc.ByteWidth, static_cast<int>(desc.Usage), blob);
+    }
+    for (UINT slot = 0; slot < psrvs.size(); ++slot) {
+        if (psrvs[slot] == nullptr) {
+            continue;
+        }
+        ID3D11Resource* resource = nullptr;
+        psrvs[slot]->GetResource(&resource);
+        D3D11_RESOURCE_DIMENSION dimension = D3D11_RESOURCE_DIMENSION_UNKNOWN;
+        if (resource != nullptr) {
+            resource->GetType(&dimension);
+        }
+        if (dimension == D3D11_RESOURCE_DIMENSION_TEXTURE2D) {
+            D3D11_TEXTURE2D_DESC desc{};
+            static_cast<ID3D11Texture2D*>(resource)->GetDesc(&desc);
+            appendf(line, " pt%u=%p:%ux%u:f%d", slot, static_cast<void*>(resource), desc.Width, desc.Height,
+                    static_cast<int>(desc.Format));
+        } else if (resource != nullptr) {
+            appendf(line, " pt%u=%p:dim%d", slot, static_cast<void*>(resource), static_cast<int>(dimension));
+        }
+        if (resource != nullptr) {
+            resource->Release();
+        }
+    }
     if (rtvs[0] != nullptr) {
         ID3D11Resource* target = nullptr;
         rtvs[0]->GetResource(&target);
@@ -607,6 +708,12 @@ void record_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instan
         release(b);
     }
     for (auto* v : srvs) {
+        release(v);
+    }
+    for (auto* b : pcbs) {
+        release(b);
+    }
+    for (auto* v : psrvs) {
         release(v);
     }
     for (auto* v : rtvs) {
@@ -671,7 +778,11 @@ void record_dispatch(ID3D11DeviceContext* context, UINT x, UINT y, UINT z) {
  * Evaluates the hide rules against the state bound for this draw. Reads back only what the
  * active rules need, so a session with one `hide vs` rule pays for one VSGetShader per draw.
  */
-bool should_hide(ID3D11DeviceContext* context) noexcept {
+bool should_hide(ID3D11DeviceContext* context, bool immediate) noexcept {
+    const std::uint32_t to = g_rangeTo.load(std::memory_order_relaxed);
+    if (immediate && to != 0 && t_ordinal >= g_rangeFrom.load(std::memory_order_relaxed) && t_ordinal < to) {
+        return true;
+    }
     if (g_hideCount[hideVs].load(std::memory_order_relaxed) != 0
         || g_hideCount[hideChk].load(std::memory_order_relaxed) != 0) {
         ID3D11VertexShader* vs = nullptr;
@@ -688,10 +799,17 @@ bool should_hide(ID3D11DeviceContext* context) noexcept {
             return true;
         }
     }
-    if (g_hideCount[hidePs].load(std::memory_order_relaxed) != 0) {
+    if (g_hideCount[hidePs].load(std::memory_order_relaxed) != 0
+        || g_hideCount[hidePchk].load(std::memory_order_relaxed) != 0) {
         ID3D11PixelShader* ps = nullptr;
         context->PSGetShader(&ps, nullptr, nullptr);
-        const bool hit = ps != nullptr && hide_matches(hidePs, reinterpret_cast<std::uintptr_t>(ps));
+        bool hit = false;
+        if (ps != nullptr) {
+            hit = hide_matches(hidePs, reinterpret_cast<std::uintptr_t>(ps));
+            if (!hit && g_hideCount[hidePchk].load(std::memory_order_relaxed) != 0) {
+                hit = hide_matches(hidePchk, shader_checksum(ps));
+            }
+        }
         if (ps != nullptr) {
             ps->Release();
         }
@@ -818,6 +936,8 @@ ViewShadow g_vmView{};
 /** The main world camera's projection scales, the target of the viewmodel FOV fix. */
 std::atomic<float> g_worldP00{0.0F};
 std::atomic<float> g_worldP11{0.0F};
+std::atomic<std::uint64_t> g_worldViewsSeen{0};
+std::atomic<ULONGLONG> g_worldTick{0};
 /** Last viewmodel camera, for the overlay; written on the render thread. */
 SRWLOCK g_cameraLock = SRWLOCK_INIT;
 ViewCamera g_vmCamera{};
@@ -889,6 +1009,16 @@ bool rigid_rows(const float* r) noexcept {
 bool patched_view(std::array<float, kViewFloats>& out) noexcept;
 void publish_camera(const std::array<float, kViewFloats>& rows) noexcept;
 
+/** Recent small near-camera palettes (the weapon's), for `weapon_root`. */
+struct SmallPalette final {
+    math::Affine root{};
+    std::size_t bones{};
+    ULONGLONG tick{};
+};
+SRWLOCK g_smallLock = SRWLOCK_INIT;
+std::array<SmallPalette, 8> g_small{};
+std::size_t g_smallNext = 0;
+
 /**
  * Looks at a palette as it is Unmapped. An arm palette is recognised by its root: camera-relative
  * and straight below the eye, at the feet (the viewmodel skeleton hangs from the camera; anything
@@ -915,6 +1045,18 @@ void examine_palette(ID3D11Resource* resource, const float* data) noexcept {
     if (!arm) {
         if (resource == g_palette.resource) {
             g_palette.valid = false;
+        }
+        // A small skinned palette hanging off the camera is the weapon's (8 bones on the guns seen
+        // so far): its root is kept for the ADS learner, which may use it instead of the hand.
+        if (nearCamera && bones >= 1) {
+            AcquireSRWLockExclusive(&g_smallLock);
+            SmallPalette& slot = g_small[g_smallNext];
+            g_smallNext = (g_smallNext + 1) % g_small.size();
+            slot.root = math::read_rows(bone0);
+            slot.root.m = math::orthonormalize(slot.root.m);
+            slot.bones = bones;
+            slot.tick = GetTickCount64();
+            ReleaseSRWLockExclusive(&g_smallLock);
         }
         return;
     }
@@ -947,14 +1089,25 @@ void examine_view(ID3D11Resource* resource, const float* data) noexcept {
     // The viewmodel compresses its depth range: P22 is non-zero, where the world's reversed
     // infinite projection has 0.
     const bool viewmodel = cameraAtOrigin && rows[50] != 0.0F && p00 > 0.2F && p00 < 5.0F && p11 > 0.2F;
-    // The main camera: perspective (row 12 is 0 0 0 -1), at a real position, with the back
-    // buffer's aspect -- which rules out the shadow cascades (orthographic) and the square probes.
-    const bool world = !cameraAtOrigin && std::fabs(rows[51] + 1.0F) < 1e-3F && std::fabs(rows[48]) < 1e-3F
-                       && std::fabs(rows[49]) < 1e-3F && std::fabs(rows[50]) < 1e-4F && p00 > 0.2F && p00 < 5.0F
-                       && p11 / p00 > 1.2F && p11 / p00 < 2.6F;
+    // The main camera: perspective (row 12 is 0 0 0 -1), at a real position, which rules out the
+    // shadow cascades (orthographic) and the viewmodel.
+    const bool perspective = !cameraAtOrigin && std::fabs(rows[51] + 1.0F) < 1e-3F && std::fabs(rows[48]) < 1e-3F
+                             && std::fabs(rows[49]) < 1e-3F && std::fabs(rows[50]) < 1e-4F && p00 > 0.2F
+                             && p00 < 5.0F && p11 > 0.2F;
+    // Then its frustum. The engine takes the horizontal FOV from the pose block but NOT the aspect:
+    // the world keeps the back buffer's (measured with a GPU capture, 2026-10-15: P11/P00 = 1.778
+    // with 1.074 written), which is what rules out the square reflection probes. While the module
+    // is on, the FOV it wrote must match as well, so no other camera can stand in for the world.
+    bool world = perspective && p11 / p00 > 1.2F && p11 / p00 < 2.6F;
+    const float fov = xr::rendered_fov();
+    if (world && enabled() && fov > 0.1F && fov < 3.1F) {
+        world = std::fabs(p00 * std::tan(fov * 0.5F) - 1.0F) < 0.01F;
+    }
     if (world) {
         g_worldP00.store(p00, std::memory_order_relaxed);
         g_worldP11.store(p11, std::memory_order_relaxed);
+        g_worldTick.store(GetTickCount64(), std::memory_order_relaxed);
+        g_worldViewsSeen.fetch_add(1, std::memory_order_relaxed);
     }
     if (viewmodel) {
         g_vmViewsSeen.fetch_add(1, std::memory_order_relaxed);
@@ -1161,12 +1314,33 @@ DrawAction on_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT inst
         return action;
     }
     take_dump_buffer(context);
-    if (context->GetType() == D3D11_DEVICE_CONTEXT_DEFERRED) {
+    const bool immediate = context->GetType() != D3D11_DEVICE_CONTEXT_DEFERRED;
+    if (!immediate) {
         g_drawsDeferred.fetch_add(1, std::memory_order_relaxed);
     } else {
         g_drawsImmediate.fetch_add(1, std::memory_order_relaxed);
+        t_ordinal = g_ordinal.fetch_add(1, std::memory_order_relaxed);
     }
-    if (g_anyHide.load(std::memory_order_relaxed) && should_hide(context)) {
+    // Learn the buffer a patched pixel shader reads, once (it is re-learned periodically at present).
+    const std::uint32_t patchPsh = g_patchPsh.load(std::memory_order_relaxed);
+    if (immediate && patchPsh != 0
+        && (g_patchBuffer.load(std::memory_order_relaxed) == nullptr || g_patchRelearn.load(std::memory_order_relaxed))) {
+        ID3D11PixelShader* ps = nullptr;
+        context->PSGetShader(&ps, nullptr, nullptr);
+        if (ps != nullptr) {
+            if (shader_checksum(ps) == patchPsh) {
+                ID3D11Buffer* cb = nullptr;
+                context->PSGetConstantBuffers(0, 1, &cb);
+                if (cb != nullptr) {
+                    g_patchBuffer.store(cb, std::memory_order_relaxed);
+                    g_patchRelearn.store(false, std::memory_order_relaxed);
+                    cb->Release();
+                }
+            }
+            ps->Release();
+        }
+    }
+    if (g_anyHide.load(std::memory_order_relaxed) && should_hide(context, immediate)) {
         g_hidden.fetch_add(1, std::memory_order_relaxed);
         action.skip = true;
         return action;
@@ -1193,7 +1367,8 @@ void on_map(ID3D11Resource* resource, UINT subresource, const D3D11_MAPPED_SUBRE
     if (t_inside || mapped == nullptr) {
         return;
     }
-    if (rewrite_wanted() && subresource == 0 && classify(resource) != BufferKind::other) {
+    const bool patched = resource != nullptr && resource == g_patchBuffer.load(std::memory_order_relaxed);
+    if (subresource == 0 && (patched || (rewrite_wanted() && classify(resource) != BufferKind::other))) {
         AcquireSRWLockExclusive(&g_rewriteMapLock);
         MapSlot* free = nullptr;
         bool stored = false;
@@ -1261,7 +1436,19 @@ void on_unmap(ID3D11Resource* resource, UINT subresource) noexcept {
             }
         }
         ReleaseSRWLockExclusive(&g_rewriteMapLock);
-        if (data != nullptr) {
+        if (data != nullptr && resource == g_patchBuffer.load(std::memory_order_relaxed) && g_patchPsh.load() != 0) {
+            const UINT row = g_patchRow.load(std::memory_order_relaxed);
+            D3D11_BUFFER_DESC desc{};
+            static_cast<ID3D11Buffer*>(resource)->GetDesc(&desc);
+            if ((row + 1U) * 16U <= desc.ByteWidth) {
+                float* const target = const_cast<float*>(static_cast<const float*>(data)) + row * 4U;
+                for (std::size_t i = 0; i < 4; ++i) {
+                    target[i] = g_patchValue[i].load(std::memory_order_relaxed);
+                }
+                g_patchCount.fetch_add(1, std::memory_order_relaxed);
+            }
+        }
+        if (data != nullptr && rewrite_wanted()) {
             t_inside = true;
             const BufferKind kind = classify(resource);
             if (kind == BufferKind::palette) {
@@ -1337,6 +1524,8 @@ using CreateCsFn = HRESULT(STDMETHODCALLTYPE*)(ID3D11Device*, const void*, SIZE_
                                                ID3D11ComputeShader**);
 using CreateIlFn = HRESULT(STDMETHODCALLTYPE*)(ID3D11Device*, const D3D11_INPUT_ELEMENT_DESC*, UINT, const void*,
                                                SIZE_T, ID3D11InputLayout**);
+using CreatePsFn = HRESULT(STDMETHODCALLTYPE*)(ID3D11Device*, const void*, SIZE_T, ID3D11ClassLinkage*,
+                                               ID3D11PixelShader**);
 
 enum CtxHook : std::size_t {
     hDrawIndexed,
@@ -1435,6 +1624,18 @@ template <int K> struct ContextHooks final {
     }
     static void STDMETHODCALLTYPE Dispatch(ID3D11DeviceContext* c, UINT x, UINT y, UINT z) {
         g_dispatches.fetch_add(1, std::memory_order_relaxed);
+        if (!t_inside && g_hideCount[hideCchk].load(std::memory_order_relaxed) != 0 && c != nullptr) {
+            ID3D11ComputeShader* cs = nullptr;
+            c->CSGetShader(&cs, nullptr, nullptr);
+            const bool hit = cs != nullptr && hide_matches(hideCchk, shader_checksum(cs));
+            if (cs != nullptr) {
+                cs->Release();
+            }
+            if (hit) {
+                g_hidden.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
+        }
         if (!t_inside && g_phase.load(std::memory_order_acquire) == static_cast<int>(Phase::recording)) {
             t_inside = true;
             record_dispatch(c, x, y, z);
@@ -1456,7 +1657,27 @@ template <int K> struct ContextHooks final {
 using Immediate = ContextHooks<0>;
 using Deferred = ContextHooks<1>;
 
-std::array<hooking::detour::Handle, 3> g_deviceHandles{};
+std::array<hooking::detour::Handle, 4> g_deviceHandles{};
+
+/**
+ * Pixel shaders are only fingerprinted, not reflected: their checksum is what a `hide pchk` rule
+ * matches, and unlike the object pointer it is the same every launch -- which is what lets a draw
+ * identified once (the ADS reticle) be hidden by a rule compiled into this file.
+ */
+HRESULT STDMETHODCALLTYPE create_pixel_shader(ID3D11Device* device, const void* bytecode, SIZE_T length,
+                                              ID3D11ClassLinkage* linkage, ID3D11PixelShader** out) {
+    const HRESULT result = reinterpret_cast<CreatePsFn>(g_deviceHandles[3].original)(device, bytecode, length,
+                                                                                      linkage, out);
+    if (SUCCEEDED(result) && out != nullptr && *out != nullptr && bytecode != nullptr && length >= 20) {
+        ShaderInfo info{};
+        std::memcpy(&info.checksum, static_cast<const std::uint8_t*>(bytecode) + 4, sizeof info.checksum);
+        info.summary = "ps";
+        AcquireSRWLockExclusive(&g_registryLock);
+        g_shaders[*out] = std::move(info);
+        ReleaseSRWLockExclusive(&g_registryLock);
+    }
+    return result;
+}
 
 HRESULT STDMETHODCALLTYPE create_vertex_shader(ID3D11Device* device, const void* bytecode, SIZE_T length,
                                                ID3D11ClassLinkage* linkage, ID3D11VertexShader** out) {
@@ -1579,6 +1800,7 @@ void install(ID3D11Device* device) noexcept {
     add(deviceTable[slots.createComputeShader], reinterpret_cast<void*>(&create_compute_shader),
         &g_deviceHandles[1]);
     add(deviceTable[slots.createInputLayout], reinterpret_cast<void*>(&create_input_layout), &g_deviceHandles[2]);
+    add(deviceTable[slots.createPixelShader], reinterpret_cast<void*>(&create_pixel_shader), &g_deviceHandles[3]);
     std::size_t immediateCount = 0;
     std::size_t deferredCount = 0;
     if (immediateTable != nullptr) {
@@ -1864,16 +2086,20 @@ void finish_capture(ID3D11Device* device) {
 // Commands
 // ---------------------------------------------------------------------------------------------
 
+extern std::atomic_bool g_snapWanted;
+void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept;
+
 void set_hide(const char* kindName, const char* value) {
     if (std::strcmp(kindName, "none") == 0) {
         for (auto& count : g_hideCount) {
             count.store(0, std::memory_order_release);
         }
+        g_rangeTo.store(0, std::memory_order_release);
         g_anyHide.store(false, std::memory_order_release);
         report("ev=vr.gpu hide cleared=1");
         return;
     }
-    static constexpr std::array<const char*, hideKinds> kNames{"vs", "ps", "srv", "cb", "vb", "ib", "chk"};
+    static constexpr std::array<const char*, hideKinds> kNames{"vs", "ps", "srv", "cb", "vb", "ib", "chk", "pchk", "cchk"};
     for (std::size_t kind = 0; kind < hideKinds; ++kind) {
         if (std::strcmp(kindName, kNames[kind]) != 0) {
             continue;
@@ -1930,6 +2156,15 @@ void poll_commands() {
                 g_phase.store(static_cast<int>(Phase::armed), std::memory_order_release);
                 report("ev=vr.gpu capture armed=1");
             }
+        } else if (std::strcmp(verb, "hide") == 0 && n >= 2 && std::strcmp(a, "range") == 0) {
+            unsigned from = 0;
+            unsigned to = 0;
+            if (sscanf_s(line.data(), "%*s %*s %u %u", &from, &to) == 2 && to > from) {
+                g_rangeFrom.store(from, std::memory_order_relaxed);
+                g_rangeTo.store(to, std::memory_order_release);
+                g_anyHide.store(true, std::memory_order_release);
+                reportf("ev=vr.gpu hide range=%u..%u", from, to);
+            }
         } else if (std::strcmp(verb, "hide") == 0 && n >= 2) {
             set_hide(a, n >= 3 ? b : "0");
         } else if (std::strcmp(verb, "fov") == 0 && n >= 2) {
@@ -1943,6 +2178,28 @@ void poll_commands() {
             reportf("ev=vr.gpu dumpvb armed=%s", a);
         } else if (std::strcmp(verb, "stats") == 0) {
             report_stats();
+        } else if (std::strcmp(verb, "patch") == 0 && n >= 2) {
+            unsigned psh = 0;
+            unsigned row = 0;
+            float v[4] = {};
+            if (std::strcmp(a, "off") == 0) {
+                g_patchPsh.store(0);
+                g_patchBuffer.store(nullptr);
+                report("ev=vr.gpu patch off=1");
+            } else if (sscanf_s(line.data(), "%*s %x %u %f %f %f %f", &psh, &row, &v[0], &v[1], &v[2], &v[3]) == 6) {
+                for (std::size_t i = 0; i < 4; ++i) {
+                    g_patchValue[i].store(v[i]);
+                }
+                g_patchRow.store(row);
+                g_patchBuffer.store(nullptr);
+                g_patchPsh.store(psh);
+                reportf("ev=vr.gpu patch psh=%08X row=%u value=%.3f,%.3f,%.3f,%.3f", psh, row, v[0], v[1], v[2], v[3]);
+            }
+        } else if (std::strcmp(verb, "reticle") == 0 && n >= 2) {
+            g_reticleHidden.store(std::strcmp(a, "show") != 0, std::memory_order_relaxed);
+            reportf("ev=vr.gpu reticle=%s", a);
+        } else if (std::strcmp(verb, "snap") == 0) {
+            g_snapWanted.store(true);
         } else {
             reportf("ev=vr.gpu command result=fail verb=%s", verb);
         }
@@ -1956,6 +2213,28 @@ void poll_commands() {
 void present(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
     static_cast<void>(swapChain);
     ++g_presents;
+    // Draws are numbered per frame for `hide range`; the frame starts here.
+    g_ordinal.store(0, std::memory_order_relaxed);
+    if (g_presents % 600 == 0) {
+        g_patchRelearn.store(true, std::memory_order_relaxed);
+    }
+    // The ADS centre dot: held off while VR is on, the flat game's own again when it is off.
+    const bool hideReticle = g_reticleHidden.load(std::memory_order_relaxed) && enabled();
+    if (hideReticle != g_reticlePatchActive) {
+        g_reticlePatchActive = hideReticle;
+        if (hideReticle) {
+            for (auto& v : g_patchValue) {
+                v.store(0.0F, std::memory_order_relaxed);
+            }
+            g_patchRow.store(kReticleRow, std::memory_order_relaxed);
+            g_patchBuffer.store(nullptr, std::memory_order_relaxed);
+            g_patchPsh.store(kReticlePsh, std::memory_order_release);
+        } else {
+            g_patchPsh.store(0, std::memory_order_release);
+            g_patchBuffer.store(nullptr, std::memory_order_relaxed);
+        }
+        reportf("ev=vr.gpu reticle hidden=%d", hideReticle ? 1 : 0);
+    }
     install(device);
     // Advance the capture at the frame boundary: armed (shadowing) -> recording -> written out.
     const int phase = g_phase.load(std::memory_order_acquire);
@@ -1966,10 +2245,12 @@ void present(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
         finish_capture(device);
     }
     write_dump(device);
+    write_snap(device, swapChain);
     if (g_installed.load(std::memory_order_acquire)) {
         ensure_buffers(device);
         read_meshes(device);
         arms::present(device, g_immediate, swapChain);
+        aim::present(device, g_immediate, swapChain);
     }
     if (g_presents % kPollPeriod == 0) {
         poll_commands();
@@ -1977,14 +2258,56 @@ void present(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
     if (g_installed.load(std::memory_order_acquire) && g_presents % kStatsPeriod == 0) {
         report_stats();
         reportf("ev=vr.gpu rewrite on=%d views_examined=%llu vm_views=%llu palettes_examined=%llu palettes_seen=%llu "
-                "palette_swaps=%llu view_swaps=%llu world_p=%.4f,%.4f",
+                "palette_swaps=%llu view_swaps=%llu world_views=%llu world_p=%.4f,%.4f world_aspect=%.4f",
                 rewrite_wanted() ? 1 : 0, static_cast<unsigned long long>(g_viewsExamined.exchange(0)),
                 static_cast<unsigned long long>(g_vmViewsSeen.exchange(0)),
                 static_cast<unsigned long long>(g_palettesExamined.exchange(0)),
                 static_cast<unsigned long long>(g_armPalettesSeen.exchange(0)),
                 static_cast<unsigned long long>(g_paletteSwaps.exchange(0)),
-                static_cast<unsigned long long>(g_viewSwaps.exchange(0)), g_worldP00.load(), g_worldP11.load());
+                static_cast<unsigned long long>(g_viewSwaps.exchange(0)),
+                static_cast<unsigned long long>(g_worldViewsSeen.exchange(0)), g_worldP00.load(), g_worldP11.load(),
+                g_worldP00.load() > 0.0F ? g_worldP11.load() / g_worldP00.load() : 0.0F);
     }
+}
+
+/** The back buffer's render target view, cached against the texture it was made for. */
+ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
+    static ID3D11Texture2D* s_texture = nullptr;
+    static ID3D11RenderTargetView* s_view = nullptr;
+    ID3D11Texture2D* texture = nullptr;
+    if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&texture)))
+        || texture == nullptr) {
+        return nullptr;
+    }
+    if (texture != s_texture) {
+        if (s_view != nullptr) {
+            s_view->Release();
+            s_view = nullptr;
+        }
+        D3D11_TEXTURE2D_DESC desc{};
+        texture->GetDesc(&desc);
+        D3D11_RENDER_TARGET_VIEW_DESC viewDesc{};
+        viewDesc.Format = desc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS   ? DXGI_FORMAT_R8G8B8A8_UNORM
+                          : desc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS ? DXGI_FORMAT_B8G8R8A8_UNORM
+                                                                         : desc.Format;
+        viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
+        if (FAILED(device->CreateRenderTargetView(texture, &viewDesc, &s_view))) {
+            s_view = nullptr;
+        }
+        s_texture = texture;
+    }
+    texture->Release();
+    return s_view;
+}
+
+bool world_projection(float& p00, float& p11) noexcept {
+    const ULONGLONG tick = g_worldTick.load(std::memory_order_relaxed);
+    if (tick == 0 || GetTickCount64() - tick > 500) {
+        return false;
+    }
+    p00 = g_worldP00.load(std::memory_order_relaxed);
+    p11 = g_worldP11.load(std::memory_order_relaxed);
+    return p00 > 0.0F && p11 > 0.0F;
 }
 
 bool viewmodel_camera(ViewCamera& out) noexcept {
@@ -1999,6 +2322,123 @@ bool viewmodel_camera(ViewCamera& out) noexcept {
 
 ID3D11DeviceContext* immediate_context() noexcept {
     return g_immediate;
+}
+
+namespace {
+
+/**
+ * `snap`: the back buffer exactly as presented -- what the headset is sent -- to SVR_BackBuffer.bmp.
+ * A desktop screenshot is the composed WINDOW, which can carry layers the back buffer does not; this
+ * is the one capture that answers "does the headset see it". 8-bit RGBA/BGRA back buffers only.
+ */
+std::atomic_bool g_snapWanted{false};
+
+void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
+    if (!g_snapWanted.exchange(false) || device == nullptr || swapChain == nullptr || g_immediate == nullptr) {
+        return;
+    }
+    ID3D11Texture2D* back = nullptr;
+    if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&back))) || back == nullptr) {
+        report("ev=vr.gpu snap result=fail reason=buffer");
+        return;
+    }
+    D3D11_TEXTURE2D_DESC desc{};
+    back->GetDesc(&desc);
+    const bool bgra = desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
+                      || desc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS;
+    const bool rgba = desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+                      || desc.Format == DXGI_FORMAT_R8G8B8A8_TYPELESS;
+    D3D11_TEXTURE2D_DESC staging = desc;
+    staging.Usage = D3D11_USAGE_STAGING;
+    staging.BindFlags = 0;
+    staging.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+    staging.MiscFlags = 0;
+    staging.SampleDesc = DXGI_SAMPLE_DESC{1, 0};
+    ID3D11Texture2D* copy = nullptr;
+    if ((!bgra && !rgba) || desc.SampleDesc.Count != 1 || FAILED(device->CreateTexture2D(&staging, nullptr, &copy))) {
+        reportf("ev=vr.gpu snap result=fail reason=format format=%d", static_cast<int>(desc.Format));
+        back->Release();
+        return;
+    }
+    t_inside = true;
+    g_immediate->CopyResource(copy, back);
+    D3D11_MAPPED_SUBRESOURCE mapped{};
+    const bool ok = SUCCEEDED(g_immediate->Map(copy, 0, D3D11_MAP_READ, 0, &mapped));
+    std::array<wchar_t, MAX_PATH> path{};
+    FILE* file = nullptr;
+    if (ok && game_path(L"SVR_BackBuffer.bmp", path) && _wfopen_s(&file, path.data(), L"wb") == 0 && file != nullptr) {
+        const UINT w = desc.Width;
+        const UINT h = desc.Height;
+        const UINT row = w * 3;
+        const UINT pad = (4 - row % 4) % 4;
+        const UINT image = (row + pad) * h;
+        std::array<std::uint8_t, 54> header{};
+        header[0] = 'B';
+        header[1] = 'M';
+        const auto put32 = [&](std::size_t at, std::uint32_t v) {
+            for (std::size_t i = 0; i < 4; ++i) {
+                header[at + i] = static_cast<std::uint8_t>(v >> (8 * i));
+            }
+        };
+        put32(2, 54 + image);
+        put32(10, 54);
+        put32(14, 40);
+        put32(18, w);
+        put32(22, h);
+        header[26] = 1;
+        header[28] = 24;
+        put32(34, image);
+        std::fwrite(header.data(), 1, header.size(), file);
+        std::vector<std::uint8_t> line(row + pad, 0);
+        for (UINT y = 0; y < h; ++y) {
+            const auto* src = static_cast<const std::uint8_t*>(mapped.pData) + static_cast<std::size_t>(h - 1 - y) * mapped.RowPitch;
+            for (UINT x = 0; x < w; ++x) {
+                const std::uint8_t* p = src + static_cast<std::size_t>(x) * 4;
+                line[x * 3 + 0] = bgra ? p[0] : p[2];
+                line[x * 3 + 1] = p[1];
+                line[x * 3 + 2] = bgra ? p[2] : p[0];
+            }
+            std::fwrite(line.data(), 1, line.size(), file);
+        }
+        std::fclose(file);
+        reportf("ev=vr.gpu snap result=ok size=%ux%u format=%d", w, h, static_cast<int>(desc.Format));
+    }
+    if (ok) {
+        g_immediate->Unmap(copy, 0);
+    }
+    t_inside = false;
+    copy->Release();
+    back->Release();
+}
+
+} // namespace
+
+bool weapon_root(const math::V3& around, math::Affine& out, std::uint32_t* bones) noexcept {
+    // The weapon's MAIN skeleton: of the small palettes near the hand, the one with the most bones,
+    // the nearest among equals. "Nearest" alone flipped, frame to frame, between the grenade
+    // launcher's 1-bone and 6-bone palettes -- whose roots coincide -- and split one weapon in two.
+    const ULONGLONG now = GetTickCount64();
+    float best = 0.5F;
+    std::size_t bestBones = 0;
+    bool found = false;
+    AcquireSRWLockShared(&g_smallLock);
+    for (const SmallPalette& p : g_small) {
+        if (p.tick == 0 || now - p.tick > 100) {
+            continue;
+        }
+        const float d = math::length(p.root.t - around);
+        if (d < 0.5F && (p.bones > bestBones || (p.bones == bestBones && d < best))) {
+            best = d;
+            bestBones = p.bones;
+            out = p.root;
+            found = true;
+            if (bones != nullptr) {
+                *bones = static_cast<std::uint32_t>(p.bones);
+            }
+        }
+    }
+    ReleaseSRWLockShared(&g_smallLock);
+    return found;
 }
 
 } // namespace sunrise::client::hooks::vr::gpu

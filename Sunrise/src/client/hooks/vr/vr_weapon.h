@@ -1,8 +1,11 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 
 #include "runtime.h"
+#include "vr_math.h"
+#include "xr_runtime.h"
 
 namespace sunrise::client::hooks::vr::weapon {
 
@@ -59,8 +62,40 @@ void retake_reference() noexcept;
  */
 void seat_error(float forward, float right, float up) noexcept;
 
+/**
+ * The head and the FINAL weapon orientation of the last frame the weapon was handed one: the
+ * controller after the rotational seat and the two-handed swing, i.e. exactly what the engine drew
+ * the gun with. Any thread.
+ * @return False until the weapon has been driven at least once.
+ */
+[[nodiscard]] bool weapon_sample(xr::HeadPose& head, xr::HandPose& hand) noexcept;
+
 /** @return The seat correction currently applied, controller basis (forward, right, up). */
 [[nodiscard]] std::array<float, 3> seat_correction() noexcept;
+
+/**
+ * The gun frame of the last frame the weapon was placed: the frame in which the drawn hand sits at
+ * its HIP pose, i.e. where the weapon module means the gun to be, before the ADS compensation turns
+ * what it hands the engine. Rotation: columns (forward, LEFT, up), the final weapon basis. Origin:
+ * relative to the character's eye (the engine's camera position, before the head offset), so
+ * `engine eye + t` is the world point and `t - head.offset` the camera-relative one. Any thread.
+ * @return False until the weapon has been driven at least once.
+ */
+[[nodiscard]] bool gun_frame(math::Affine& frame, xr::HeadPose& head, xr::HandPose* hand = nullptr) noexcept;
+
+/** The viewmodel frame the engine was really handed, camera-relative, as the transform detour left it. */
+struct DrawnFrame final {
+    /** Rotation: the basis handed to the weapon's getter. Origin: the transform buffer's offset lanes. */
+    math::Affine local{};
+    /** The engine's own offset lanes before this module added to them. */
+    std::array<float, 3> lanesIn{};
+    /** Counts transform detours; equal serials mean the same frame. */
+    std::uint64_t serial{};
+    bool valid{};
+};
+
+/** @return The last frame the engine placed the viewmodel with. Any thread. */
+[[nodiscard]] DrawnFrame drawn_frame() noexcept;
 
 /**
  * The rotational half of self-seating: a rotation in the controller's own proper basis
@@ -72,5 +107,26 @@ void set_seat_rotation(const std::array<float, 4>& quaternion) noexcept;
 
 /** Drops both seat corrections, positional and rotational, back to none. */
 void seat_reset() noexcept;
+
+/** The left hand's hold on the weapon, as the arm module decided it this frame. */
+struct TwoHandGrip final {
+    /** 0 one-handed, 1 fully held; in between while taking hold or letting go. */
+    float weight{};
+    /** True when the hold steers the barrel (a foregrip); false for a support hand under a pistol. */
+    bool aim{};
+    /** The foregrip in the right controller's raw (forward, LEFT, up) basis, from its palm, metres. */
+    std::array<float, 3> foregrip{};
+    /** The handguard, metres along the controller's forward from the foregrip. */
+    float slideMin{};
+    float slideMax{};
+};
+
+/**
+ * Two-handed aim. While the hold steers the barrel, the orientation handed to the weapon is turned
+ * about the right palm until the foregrip line runs through the left palm (vr_two_hand.h), blended
+ * in by `weight`. Roll stays the right wrist's. Published by the arm module once a frame; a grip
+ * that stops being published lets go by itself after a quarter of a second.
+ */
+void set_two_hand(const TwoHandGrip& grip) noexcept;
 
 } // namespace sunrise::client::hooks::vr::weapon

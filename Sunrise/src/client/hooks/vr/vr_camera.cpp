@@ -27,9 +27,12 @@
 #include "../../../core/ui/runtime/ui_visibility_runtime.h"
 #include "../../input/window_focus.h"
 #include "../teleport/runtime.h"
+#include "vr_ads.h"
+#include "vr_arms.h"
 #include "vr_destination.h"
 #include "vr_gamepad.h"
 #include "vr_gpu.h"
+#include "vr_probe.h"
 #include "vr_watch.h"
 #include "vr_weapon.h"
 #include "xr_runtime.h"
@@ -61,6 +64,7 @@ constexpr int kYawKey = VK_F10;
 constexpr int kHeightKey = VK_F11;
 constexpr int kResetKey = VK_F8;
 constexpr int kRecentreKey = VK_F7;
+constexpr int kEyeKey = VK_F6;
 
 /** One press of the yaw key, in degrees. Four presses make a full turn. */
 constexpr float kYawStep = 45.0F;
@@ -163,7 +167,7 @@ std::atomic<float> g_height{0.0F};
 std::atomic<float> g_fovDegrees{0.0F};
 
 /** Held state of each probe key on the previous frame, so a switch flips only on the press. */
-std::array<bool, 5> g_keyDown{};
+std::array<bool, 6> g_keyDown{};
 
 /** The camera thread owns both of these; they are published for the report only. */
 Pose g_lastRead{};
@@ -386,9 +390,12 @@ void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
             if (answered) {
                 g_servoNoResponse = 0;
                 // The sign test above is also what keeps the player fighting the servo from
-                // poisoning the estimate.
+                // poisoning the estimate. Not learned in ADS: the game scales look sensitivity by
+                // its zoom there, so the counts per radian are a different number for as long as
+                // ADS lasts, and learning it would leave the hip estimate wrong on the way out.
                 const float measured = static_cast<float>(-g_lastServoCounts) / achieved;
-                if (measured > kServoCountsPerRadianMin && measured < kServoCountsPerRadianMax) {
+                if (measured > kServoCountsPerRadianMin && measured < kServoCountsPerRadianMax
+                    && ads::engine_fraction() < 0.02F) {
                     g_countsPerRadian += (measured - g_countsPerRadian) * kServoLearnRate;
                 }
             } else if (g_servoNoResponse < kServoStuckFrames) {
@@ -527,6 +534,7 @@ void poll_keys() noexcept {
     // The access watch and the F3 probe are driven by files, so they run whatever the focus is.
     watch::tick();
     weapon::tick();
+    probe::tick();
     destination::tick();
     // An open interface owns the keyboard, and a key pressed at another window is not ours.
     if (!client::input::game_focused() || core::ui::runtime::snapshot().visible) {
@@ -564,6 +572,20 @@ void poll_keys() noexcept {
         // The weapon rests where the controller is, so re-seating the player has to re-seat that too.
         weapon::retake_reference();
         report("ev=vr.probe recentre requested");
+    }
+    if (pressed(5, kEyeKey)) {
+        // The eye the mono image is rendered from: centre, right, left, round again. A sight lines
+        // up for the eye the image is rendered from, so this decides where the gun has to be held
+        // to aim -- before the nose, or before the dominant eye as with a real gun.
+        const int next = (xr::render_eye() + 2) % 3;
+        xr::set_render_eye(next);
+        std::array<char, core::log::kLineCapacity> line{};
+        const int written = std::snprintf(line.data(), line.size(), "ev=vr.probe eye=%s",
+                                          next == 0 ? "center" : next == 1 ? "left" : "right");
+        if (written > 0) {
+            core::log::write(core::log::Channel::client, core::log::Level::warn,
+                             {line.data(), static_cast<std::size_t>(written)});
+        }
     }
     if (changed) {
         report_state();
@@ -612,6 +634,10 @@ void present_frame(void* device, void* swapChain) noexcept {
     // the servo would rotate the world every time it corrected.
     xr::begin_frame(g_roomAnchor.load(std::memory_order_relaxed));
     xr::end_frame(static_cast<IDXGISwapChain*>(swapChain));
+    // The two-handed hold decides what the left grip means before the grip becomes a key, and the
+    // physical ADS whether right mouse is held.
+    arms::update_hold();
+    ads::present();
     // The controllers drive the keyboard and mouse only while the session produces input.
     gamepad::pump(xr::active());
     if ((++g_presentCount % kReportPeriod) == 0) {
@@ -687,6 +713,11 @@ void apply_camera(std::uint32_t playerIndex) noexcept {
         }
         return;
     }
+    // The character's own aim, for the tracer to recognise in the arguments of whatever fires a shot.
+    probe::set_reference(pose.position, pose.forward);
+    // The engine's FOV as IT made it, before ours goes over it: its narrowing is the ADS progress,
+    // which the weapon (placed after this, in the same frame) compensates the ADS animation by.
+    ads::note_engine_fov(pose.horizontalFov);
     const float bodyYaw = std::atan2(pose.forward[1], pose.forward[0]);
     g_bodyYaw.store(bodyYaw, std::memory_order_relaxed);
 

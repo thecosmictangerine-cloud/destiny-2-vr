@@ -43,6 +43,11 @@ $script:Keys = @{
     'S'      = @(0x53, 0x1F, $false)
     'D'      = @(0x44, 0x20, $false)
     'E'      = @(0x45, 0x12, $false)
+    'R'      = @(0x52, 0x13, $false)
+    # Weapon slots: kinetic, energy, power.
+    '1'      = @(0x31, 0x02, $false)
+    '2'      = @(0x32, 0x03, $false)
+    '3'      = @(0x33, 0x04, $false)
 }
 
 # Scancodes for the characters Send-GameText can type. Enough for activity package names.

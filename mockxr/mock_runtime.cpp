@@ -8,6 +8,7 @@
 #include <string>
 #include <cstring>
 #include <cstdio>
+#include <share.h>
 #include <cmath>
 #include <d3d11.h>
 #define XR_USE_GRAPHICS_API_D3D11
@@ -78,7 +79,9 @@ int64_t gFrameTime = 1;
 FILE* gLog = nullptr;
 void L(const char* fmt, ...)
 {
-    if (!gLog) { fopen_s(&gLog, "SVR_MockXR.log", "w"); }
+    // _fsopen with _SH_DENYNO, not fopen_s: fopen_s opens the file exclusively, and then no test
+    // can read the log while the game holds it.
+    if (!gLog) { gLog = _fsopen("SVR_MockXR.log", "w", _SH_DENYNO); }
     if (!gLog) return;
     va_list a; va_start(a, fmt); vfprintf(gLog, fmt, a); va_end(a);
     fprintf(gLog, "\n"); fflush(gLog);
@@ -310,8 +313,12 @@ MOCK_FN Mock_xrLocateViews(XrSession, const XrViewLocateInfo*, XrViewState* vs,
     for (int i = 0; i < 2; i++)
     {
         views[i].pose.orientation = { cy * sp, sy * cp, -sy * sp, cy * cp };
-        views[i].pose.position = { (i == 0 ? -0.032f : 0.032f) + gInHeadX,
-                                   1.6f + gInHeadY, gInHeadZ }; // ~IPD, standing height + offsets
+        // The eyes sit +-32 mm along the head's own right axis (~IPD), so they turn with the head as
+        // a real headset's do: rendering from one eye must move that eye when the head yaws. A pitch
+        // about X leaves an X offset unchanged; the yaw about Y turns (e, 0, 0) into (e cos, 0, -e sin).
+        const float e = i == 0 ? -0.032f : 0.032f;
+        views[i].pose.position = { e * cosf(yaw) + gInHeadX,
+                                   1.6f + gInHeadY, -e * sinf(yaw) + gInHeadZ }; // standing height + offsets
         views[i].fov = EyeFov(i);
     }
     return XR_SUCCESS;
@@ -356,12 +363,18 @@ void ReadMockInput()
     WIN32_FILE_ATTRIBUTE_DATA fad;
     if (!GetFileAttributesExA("SVR_MockInput.txt", GetFileExInfoStandard, &fad)) return;
     if (fad.ftLastWriteTime.dwLowDateTime == lastWrite.dwLowDateTime && fad.ftLastWriteTime.dwHighDateTime == lastWrite.dwHighDateTime) return;
+    // The write time is only marked as consumed once the WHOLE file has been read. Marking it first
+    // lost any pose whose read collided with the harness still writing it (a sharing violation, or
+    // half a line): that pose was never retried, and the test silently ran with the previous one.
+    char text[1024] = {};
+    FILE* f = _fsopen("SVR_MockInput.txt", "r", _SH_DENYNO);
+    if (!f) return;
+    const size_t got = fread(text, 1, sizeof(text) - 1, f);
+    fclose(f);
+    if (got == 0 || text[got - 1] != '\n') return;   // empty or still being written: next frame
     lastWrite = fad.ftLastWriteTime;
-    FILE* f = nullptr;
-    fopen_s(&f, "SVR_MockInput.txt", "r");
-    if (f)
     {
-        int n = fscanf_s(f, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f "
+        int n = sscanf_s(text, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f "
                         "%f %f",
             &gInTurnX, &gInTrigR, &gInHandYaw, &gInHandPitch,
             &gInHeadYaw, &gInHeadPitch, &gInHeadX, &gInHeadY, &gInHeadZ,
@@ -371,7 +384,6 @@ void ReadMockInput()
             &gInBtnThumbL, &gInBtnThumbR, &gInBtnMenu,
             &gInLHandYaw, &gInLHandPitch, &gInLHandX, &gInLHandY, &gInLHandZ,
             &gInHandRoll, &gInLHandRoll);
-        fclose(f);
         if (n >= 1)
             gHaveInput = true;
     }
@@ -498,6 +510,20 @@ MOCK_FN Mock_xrLocateSpace(XrSpace space, XrSpace, XrTime, XrSpaceLocation* loc)
     return XR_SUCCESS;
 }
 
+/**
+ * Haptics: logged, so a test can see the pulse that confirms taking hold of the weapon -- the one
+ * piece of feedback a player gets in the hand rather than on screen.
+ */
+MOCK_FN Mock_xrApplyHapticFeedback(XrSession, const XrHapticActionInfo* info, const XrHapticBaseHeader* header)
+{
+    const MockAction* a = info ? (const MockAction*)info->action : nullptr;
+    const XrHapticVibration* v = (header && header->type == XR_TYPE_HAPTIC_VIBRATION) ? (const XrHapticVibration*)header : nullptr;
+    L("haptic action=%s amplitude=%.2f ms=%.1f", a ? a->name.c_str() : "?", v ? v->amplitude : -1.0f,
+      v ? (double)v->duration / 1e6 : -1.0);
+    return XR_SUCCESS;
+}
+MOCK_FN Mock_xrStopHapticFeedback(XrSession, const XrHapticActionInfo*) { return XR_SUCCESS; }
+
 MOCK_FN Mock_xrAcquireSwapchainImage(XrSwapchain h, const XrSwapchainImageAcquireInfo*, uint32_t* index)
 {
     MockSwapchain* sc = (MockSwapchain*)h;
@@ -553,6 +579,8 @@ extern "C" XRAPI_ATTR XrResult XRAPI_CALL Mock_xrGetInstanceProcAddr(XrInstance,
     BIND(xrGetActionStatePose);
     BIND(xrGetActionStateBoolean);
     BIND(xrLocateSpace);
+    BIND(xrApplyHapticFeedback);
+    BIND(xrStopHapticFeedback);
 #undef BIND
     if (strcmp(name, "xrGetInstanceProcAddr") == 0)
         return set((void*)Mock_xrGetInstanceProcAddr);

@@ -1,3 +1,8 @@
+> **Done (2026-10-15).** The two-handed hold is built and verified on the mock: see
+> `docs/TWO-HANDS.md`. The open questions below were answered (grip plus proximity; two-handed aim
+> for long guns, a support hand for pistols; reloads still later). Next: `docs/HANDOFF-ADS.md`.
+> Kept for the plan's reasoning; the snap was built as described except where TWO-HANDS.md says.
+
 # Handoff — the two-handed grip (written 2026-10-15, end of the arms session)
 
 **Next task: the left hand takes hold of the weapon.** The user chose this over reloads. Read

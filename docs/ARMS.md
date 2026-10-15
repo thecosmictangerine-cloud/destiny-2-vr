@@ -137,8 +137,8 @@ the model was built in), closed is the right hand's fingers around the gun's han
 (left and right finger bones paired by mirror symmetry of their bind centroids). Blended about each
 bone's own centroid, never the model origin.
 
-Note: the left grip is also bound to the grenade by the gamepad mapping (`vr_gamepad.cpp`), so on
-the mock squeezing it throws one. The curl is purely visual; the binding is F2's decision.
+The left grip is contextual since the two-handed hold (`docs/TWO-HANDS.md`): near the weapon's
+handguard it takes hold, away from it it is still the grenade. The curl itself is purely visual.
 
 ## Results on the mock (Io, 2026-10-15)
 
@@ -166,8 +166,7 @@ how the elbow drops, how the grip sits in the hand. Everything that shapes that 
 
 ## Not done yet
 
-- **Two-handed foregrip** (the left hand snapping to the weapon when brought near it) — agreed as a
-  next step.
+- ~~Two-handed foregrip~~ — done, see `docs/TWO-HANDS.md`.
 - **Reloads**: the left hand stays on its controller; the game's reload animation no longer reaches
   it.
 - **Index finger on the trigger**, thumb on the face buttons: the curl is all-or-nothing per hand.

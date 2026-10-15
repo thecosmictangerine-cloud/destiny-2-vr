@@ -325,6 +325,19 @@ Two further image defects, independent of the above:
   did not write; it is written now, and the layer derives its vertical from the aspect read back out
   of the block. The cost is a horizontally stretched desktop capture, which is why it was left
   unwritten while the weapon work needed undistorted screenshots.
+
+  **Corrected 2026-10-15: the engine does not render with that aspect.** A GPU capture with the
+  module on shows the world's projection at P00 = 0.7813 (the 104 deg written) but P11/P00 = 1.778
+  -- the back buffer's 16:9, with 1.074 written and read back. The engine takes the block's FOV and
+  ignores its aspect for the projection, and the desktop capture was never stretched. So the layer
+  was declaring +-50 deg vertically for an image holding +-35.7: the bands were gone because the
+  world was stretched 1.65x tall in the headset (about 1.85x on the Quest's own 0.964). The layer
+  now declares the projection the GPU actually received for the world (`gpu::world_projection`,
+  P00/P11 read at Unmap, fresh within 0.5 s; fallback: the block's FOV and the back buffer's pixel
+  ratio): geometrically right, and the bands are back. Filling the Quest's vertical field needs the
+  world RENDERED taller -- a back buffer with the eye's aspect (a windowed resolution such as
+  1040x1080; untested), or finding where the engine takes the viewport's aspect. The aspect is still
+  written; it is harmless (if anything it widens culling).
 - **Resolution.** The headset was getting a copy of a 1280x720 window. The engine accepts a windowed
   resolution **larger than the screen**: `2560x1440` was verified, logged as
   `ev=vr.xr swapchain size=2560x1440`, four times the pixels. The catch is that anything the mouse

@@ -8,6 +8,7 @@ proof of concept. Engine internals live in `docs/RESEARCH.md`; read it before to
 - `sunrise-vr/` — git clone of `stanuwu/Sunrise`, branch `vr`, `upstream` remote, pinned to master
   commit `7e3875d`. All mod code goes in `Sunrise/src/client/hooks/vr/`.
 - `tools/` — the Sunrise installer and the official 0.3.2 DLL, kept for comparison and rollback.
+- **Current task: the two-handed grip — start with `docs/HANDOFF-TWO-HANDS.md`.**
 - `docs/` — research and status. Project-level docs live HERE, not inside the fork, so nothing of
   ours can ever conflict with upstream.
 - Game install: `C:\Games\Sunrise` (~93 GB, separate from any live Destiny 2).
@@ -19,7 +20,8 @@ tracking 6DOF carries most of the sense of presence; stereo disparity matters ma
 metres and these are big open spaces. The user knows the world will read as flat/infinitely far.
 
 Phases: **F0.a** build from source · **F0.b** prove the camera pose can be written · **F1** OpenXR
-+ 6DOF mono head tracking · **F2** controllers as a gamepad · **F3** weapons 6DOF.
++ 6DOF mono head tracking · **F2** controllers as a gamepad · **F3** weapons 6DOF · **F4** arms
+(each on its own controller, weapon in the right hand; agreed 2026-10-15, see `docs/ARMS.md`).
 
 F3 is in scope even though Sunrise has no enemies: it retires the hardest remaining risk
 (decoupling the weapon viewmodel from the camera). Validate aim with a `world_lines` impact
@@ -28,7 +30,7 @@ marker, not with something to shoot.
 ## Fork discipline (option C)
 
 All VR code in its own directory; upstream files get only additive lines. Current footprint into
-theirs: **48 insertions, 5 files** (`Sunrise.vcxproj`, `graphics_renderer_lifecycle.cpp`, and three
+theirs: **55 insertions, 5 files** (`Sunrise.vcxproj`, `graphics_renderer_lifecycle.cpp`, and three
 in `hooks/teleport/`). The only non-addition is the `AdditionalIncludeDirectories` line, extended
 with `vendor\openxr\include`.
 Keep it that way — it is what makes `git pull upstream` merge cleanly. `Sunrise.vcxproj` lists all
@@ -111,6 +113,22 @@ about 3–4 minutes.
   servo is catching up or cannot inject at all. Vertical stick look is dropped: pitch comes from
   the player's neck.
 
+- `vr_gpu.cpp` — D3D11 detours (immediate and deferred vtables, slots from `vr_d3d_slots.cpp`,
+  which reads them out of the SDK headers with `CINTERFACE`), shader/input-layout reflection at
+  creation, a whole-frame capture (`SVR_Gpu.txt`: `capture`, `hide vs|ps|srv|cb|vb|ib|chk`,
+  `dumpvb`, `fov`, `rewrite`, `stats`) and the **in-place rewrites at Unmap**: arm palettes (cb11)
+  and the viewmodel's projection (cb12, widened to the world's FOV — it was 77° against 104°, the
+  gun and arms 1.6× too big in VR). Installed on the first present, before F9, so shader creation
+  is seen. Analyse captures with `scripts/testing/gpu_capture.py`, `find_arms.py`, `arm_rig.py`.
+- `vr_arms.cpp` — the arm rig and solve (`docs/ARMS.md`). Joints from skin-weight overlap, refined
+  live by least squares; body hung from the neck; two-bone IK with an anatomical pole; forearm roll
+  split along its bones; right hand stays on the gun, left on its controller with a mirrored grip
+  and fingers that close with the left grip button. It also **seats the weapon**: the drawn right
+  palm is driven onto the controller's grip pose and the right hand's rotation onto a canonical
+  pistol grip, through `weapon::seat_error`/`set_seat_rotation`, so every weapon sits in the hand
+  and points along the controller. `SVR_Arms.txt`: `enable`, `overlay on` (controller frames + solved
+  arm drawn into the frame), `dump`, `neck`, `shoulder`, `pole`, `stretch`, `twist`, `rig`,
+  `relearn`, `canon learn|on|off|reset`. `scripts/testing/Test-Arms.ps1` is the pose matrix.
 - `vr_weapon.cpp` — the weapon on the controller. Detours three engine functions: the camera pose
   getter (`+0x12D22C0`, whose caller `D5D832` feeds the weapon and `B363FA` the render view), the
   pose pointer (`+0x12D50F0`), and **the weapon's own transform builder (`+0xD5D7F0`)**. That third
@@ -359,6 +377,17 @@ milestones, not for debugging.
 - **The loading transition (ship in flight) renders black while the module writes the camera**,
   with the mock at 104° FOV and a level head. Toggling F9 off shows the scene at once. Not yet
   bisected between the FOV and the up vector; harmless for a PoC, but do not mistake it for a hang.
+
+- **`near` and `far` are macros** in the Windows headers; a variable called `near` is a syntax
+  error 30 lines from where it looks wrong.
+- **The game may Map a buffer on one thread and Unmap it on another.** A per-thread table of mapped
+  pointers silently misses those; `vr_gpu.cpp` uses a shared one.
+- **Shader reflection is stripped** in this build (no names, no cbuffer layouts): identify GPU data
+  by its contents, and confirm by hiding draws and comparing screenshots.
+- **The left grip throws a grenade** (gamepad mapping), which the arm module also reads to close the
+  left hand. On the mock, `GripL 1` therefore fires an ability.
+- The mock's default hands sit 0.2 m below the eye; with the FOV fixed they are at the bottom edge
+  of the frame. `Test-Arms.ps1` raises them.
 
 ## Rules
 

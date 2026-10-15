@@ -25,6 +25,7 @@
 
 #include <intrin.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -165,6 +166,52 @@ std::array<std::atomic<int>, 3> g_xformLanes{{{4}, {5}, {6}}};
  * gun is therefore a complete calibration, and the residual is the instrument's noise floor.
  */
 std::array<std::atomic<float>, 3> g_pivot{};
+/**
+ * The self-seating correction, same basis as g_pivot, integrated from the arm module's
+ * measurement of where the drawn right palm sits relative to the controller (see seat_error).
+ */
+std::array<std::atomic<float>, 3> g_seat{};
+std::atomic_bool g_seatOn{true};
+/** Rotational seat, (x, y, z, w) in the controller's (forward, left, up) basis; identity until driven. */
+std::array<std::atomic<float>, 4> g_seatRotation{{{0.0F}, {0.0F}, {0.0F}, {1.0F}}};
+
+/**
+ * Applies the rotational seat to a controller basis in place. With columns C = (f, l, u) and the
+ * seat Q expressed in that basis, the corrected basis is C * Q: the correction rides with the
+ * controller, so it holds at any orientation exactly as the pivot does.
+ */
+void apply_seat_rotation(xr::HandPose& hand) noexcept {
+    if (!g_seatOn.load(std::memory_order_relaxed)) {
+        return;
+    }
+    const float x = g_seatRotation[0].load(std::memory_order_relaxed);
+    const float y = g_seatRotation[1].load(std::memory_order_relaxed);
+    const float z = g_seatRotation[2].load(std::memory_order_relaxed);
+    const float w = g_seatRotation[3].load(std::memory_order_relaxed);
+    if (std::fabs(w) > 0.99999F) {
+        return;
+    }
+    // Columns of Q.
+    const float q[3][3] = {{1 - 2 * (y * y + z * z), 2 * (x * y + z * w), 2 * (x * z - y * w)},
+                           {2 * (x * y - z * w), 1 - 2 * (x * x + z * z), 2 * (y * z + x * w)},
+                           {2 * (x * z + y * w), 2 * (y * z - x * w), 1 - 2 * (x * x + y * y)}};
+    std::array<float, 3> f{};
+    std::array<float, 3> l{};
+    std::array<float, 3> u{};
+    for (std::size_t a = 0; a < 3; ++a) {
+        const float cf = hand.forward[a];
+        const float cl = -hand.right[a];
+        const float cu = hand.up[a];
+        f[a] = cf * q[0][0] + cl * q[0][1] + cu * q[0][2];
+        l[a] = cf * q[1][0] + cl * q[1][1] + cu * q[1][2];
+        u[a] = cf * q[2][0] + cl * q[2][1] + cu * q[2][2];
+    }
+    for (std::size_t a = 0; a < 3; ++a) {
+        hand.forward[a] = f[a];
+        hand.right[a] = -l[a];
+        hand.up[a] = u[a];
+    }
+}
 /**
  * Which of the controller's two OpenXR poses anchors the weapon's position.
  *
@@ -314,6 +361,7 @@ bool hand_pose_for(Pose& out) noexcept {
     if (!hand.valid) {
         return false;
     }
+    apply_seat_rotation(hand);
     // Latched for the transform detour, which runs later on this same thread and must correct for
     // the very orientation being handed over here.
     t_sample.head = head;
@@ -448,9 +496,13 @@ void __fastcall xform_replacement(void* out) noexcept {
             // anchor and grew into over a metre of phantom translation at 180 degrees of turn.
             const bool palmAnchor = g_palmAnchor.load(std::memory_order_relaxed);
             const xr::Vector& anchor = palmAnchor ? hand.palm : hand.offset;
-            const float pivotForward = g_pivot[0].load(std::memory_order_relaxed);
-            const float pivotRight = g_pivot[1].load(std::memory_order_relaxed);
-            const float pivotUp = g_pivot[2].load(std::memory_order_relaxed);
+            const bool seat = g_seatOn.load(std::memory_order_relaxed);
+            const float pivotForward =
+                g_pivot[0].load(std::memory_order_relaxed) + (seat ? g_seat[0].load(std::memory_order_relaxed) : 0.0F);
+            const float pivotRight =
+                g_pivot[1].load(std::memory_order_relaxed) + (seat ? g_seat[1].load(std::memory_order_relaxed) : 0.0F);
+            const float pivotUp =
+                g_pivot[2].load(std::memory_order_relaxed) + (seat ? g_seat[2].load(std::memory_order_relaxed) : 0.0F);
             for (std::size_t axis = 0; axis < 3; ++axis) {
                 const int lane = g_xformLanes[axis].load(std::memory_order_relaxed);
                 if (lane < 0 || lane >= static_cast<int>(kXformFloats)) {
@@ -741,6 +793,16 @@ void poll_commands() noexcept {
             } else {
                 report("ev=vr.weapon command result=fail verb=turn reason=parse");
             }
+        } else if (std::strcmp(verb, "seat") == 0 && n >= 2) {
+            // `seat on|off|reset`: the self-seating loop driven by the arm module.
+            if (std::strcmp(a, "reset") == 0) {
+                for (auto& v : g_seat) {
+                    v.store(0.0F, std::memory_order_release);
+                }
+            } else {
+                g_seatOn.store(std::strcmp(a, "off") != 0, std::memory_order_release);
+            }
+            reportf("ev=vr.weapon seat=%s", a);
         } else if (std::strcmp(verb, "anchor") == 0 && n >= 2) {
             const bool palm = std::strcmp(a, "aim") != 0;
             g_palmAnchor.store(palm, std::memory_order_release);
@@ -849,6 +911,43 @@ bool block_orientation_enabled() noexcept {
 
 bool block_position_enabled() noexcept {
     return g_blockPosition.load(std::memory_order_acquire);
+}
+
+void seat_error(float forward, float right, float up) noexcept {
+    // A slow integrator: about a third of a second to settle at 90 Hz, so recoil and other fast
+    // animation still read, while anything held -- a weapon's grip offset, a sprint pose -- is
+    // cancelled. Large errors are animation transitions (a weapon being swapped out, the hand off
+    // the gun) and are ignored rather than chased.
+    constexpr float kGain = 0.04F;
+    constexpr float kIgnoreAbove = 0.25F;
+    constexpr float kLimit = 0.35F;
+    const float magnitude = std::sqrt(forward * forward + right * right + up * up);
+    if (!g_seatOn.load(std::memory_order_relaxed) || !std::isfinite(magnitude) || magnitude > kIgnoreAbove) {
+        return;
+    }
+    const std::array<float, 3> error{forward, right, up};
+    for (std::size_t axis = 0; axis < 3; ++axis) {
+        const float next = g_seat[axis].load(std::memory_order_relaxed) - kGain * error[axis];
+        g_seat[axis].store(std::clamp(next, -kLimit, kLimit), std::memory_order_relaxed);
+    }
+}
+
+void set_seat_rotation(const std::array<float, 4>& quaternion) noexcept {
+    for (std::size_t i = 0; i < 4; ++i) {
+        g_seatRotation[i].store(quaternion[i], std::memory_order_relaxed);
+    }
+}
+
+void seat_reset() noexcept {
+    for (auto& v : g_seat) {
+        v.store(0.0F, std::memory_order_relaxed);
+    }
+    set_seat_rotation({0.0F, 0.0F, 0.0F, 1.0F});
+}
+
+std::array<float, 3> seat_correction() noexcept {
+    return {g_seat[0].load(std::memory_order_relaxed), g_seat[1].load(std::memory_order_relaxed),
+            g_seat[2].load(std::memory_order_relaxed)};
 }
 
 void retake_reference() noexcept {

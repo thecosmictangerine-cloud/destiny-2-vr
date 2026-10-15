@@ -29,6 +29,7 @@
 #include "../teleport/runtime.h"
 #include "vr_destination.h"
 #include "vr_gamepad.h"
+#include "vr_gpu.h"
 #include "vr_watch.h"
 #include "vr_weapon.h"
 #include "xr_runtime.h"
@@ -576,6 +577,8 @@ bool head_tracking() noexcept {
 
 /** Drives the OpenXR frame from the present hook. */
 void present_frame(void* device, void* swapChain) noexcept {
+    // Before the switch: the GPU module has to watch shaders being created whether or not VR is on.
+    gpu::present(static_cast<ID3D11Device*>(device), static_cast<IDXGISwapChain*>(swapChain));
     if (!g_enabled.load(std::memory_order_relaxed)) {
         gamepad::release_all();
         // Switching off HANDS THE HEADSET BACK, by tearing the OpenXR session down. F9 then brings

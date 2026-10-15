@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "runtime.h"
 
 namespace sunrise::client::hooks::vr::weapon {
@@ -45,5 +47,30 @@ void retake_reference() noexcept;
  * @return False while the pose written to the camera block should keep the engine's position.
  */
 [[nodiscard]] bool block_position_enabled() noexcept;
+
+/**
+ * Feeds back where the right hand really is on the controller, so the weapon seats itself.
+ *
+ * The arm module reads the drawn right palm out of the GPU palette every frame and reports how
+ * far it sits from the controller's grip pose, in the controller's basis (forward, right, up,
+ * metres). A slow integrator moves the weapon by the opposite amount. The `pivot` constant was
+ * measured by hand for one weapon; this closes the same loop for any weapon, and for any slow
+ * animation (sprint) that carries the gun away from the hand -- fast ones, like recoil, still show.
+ */
+void seat_error(float forward, float right, float up) noexcept;
+
+/** @return The seat correction currently applied, controller basis (forward, right, up). */
+[[nodiscard]] std::array<float, 3> seat_correction() noexcept;
+
+/**
+ * The rotational half of self-seating: a rotation in the controller's own proper basis
+ * (forward, LEFT, up), as a unit quaternion (x, y, z, w), applied to the orientation handed to the
+ * weapon before anything else. The arm module drives it so the right hand holds every weapon the
+ * way it holds the hand cannon at rest -- which points every weapon where the controller points.
+ */
+void set_seat_rotation(const std::array<float, 4>& quaternion) noexcept;
+
+/** Drops both seat corrections, positional and rotational, back to none. */
+void seat_reset() noexcept;
 
 } // namespace sunrise::client::hooks::vr::weapon

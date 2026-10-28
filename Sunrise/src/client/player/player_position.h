@@ -16,6 +16,12 @@ void observe(void* component) noexcept;
 /** Refreshes the position for a player at rest. Call it per frame, on a game thread. */
 void poll() noexcept;
 
+/**
+ * @return The player's physics component from the last sync or poll, or null. Any thread may read
+ * it. It can be stale, so read through it only with faulting-safe reads.
+ */
+[[nodiscard]] void* component() noexcept;
+
 /** Drops the published position. */
 void reset() noexcept;
 

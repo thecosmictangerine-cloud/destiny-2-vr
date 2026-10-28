@@ -99,12 +99,17 @@ bool note_character_writeback(
     std::array<char, core::log::kLineCapacity> line{};
     const int written = std::snprintf(line.data(),
                                       line.size(),
-                                      "ev=activity stage=writeback result=%s world_state=%u",
+                                      "ev=activity stage=writeback result=%s world_state=%u "
+                                      "activity=%d/%d/%d selector=%d",
                                       parsed ? "ok" : "unparsed",
-                                      static_cast<unsigned>(request.worldState));
+                                      static_cast<unsigned>(request.worldState),
+                                      static_cast<int>(request.activityBytes[0]),
+                                      static_cast<int>(request.activityBytes[1]),
+                                      static_cast<int>(request.activityBytes[2]),
+                                      static_cast<int>(request.activitySelector));
     if (written > 0) {
         core::log::write(core::log::Channel::server,
-                         core::log::Level::info,
+                         parsed ? core::log::Level::info : core::log::Level::warn,
                          {line.data(), static_cast<std::size_t>(written)});
     }
     if (parsed && request.hasWorldState) {
@@ -311,9 +316,8 @@ bool consume(std::span<const std::byte> request,
         return false;
     }
     if (message.opcode == middleware::web_service::messages::opcode702::kOpcode) {
-        if (!note_character_writeback(message, presentation)) {
-            return false;
-        }
+        // A write-back the server cannot read is still answered; no reply drops the connection.
+        static_cast<void>(note_character_writeback(message, presentation));
     }
     if (message.opcode == middleware::web_service::messages::opcode205::kOpcode) {
         state::InvestmentState investment{};

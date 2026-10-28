@@ -24,7 +24,7 @@ inline constexpr float kUnitLaneHigh = 1.0F;
 inline constexpr std::size_t kSquadCountCapacity =
     middleware::bap::activity_message::squad_auth::kMaximumRequestedCountLength;
 
-/** One normalized lane value. The mint is the only place the range is compared. */
+/** One device lane value. The mint does not check its range. */
 struct UnitScalarHandle final {
     float value{};
 };

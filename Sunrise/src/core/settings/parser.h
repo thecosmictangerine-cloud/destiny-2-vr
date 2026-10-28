@@ -57,12 +57,6 @@ private:
     /** Parses one local destination and its launch policy. Every required field appears once. */
     [[nodiscard]] bool
     default_destination(state::activity::defaults::DefaultDestination& output) noexcept;
-    /** Parses one arrival override row. It must name a destination and at least one value. */
-    [[nodiscard]] bool
-    arrival_override(state::activity::defaults::ArrivalOverride& output) noexcept;
-    /** Parses the arrival override table, which has to fit fixed storage. */
-    [[nodiscard]] bool
-    arrival_overrides(state::activity::defaults::ActivityDefaults& output) noexcept;
     /** Parses logging sinks and channel levels. */
     [[nodiscard]] bool logging(log::Settings& output) noexcept;
     /** Parses named channel levels and ignores unknown channels. */

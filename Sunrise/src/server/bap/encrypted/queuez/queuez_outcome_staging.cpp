@@ -107,7 +107,6 @@ bool stage_service_outcome(Scratch& scratch,
     const auto* equipment = transaction_if<EquipmentSwapTransaction>(outcome);
     const auto* subclassSelection = transaction_if<SubclassSelectionTransaction>(outcome);
     const auto* itemState = transaction_if<ItemStateTransaction>(outcome);
-    const auto* currentActivity = transaction_if<CurrentActivityTransaction>(outcome);
     const auto* artifactPurchase = transaction_if<ArtifactPurchaseTransaction>(outcome);
     const auto* socket = transaction_if<SocketPlugTransaction>(outcome);
     const auto* itemDismantle = transaction_if<ItemDismantleTransaction>(outcome);
@@ -130,7 +129,8 @@ bool stage_service_outcome(Scratch& scratch,
                                          written,
                                          after,
                                          armsRepush,
-                                         armsBannerRepush);
+                                         armsBannerRepush,
+                                         outcome.subscriptionAnswered);
         bannerRoot = outcome.subscription.familyRootSoid;
         // The subscribe is the only moment a family-two root arrives. Recorded rather than acted
         // on: the inline answer to this subscribe lands, so nothing is owed until an equip makes
@@ -278,23 +278,6 @@ bool stage_service_outcome(Scratch& scratch,
             core::log::write(core::log::Channel::server,
                              core::log::Level::warn,
                              "ev=queuez stage=item_state result=fail");
-            return false;
-        }
-        middleware::secure_channel::advance_nonce(nonce);
-        after = update.after;
-    } else if (currentActivity != nullptr) {
-        // Only the selected character's own body changes. The reply is the client's task
-        // completion and this upsert rides behind it in the same write.
-        const EquipmentSwap& update = currentActivity->update;
-        if (!valid(update.after) || update.characterSoid != currentActivity->pending.characterSoid
-            || update.after.family4RootSoid != before.family4RootSoid
-            || before.family4Version == (std::numeric_limits<std::int32_t>::max)()
-            || update.after.family4Version != before.family4Version + 1
-            || !push::append_current_activity_notification(
-                scratch, update, currentActivity->pending, key, nonce, response, written)) {
-            core::log::write(core::log::Channel::server,
-                             core::log::Level::warn,
-                             "ev=queuez stage=current_activity result=fail");
             return false;
         }
         middleware::secure_channel::advance_nonce(nonce);

@@ -7,6 +7,7 @@
 #include <span>
 #include <string_view>
 
+#include "../../../middleware/bap/activity_message/auth_fields.h"
 #include "../../../middleware/bap/activity_message/scriptable_auth_body.h"
 #include "mission_script_lua_internal.h"
 
@@ -80,14 +81,32 @@ atom_u8(lua_State* state, int table, const char* field, std::uint8_t bound) {
     return reference;
 }
 
+/** The point reader has no bounds check, so every parameter must belong to the SDK target. */
+[[nodiscard]] std::uint8_t atom_point_parameter(lua_State* state, int table) {
+    const auto parameter =
+        atom_u8(state, table, "value", (std::numeric_limits<std::uint8_t>::max)());
+    lua_getfield(state, table, "target");
+    const auto* handle = static_cast<const SlotHandle*>(luaL_checkudata(state, -1, kSlotMetatable));
+    SlotDefinition target{};
+    const bool current = current_slot(state, *handle, target);
+    lua_pop(state, 1);
+    const Impl* impl = impl_from_state(state);
+    if (!current || impl->definitions.resolveActorAbilityTarget == nullptr
+        || !impl->definitions.resolveActorAbilityTarget(
+            impl->definitions.context, target.nativeRow, parameter)) {
+        static_cast<void>(luaL_error(state, "atom target has no such authored point parameter"));
+    }
+    return parameter;
+}
+
 scriptable_auth::Type2LanePrimary atom_face(lua_State* state, int table) {
-    return scriptable_auth::Type2LaneRefByte{atom_target(state, table),
-                                             atom_u8(state, table, "value", 0xFFU)};
+    return scriptable_auth::Type2LaneAlternateRefByte{atom_target(state, table),
+                                                      atom_point_parameter(state, table)};
 }
 
 scriptable_auth::Type2LanePrimary atom_snap_to(lua_State* state, int table) {
-    return scriptable_auth::Type2LaneAlternateRefByte{atom_target(state, table),
-                                                      atom_u8(state, table, "value", 0xFFU)};
+    return scriptable_auth::Type2LaneRefByte{atom_target(state, table),
+                                             atom_point_parameter(state, table)};
 }
 
 scriptable_auth::Type2LanePrimary atom_sequence(lua_State* state, int table) {
@@ -100,7 +119,7 @@ scriptable_auth::Type2LanePrimary atom_sleep(lua_State* state, int table) {
 
 scriptable_auth::Type2LanePrimary atom_move_to(lua_State* state, int table) {
     return scriptable_auth::Type2LaneRefByteBool{atom_target(state, table),
-                                                 atom_u8(state, table, "value", 0xFFU),
+                                                 atom_point_parameter(state, table),
                                                  atom_flag(state, table, "enabled")};
 }
 
@@ -122,29 +141,62 @@ scriptable_auth::Type2LanePrimary atom_set_channel(lua_State* state, int table) 
                                                atom_real(state, table, "value")};
 }
 
-/** Reads the three ability identities, the target and the two signed bytes. */
-scriptable_auth::Type2LanePrimary atom_ability(lua_State* state, int table) {
-    scriptable_auth::Type2LaneTripleRef ability{};
-    lua_getfield(state, table, "values");
-    luaL_checktype(state, -1, LUA_TTABLE);
-    const int values = lua_gettop(state);
-    for (std::size_t index = 0; index < ability.values.size(); ++index) {
-        lua_rawgeti(state, values, static_cast<lua_Integer>(index) + 1);
-        const lua_Integer value = luaL_checkinteger(state, -1);
-        lua_pop(state, 1);
-        if (value < 0 || value > (std::numeric_limits<std::uint32_t>::max)()) {
-            static_cast<void>(luaL_error(state, "ability value is outside a 32-bit range"));
+/** Uses one exact actor-owned ability and the first parameter of an optional authored point. */
+scriptable_auth::Type2LanePrimary
+atom_ability(lua_State* state, int table, const SlotDefinition& actor) {
+    table = lua_absindex(state, table);
+    // Actor-target modes and raw hash tuples have no script-level meaning on this path.
+    static constexpr std::array<std::string_view, 4> kFields{
+        "kind", "ability", "target", "quantized"};
+    lua_pushnil(state);
+    while (lua_next(state, table) != 0) {
+        const auto key = lua_string_view(state, -2);
+        if (std::find(kFields.begin(), kFields.end(), key) == kFields.end()) {
+            static_cast<void>(luaL_error(state, "unknown ability atom field"));
         }
-        ability.values[index] = static_cast<std::uint32_t>(value);
+        lua_pop(state, 1);
     }
+    lua_getfield(state, table, "ability");
+    luaL_checktype(state, -1, LUA_TTABLE);
+    const std::uint32_t owner = atom_u32(state, -1, "slot_row");
+    const std::uint32_t group = atom_u32(state, -1, "group_hash");
+    const std::uint32_t request = atom_u32(state, -1, "request_hash");
     lua_pop(state, 1);
-    ability.reference = atom_target(state, table);
-    ability.mode = static_cast<std::int8_t>(atom_u8(state, table, "mode", 6U));
-    ability.value =
-        static_cast<std::int8_t>(static_cast<int>(atom_u8(state, table, "value", 0xFFU)) - 128);
+    Impl* const impl = impl_from_state(state);
+    if (owner != actor.nativeRow || impl == nullptr
+        || impl->definitions.resolveActorAbility == nullptr
+        || !impl->definitions.resolveActorAbility(
+            impl->definitions.context, owner, group, request)) {
+        static_cast<void>(luaL_error(state, "ability does not belong to this SDK actor"));
+    }
+    scriptable_auth::Type2LaneTripleRef ability{};
+    ability.values = {
+        group, request, middleware::bap::activity_message::auth_fields::kClientRefAbsentKey};
+    ability.reference.slotType = -1;
+    ability.mode = -1;
+    ability.value = -1;
+    lua_getfield(state, table, "target");
+    const bool targeted = !lua_isnil(state, -1);
+    lua_pop(state, 1);
+    if (targeted) {
+        lua_getfield(state, table, "target");
+        const auto* const handle =
+            static_cast<const SlotHandle*>(luaL_checkudata(state, -1, kSlotMetatable));
+        SlotDefinition target{};
+        const bool current = current_slot(state, *handle, target);
+        lua_pop(state, 1);
+        // Selector zero is the first authored point parameter, not an actor-target mode.
+        constexpr std::uint32_t kFirstPointParameter = 0;
+        if (!current || impl->definitions.resolveActorAbilityTarget == nullptr
+            || !impl->definitions.resolveActorAbilityTarget(
+                impl->definitions.context, target.nativeRow, kFirstPointParameter)) {
+            static_cast<void>(luaL_error(state, "ability target has no authored point parameter"));
+        }
+        ability.reference = atom_target(state, table);
+        ability.value = static_cast<std::int8_t>(kFirstPointParameter);
+    }
     return ability;
 }
-
 /** One script-facing atom name and the reader that fills its native lane child. */
 struct AtomKind final {
     std::string_view name;
@@ -162,11 +214,14 @@ constexpr std::array<AtomKind, 10> kAtomKinds{{
     {"set_temperament", &atom_set_temperament},
     {"set_channel", &atom_set_channel},
     {"snap_to", &atom_snap_to},
-    {"ability", &atom_ability},
+    {"ability", nullptr},
 }};
 
 /** Builds one atom lane from its declaration table at stack index `table`. */
-void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& lane) {
+void parse_atom(lua_State* state,
+                int table,
+                const SlotDefinition& actor,
+                scriptable_auth::Type2KeyedLane& lane) {
     lua_getfield(state, table, "kind");
     const std::string_view kind = lua_string_view(state, -1);
     const auto match =
@@ -177,7 +232,8 @@ void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& la
         static_cast<void>(luaL_error(state, "unknown atom kind"));
         return;
     }
-    lane.primary = match->read(state, table);
+    lane.primary =
+        match->read != nullptr ? match->read(state, table) : atom_ability(state, table, actor);
     lua_pop(state, 1);
     lua_getfield(state, table, "quantized");
     if (!lua_isnil(state, -1)) {
@@ -192,10 +248,16 @@ void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& la
 }
 } // namespace
 
-/**
- * Loads the 32-lane client-atom program one type-2 combatant runs on its bound actor. A rising
- * `generation` restarts the program; the same one leaves the running program alone.
- */
+/** Exposes the same closed operation names the native atom parser accepts. */
+void push_atom_kinds(lua_State* state) {
+    lua_createtable(state, 0, static_cast<int>(kAtomKinds.size()));
+    for (const auto& kind : kAtomKinds) {
+        lua_pushlstring(state, kind.name.data(), kind.name.size());
+        lua_setfield(state, -2, kind.name.data());
+    }
+}
+
+/** Stages an actor program while native state owns its creation and program revisions. */
 [[nodiscard]] int slot_run_atoms(lua_State* state) {
     const auto* const handle =
         static_cast<const SlotHandle*>(luaL_checkudata(state, 1, kSlotMetatable));
@@ -203,30 +265,15 @@ void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& la
     if (!current_slot(state, *handle, slot) || !exact_combatant_slot(slot)) {
         return luaL_error(state, "activity slot is not an exact type-2 combatant");
     }
-    // Named arguments this call accepts. Any other key is refused.
-    static constexpr std::array<std::string_view, 4> kDeclared{
-        "generation", "seed", "binding", "atoms"};
+    // Only these named arguments belong to this API.
+    static constexpr std::array<std::string_view, 2> kDeclared{"spawn", "atoms"};
     refuse_unknown_arguments(state, kDeclared);
-    const lua_Integer generation = checked_integer_argument(state, "generation");
-    const lua_Integer seed = optional_integer_argument(state, "seed", 0);
-    if (generation <= 0 || generation > 0x7FFFFFFF || seed < 0 || seed > 0x3F) {
-        return luaL_error(state, "atom generation or seed is outside its native field width");
-    }
+    const bool spawn = optional_boolean_argument(state, "spawn", false);
+    // The encoder needs a positive template value; only the native reducer publishes counters.
+    constexpr std::uint32_t kUncommittedRevision = 1;
     scriptable_auth::Type2Body body{};
-    body.channels.revision = static_cast<std::uint32_t>(generation);
-    body.channels.actorBinding = scriptable_auth::Type2ActorBinding::squadMember;
-    if (push_argument(state, "binding") != LUA_TNIL) {
-        const std::string_view binding = lua_string_view(state, -1);
-        if (binding == "self") {
-            body.channels.actorBinding = scriptable_auth::Type2ActorBinding::selfOwned;
-        } else if (binding != "squad") {
-            return luaL_error(state, "actor binding must be 'squad' or 'self'");
-        }
-    }
-    lua_pop(state, 1);
-    body.atoms.generation = static_cast<std::uint32_t>(generation);
-    body.atoms.progressSeed = static_cast<std::uint8_t>(seed);
-
+    body.channels.revision = kUncommittedRevision;
+    body.atoms.generation = kUncommittedRevision;
     lua_getfield(state, 2, "atoms");
     luaL_checktype(state, -1, LUA_TTABLE);
     const int list = lua_gettop(state);
@@ -237,14 +284,11 @@ void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& la
     for (std::size_t index = 0; index < count; ++index) {
         lua_rawgeti(state, list, static_cast<lua_Integer>(index) + 1);
         luaL_checktype(state, -1, LUA_TTABLE);
-        parse_atom(state, lua_gettop(state), body.atoms.lanes[index]);
+        parse_atom(state, lua_gettop(state), slot, body.atoms.lanes[index]);
         lua_pop(state, 1);
     }
     lua_pop(state, 1);
     body.atoms.count = static_cast<std::uint8_t>(count);
-    if (body.atoms.progressSeed > body.atoms.count) {
-        return luaL_error(state, "atom seed names a lane the program does not hold");
-    }
 
     std::array<std::byte, scriptable_auth::kType2MaximumBodyByteCount> encoded{};
     std::size_t written = 0;
@@ -256,7 +300,9 @@ void parse_atom(lua_State* state, int table, scriptable_auth::Type2KeyedLane& la
                            slot,
                            scriptable_auth::kType2Schema,
                            writtenBits,
-                           std::span<const std::byte>(encoded.data(), written));
+                           std::span<const std::byte>(encoded.data(), written),
+                           IntentKind::runActorProgram,
+                           spawn);
 }
 
 } // namespace sunrise::server::activity::mission::lua_vm::detail

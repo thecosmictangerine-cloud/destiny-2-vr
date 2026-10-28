@@ -14,16 +14,15 @@ struct CurrentSliceSet final {
 };
 
 /**
- * Attaches the boot-step fixes that carry sign-in through to character select.
- * Each fix reports its own outcome, so a single miss never disables the others.
- * @return True when every fix attached.
+ * Finds the boot-step accessor and the slice-set sample targets. Nothing is detoured.
+ * @return True when both targets were found.
  */
 [[nodiscard]] bool install() noexcept;
 
-/** Detaches every boot-step fix. */
+/** Clears both accessors. */
 void uninstall() noexcept;
 
-/** @return True while at least one boot-step fix is attached. */
+/** @return True while at least one accessor is found. */
 [[nodiscard]] bool is_installed() noexcept;
 
 /** Publishes the client's own boot-flow step. Call it per frame, on a game thread. */
@@ -42,5 +41,8 @@ void poll_current_slice_set() noexcept;
  * @return True while the published step is `activity:in_world` and fresh.
  */
 [[nodiscard]] bool in_world() noexcept;
+
+/** @return The last published boot-flow step while it is fresh, or -1. */
+[[nodiscard]] std::int32_t current_step() noexcept;
 
 } // namespace sunrise::client::hooks::bootflow

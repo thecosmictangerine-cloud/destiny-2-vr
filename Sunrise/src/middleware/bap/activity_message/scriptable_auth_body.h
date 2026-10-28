@@ -38,7 +38,7 @@ struct TemperamentId final {
     [[nodiscard]] friend constexpr bool operator==(TemperamentId, TemperamentId) noexcept = default;
 };
 
-/** Selects whether Type 2 creates its own actor or binds one authored squad member. */
+/** Selects automatic actor creation or creation by an authored scene. */
 enum class Type2ActorBinding : std::int8_t {
     selfOwned = -1,
     squadMember = 1,
@@ -161,6 +161,53 @@ inline constexpr std::size_t kType2MaximumBodyBitCount =
 /** Same size padded up to whole bytes. */
 inline constexpr std::size_t kType2MaximumBodyByteCount = (kType2MaximumBodyBitCount + 7) / 8;
 
+/** Full Auth also permits spawn generation, eight keyed rows and eight manifest references. */
+inline constexpr std::size_t kType2FullMaximumBitCount =
+    kType2MaximumBodyBitCount + 31U + (1U + 8U * (1U + 32U + 1U + 31U) + 1U + 32U)
+    + (4U + 8U * 55U + 31U);
+inline constexpr std::size_t kType2FullMaximumByteCount = (kType2FullMaximumBitCount + 7U) / 8U;
+
+/** Exact retained spans around `.6`; all other root fields remain byte-for-byte unchanged. */
+struct Type2ProgramLayout final {
+    std::size_t controlOffset{};
+    std::size_t programOffset{};
+    std::size_t programBits{};
+    std::uint32_t spawnGeneration{};
+    std::uint32_t generation{};
+    std::uint8_t bindingWire{};
+    bool enabled{};
+};
+
+/** Replaces a program and owns the counters for actor creation or retirement. */
+[[nodiscard]] bool replace_type2_atoms(std::span<const std::byte> previous,
+                                       std::size_t previousBits,
+                                       std::span<const std::byte> program,
+                                       std::size_t programBits,
+                                       std::uint32_t committedGeneration,
+                                       std::uint32_t committedSpawnGeneration,
+                                       bool spawn,
+                                       std::span<std::byte> output,
+                                       std::size_t& written,
+                                       std::size_t& writtenBits,
+                                       std::uint32_t& generation,
+                                       std::uint32_t& spawnGeneration,
+                                       bool retire = false) noexcept;
+
+/** Reads every full-root field using native bounded arrays and finite atom-lane tags. */
+[[nodiscard]] bool inspect_type2_program(std::span<const std::byte> input,
+                                         std::size_t bitCount,
+                                         Type2ProgramLayout& output) noexcept;
+
+/** Replaces only `.6`; a zero hash cancels the program on the enabled squad-bound actor. */
+[[nodiscard]] bool replace_type2_sequence(std::span<const std::byte> previous,
+                                          std::size_t previousBits,
+                                          std::uint32_t sequenceHash,
+                                          std::uint32_t committedGeneration,
+                                          std::span<std::byte> output,
+                                          std::size_t& written,
+                                          std::size_t& writtenBits,
+                                          std::uint32_t& generation) noexcept;
+
 /** Encodes both keyed-lane tags and their selected native child schemas. */
 [[nodiscard]] bool encode_type2_keyed_lane(const Type2KeyedLane& lane,
                                            std::span<std::byte> output,
@@ -172,6 +219,42 @@ inline constexpr std::size_t kType2MaximumBodyByteCount = (kType2MaximumBodyBitC
                                      std::span<std::byte> output,
                                      std::size_t& written,
                                      std::size_t& writtenBits) noexcept;
+
+/** Type-24 controls up to four authored object channels through one counted Auth array. */
+inline constexpr std::uint8_t kType24SlotType = 24;
+inline constexpr std::uint32_t kType24ComponentClass = 0x80804F3BU;
+inline constexpr std::uint32_t kType24SenseSchema = 0x80804F3DU;
+inline constexpr std::uint32_t kType24Schema = 0x80804F40U;
+inline constexpr std::size_t kType24ChannelCapacity = 4;
+inline constexpr std::uint8_t kType24CountWidth = 3;
+/** Each channel carries a biased int32 revision and two float32 values. */
+inline constexpr std::size_t kType24ChannelBitCount = 96;
+inline constexpr std::size_t kType24MaximumBitCount =
+    kType24CountWidth + kType24ChannelCapacity * kType24ChannelBitCount;
+inline constexpr std::size_t kType24MaximumByteCount = (kType24MaximumBitCount + 7U) / 8U;
+/** The native channel setter clamps values to this interval. */
+inline constexpr float kType24MinimumValue = -100.F;
+inline constexpr float kType24MaximumValue = 100.F;
+
+/** One revision-qualified target value and its native blend duration. */
+struct Type24Channel final {
+    std::int32_t revision{};
+    float value{};
+    float blend{};
+};
+
+/** Rows follow the target object's authored channel order. */
+struct Type24Body final {
+    std::array<Type24Channel, kType24ChannelCapacity> channels{};
+    std::uint8_t count{};
+};
+
+// TODO: bind extracted output-channel counts before exposing mission controls for this body.
+/** Encodes only the declared channel rows; the host owns each row's revision. */
+[[nodiscard]] bool encode_type24(const Type24Body& body,
+                                 std::span<std::byte> output,
+                                 std::size_t& written,
+                                 std::size_t& writtenBits) noexcept;
 
 /** ClientRef slot type and Auth schema for the object-filter sensor. */
 inline constexpr std::uint8_t kType34SlotType = 34;
@@ -410,8 +493,9 @@ inline constexpr std::uint32_t kType53Schema = 0x80804F77;
 inline constexpr std::size_t kType53EntryCount = 128;
 inline constexpr std::size_t kType53MinimumBitCount = 19'767;
 inline constexpr std::size_t kType53MaximumBitCount = 27'959;
-/** One dialogue pulse has exactly one present 64-bit world id. */
-inline constexpr std::size_t kType53BitCount = kType53MinimumBitCount + 64;
+/** Each active row adds one present 64-bit world id. A single pulse has exactly one. */
+inline constexpr std::size_t kType53WorldBitCount = 64;
+inline constexpr std::size_t kType53BitCount = kType53MinimumBitCount + kType53WorldBitCount;
 inline constexpr std::size_t kType53ByteCount = (kType53BitCount + 7) / 8;
 /** ClientRef slot type for the three-lane authored HUD directive state. */
 inline constexpr std::uint8_t kType68SlotType = 68;
@@ -471,10 +555,18 @@ struct Type68Preset final {
     bool visible{true};
     /** Authored type-47 destination; absent removes the explicit guidance marker. */
     Type2LaneClientRef navpoint{};
+    /** The navpoint's slot name hash; the client resolves it to a position when the object is
+     * not registered. The absent key sends none. */
+    std::uint32_t navpointNameHash{0x811C9DC5U};
+    /** Slice-set hash of the navpoint's bubble; from another bubble the client routes to it. */
+    std::uint32_t navpointBubbleHash{};
     /** Type-70 engagement sensor the client tests before it shows the mission banner. */
     Type2LaneClientRef audience{};
+    /** Type-60 volume; while the player is inside it the HUD marker hides and the map pin stays. */
+    Type2LaneClientRef waypoint{};
 };
 
+// TODO: Map the five flag bits and participant-filter policy before exposing a mission control.
 /** One exact type-70 state with both optional authored filter lists absent. */
 struct Type70Preset final {
     /** Five raw native flag bits. The shipped constructor default is one. */
@@ -605,9 +697,11 @@ struct Type31GenerationGuard final {
     bool hasLast{};
 };
 
-/** One safe type-31 pulse. Enabled is fixed true and the unconsumed auxiliary value is zero. */
+/** One safe type-31 pulse. The unconsumed auxiliary value is zero. */
 struct Type31Preset final {
     std::uint64_t generation{};
+    /** A disabled body never fires, whatever its generation. */
+    bool enabled{true};
 };
 
 /** Complete schema-shaped type-31 body. */
@@ -688,6 +782,23 @@ struct Type53SequenceGuard final {
 struct Type53Preset final {
     std::uint16_t cueIndex{};
     std::int32_t sequence{1};
+    /** Type-60 volume the local player must stand in before the line plays; absent plays now. */
+    Type2LaneClientRef filter{};
+};
+
+/** Slot type a dialogue filter names: the client tests player occupancy only for volumes. */
+inline constexpr auto kType53FilterSlotType = static_cast<std::int8_t>(kType60SlotType);
+
+/** One dialogue row. An active row plays once per new sequence, when its filter admits. */
+struct Type53Row final {
+    bool active{};
+    std::int32_t sequence{};
+    Type2LaneClientRef filter{};
+};
+
+/** Complete type-53 body. Each new body replaces every row the client holds. */
+struct Type53Body final {
+    std::array<Type53Row, kType53EntryCount> rows{};
 };
 
 /** Finds the next positive per-channel type-23 sequence without wrapping. */
@@ -722,7 +833,7 @@ struct Type53Preset final {
 
 /**
  * Encodes one canonical type-31 pulse without changing a refused output buffer.
- * The generation must be newer and must not equal the reserved maximum.
+ * The generation must not be older than the last one and must not equal the reserved maximum.
  */
 [[nodiscard]] bool encode_type31(const Type31Preset& preset,
                                  const Type31GenerationGuard& guard,
@@ -811,6 +922,14 @@ struct Type53Preset final {
 [[nodiscard]] bool validate_type38_body(std::span<const std::byte> input,
                                         std::size_t bitCount) noexcept;
 
+/**
+ * Picks the generation of an arm or disarm. The client stores its activity clock at each fire and
+ * fires again only for a later generation, so an arm after the first uses the largest one. That
+ * arm fires on every update while the player stays inside, so it is disarmed once it reports.
+ */
+[[nodiscard]] bool type31_arm_generation(const Type31GenerationGuard& guard,
+                                         std::uint64_t& next) noexcept;
+
 /** Finds the next positive fire sequence for one authored dialogue cue without wrapping. */
 [[nodiscard]] bool next_type53_sequence(const Type53SequenceGuard& guard,
                                         std::uint16_t cueIndex,
@@ -822,7 +941,30 @@ struct Type53Preset final {
                                  std::span<std::byte> output,
                                  std::size_t& written) noexcept;
 
-/** Validates the exact one-cue dialogue body and all unset-reference invariants. */
+/**
+ * Fires one cue on top of a transported body and keeps its rows still waiting for a volume.
+ * @return False when the sequence is not newer than the guard and the base row.
+ */
+[[nodiscard]] bool compose_type53(const Type53Body& base,
+                                  const Type53Preset& preset,
+                                  const Type53SequenceGuard& guard,
+                                  Type53Body& body) noexcept;
+
+/**
+ * Encodes one complete type-53 body; its length grows with the active rows.
+ * @param bits Receives the exact bit count.
+ */
+[[nodiscard]] bool encode_type53_body(const Type53Body& body,
+                                      std::span<std::byte> output,
+                                      std::size_t& written,
+                                      std::size_t& bits) noexcept;
+
+/** Decodes one type-53 body of the given bit count in the form this tree encodes. */
+[[nodiscard]] bool decode_type53_body(std::span<const std::byte> input,
+                                      std::size_t bitCount,
+                                      Type53Body& body) noexcept;
+
+/** Validates a dialogue body with at least one fired cue. */
 [[nodiscard]] bool validate_type53_body(std::span<const std::byte> input,
                                         std::size_t bitCount) noexcept;
 

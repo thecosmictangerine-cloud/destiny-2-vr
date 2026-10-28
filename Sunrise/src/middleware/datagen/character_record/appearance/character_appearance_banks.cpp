@@ -1,10 +1,14 @@
 #include <algorithm>
 
+#include "../../../../state/build_data/items/catalysts/exotic_catalyst_catalog.h"
 #include "../../../../state/build_data/runtime.h"
 #include "internal.h"
 
 namespace sunrise::middleware::datagen::character_record::appearance {
 namespace {
+
+/** The base Tesseract plug is replaced by the completed Worldline catalyst. */
+constexpr std::uint32_t kTesseractPlugHash = 0xD91C01C9U;
 
 /**
  * Socket types in priority order, most load-bearing first.
@@ -62,17 +66,17 @@ struct Ranked {
     return left.lane < right.lane;
 }
 
-/**
- * Appends one definition's sandbox perks to a bank.
- * @param definitionIndex Native item or plug index.
- * @param count Occupied entries, advanced per appended perk.
- */
+/** A completed catalyst replaces the base Tesseract without changing the other perks. */
 void append_perks(std::uint16_t definitionIndex,
                   std::span<std::uint16_t> bank,
-                  std::size_t& count) noexcept {
+                  std::size_t& count,
+                  bool completedCatalyst) noexcept {
     details::Definition detail{};
     if (definitionIndex == details::kUnavailableItemIndex
         || !state::build_data::find_configured_item_detail(definitionIndex, detail)) {
+        return;
+    }
+    if (completedCatalyst && detail.definitionHash == kTesseractPlugHash) {
         return;
     }
     const std::size_t perks = detail.sandboxPerkCount < detail.sandboxPerks.size()
@@ -91,9 +95,16 @@ void append_perks(std::uint16_t definitionIndex,
 void append_item_perks(const Equipped& equipped,
                        std::span<std::uint16_t> bank,
                        std::size_t& count) noexcept {
-    append_perks(equipped.definitionIndex, bank, count);
+    namespace catalysts = state::build_data::items::catalysts;
+    const catalysts::Result catalyst = catalysts::resolve(equipped.definitionIndex);
+    const bool completedCatalyst =
+        catalyst.error == catalysts::Error::none
+        && catalyst.availability == catalysts::Availability::released
+        && resolve_effective_plug(equipped, catalyst.completed.socketLane)
+               == catalyst.completed.effectDefinitionIndex;
+    append_perks(equipped.definitionIndex, bank, count, completedCatalyst);
     for (std::size_t lane = 0; lane < equipped.laneCount; ++lane) {
-        append_perks(resolve_effective_plug(equipped, lane), bank, count);
+        append_perks(resolve_effective_plug(equipped, lane), bank, count, completedCatalyst);
     }
 }
 

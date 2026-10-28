@@ -15,6 +15,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return "sensorSenseUpdated";
     case host::EventKind::clientStateChanged:
         return "clientStateChanged";
+    case host::EventKind::regionChanged:
+        return "regionChanged";
     case host::EventKind::incidentReceived:
         return "incidentReceived";
     case host::EventKind::timerElapsed:
@@ -29,6 +31,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return "triggerExited";
     case host::EventKind::squadState:
         return "squadState";
+    case host::EventKind::squadProvoked:
+        return "squadProvoked";
     case host::EventKind::entitySpawned:
         return "entitySpawned";
     case host::EventKind::entityDied:
@@ -57,6 +61,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return "objectInteracted";
     case host::EventKind::damageState:
         return "damageState";
+    case host::EventKind::deviceState:
+        return "deviceState";
     case host::EventKind::objectState:
         return "objectState";
     case host::EventKind::ghostLinkState:
@@ -102,6 +108,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return kSenseUpdateEventMetatable;
     case host::EventKind::clientStateChanged:
         return kClientStateChangedEventMetatable;
+    case host::EventKind::regionChanged:
+        return kRegionChangedEventMetatable;
     case host::EventKind::incidentReceived:
         return kIncidentReceivedEventMetatable;
     case host::EventKind::clientMessageReceived:
@@ -136,6 +144,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return kTriggerExitedEventMetatable;
     case host::EventKind::squadState:
         return kSquadStateEventMetatable;
+    case host::EventKind::squadProvoked:
+        return kSquadProvokedEventMetatable;
     case host::EventKind::entitySpawned:
         return kEntitySpawnedEventMetatable;
     case host::EventKind::entityDied:
@@ -164,10 +174,11 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
     case host::EventKind::actorPathState:
         return kActorPathEventMetatable;
     case host::EventKind::objectInteracted:
-        return kObjectInteractionEventMetatable;
     case host::EventKind::damageState:
     case host::EventKind::objectState:
         return kObjectInteractionEventMetatable;
+    case host::EventKind::deviceState:
+        return kDeviceStateEventMetatable;
     case host::EventKind::ghostLinkState:
         return kGhostLinkEventMetatable;
     }
@@ -207,6 +218,10 @@ bool push_common_member(lua_State* state, const host::Event& event, std::string_
     }
     if (key == "source_generation") {
         push_u64_string(state, event.sourceGeneration);
+        return true;
+    }
+    if (key == "attempt_generation") {
+        push_u64_string(state, event.attemptGeneration);
         return true;
     }
     return false;

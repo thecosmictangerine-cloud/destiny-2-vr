@@ -303,15 +303,6 @@ bool commit(ServiceOutcome& outcome, Publication& publication, const char*& reas
         reason = "item_state";
         return committed;
     }
-    if (auto* transaction = transaction_if<CurrentActivityTransaction>(outcome)) {
-        const bool committed = state::commit_current_activity(transaction->pending);
-        core::log::write(core::log::Channel::server,
-                         committed ? core::log::Level::debug : core::log::Level::warn,
-                         committed ? "ev=current_activity stage=transaction_commit result=ok"
-                                   : "ev=current_activity stage=transaction_commit result=fail");
-        reason = "current_activity";
-        return committed;
-    }
     if (auto* transaction = transaction_if<ProfileItemAcquisitionTransaction>(outcome)) {
         const bool committed = transaction->pending != nullptr
                                && state::commit_profile_item_acquisition(*transaction->pending);

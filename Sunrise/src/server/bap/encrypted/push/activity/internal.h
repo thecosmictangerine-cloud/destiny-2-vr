@@ -11,6 +11,7 @@
 #include "../../../../gameplay/gameplay_advertisement.h"
 #include "../../../internal.h"
 #include "activity_arrival.h"
+#include "activity_roster_device_publication.h"
 
 namespace sunrise::server::bap::encrypted::push::activity {
 
@@ -98,6 +99,21 @@ void stage_membership_body_record(const Session& session, std::span<const std::b
 
 /** Promotes the staged membership body to the delivered record. */
 void commit_membership_body_record(const Session& session) noexcept;
+
+/** Drops membership state that belonged to a discarded frame. */
+void discard_membership_body_record(const Session& session) noexcept;
+
+/** Names where this body first differs from the last one delivered on this connection. */
+void report_roster_body_delta(const Session& session, std::span<const std::byte> body) noexcept;
+
+/**
+ * Reports one unsolicited push held back while the client holds no slice set, once per held item.
+ * @param hostStateRevision Host state revision waiting, or zero.
+ * @param scriptableRevision Typed body waiting, or zero.
+ */
+void report_roster_deferral(const Session& session,
+                            std::uint64_t hostStateRevision,
+                            std::uint64_t scriptableRevision) noexcept;
 
 /**
  * Tests whether the installed packages author one region as private.
@@ -294,6 +310,12 @@ enum class CanonicalGroupStatus : std::uint8_t {
 same_generated_group(const state::build_data::scenarios::RosterGroup& left,
                      const state::build_data::scenarios::RosterGroup& right) noexcept;
 
+/** Copies one request-owned generated group into the encoder's fixed input at one slot. */
+[[nodiscard]] bool fill_generated_group(const state::build_data::scenarios::RosterGroup& source,
+                                        Scratch& scratch,
+                                        std::size_t slot,
+                                        message::Roster& roster) noexcept;
+
 /** Finds one exact same-key group and rejects conflicting or multiply-published keys. */
 [[nodiscard]] ExistingGroup
 find_existing_group(const state::build_data::scenarios::RosterGroup& candidate,
@@ -310,9 +332,13 @@ find_existing_group(const state::build_data::scenarios::RosterGroup& candidate,
 /** @return One bit per bubble this link hosts; every bubble when no world is bound. */
 [[nodiscard]] std::uint64_t hosted_bubble_mask(const Session& session) noexcept;
 
+/** @return True when this link registers the destination's top-level groups. */
+[[nodiscard]] bool publishes_top_level_groups(const Session& session) noexcept;
+
 /** Copies the destination's published groups into the encoder's fixed input. */
 [[nodiscard]] bool fill_roster(const state::build_data::scenarios::Definition& layout,
                                std::uint64_t hostedBubbles,
+                               bool publishTopLevel,
                                Scratch& scratch,
                                message::Roster& roster) noexcept;
 
@@ -370,8 +396,43 @@ canonical_group_status(const state::build_data::scenarios::Definition& layout,
 make_auth_override(const server::activity::host::PendingScriptableOverride& retained,
                    message::AuthOverride& output) noexcept;
 
-/** Advances the epoch once per bubble the client holds, so every group re-registers there. */
+/** Tracks the bubble the client holds; a change moves no group and only logs the crossing. */
 void advance_region_epoch(Session& session, const RefreshReport* refresh) noexcept;
+
+/**
+ * Puts the groups appended after the seed into first-seen order, whichever path appended them.
+ * The client keys its state bytes by position, so a group that moves is torn down and rebuilt.
+ * @param firstAppended Position of the first group after the seed; earlier ones keep their order.
+ */
+void order_appended_groups(const Session& session,
+                           Scratch& scratch,
+                           message::Roster& roster,
+                           std::size_t firstAppended) noexcept;
+
+/**
+ * Moves the groups of objects present in every scenario state into the top-level list.
+ * The owning link also adds any such group not yet published; the other link retires them.
+ * @param firstAppended Position of the first group after the seed; moved up for each group
+ * taken from past it.
+ * @return False when the scenario cannot be read or a group conflicts.
+ */
+[[nodiscard]] bool promote_scenario_wide_groups(const Session& session,
+                                                Scratch& scratch,
+                                                message::Roster& roster,
+                                                std::size_t& firstAppended) noexcept;
+
+/**
+ * Registers every leased key under each bubble it was registered under before.
+ * @return False when a sub-block is full.
+ */
+[[nodiscard]] bool
+retain_group_bubbles(const Session& session, Scratch& scratch, message::Roster& roster) noexcept;
+
+/**
+ * Puts the bubble sub-blocks into first-seen order and records any bubble seen for the first time.
+ * The client keys sub-blocks by position, so a moved block rebuilds every group it lists.
+ */
+void order_sub_blocks(Session& session, Scratch& scratch, message::Roster& roster) noexcept;
 
 /** Stamps every group's revision from its lease, moved only when that group's identity changes. */
 void stamp_group_sequences(Session& session, message::Roster& roster) noexcept;

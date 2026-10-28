@@ -98,8 +98,8 @@ struct SelectCharacter {
     std::uint64_t selectedCharacterSoid{};
     /**
      * The account object moves as a selected-character patch, not a full body.
-     * The first pick replaces it whole. After opcode 505 a resent account body wipes the resident
-     * settings block, so only the one field goes out.
+     * The first pick replaces it whole. After opcode 505, or on a re-pick of the resident
+     * character, a resent account body wipes the settings block, so only the one field goes out.
      */
     bool patchAccount{};
 };

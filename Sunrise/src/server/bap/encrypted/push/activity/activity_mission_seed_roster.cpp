@@ -20,7 +20,7 @@ namespace layouts = state::build_data::scenarios;
 
 /** Logs which exit refused, since the returned outcome itself carries no reason. */
 [[nodiscard]] MissionSeedRosterResult refuse_seed(std::string_view reason) noexcept {
-    std::array<char, 96> line{};
+    std::array<char, 192> line{};
     const int written = std::snprintf(line.data(),
                                       line.size(),
                                       "ev=activity stage=mission_seed_refusal reason=%.*s",
@@ -158,6 +158,22 @@ namespace sdk = state::activity_sdk;
     return true;
 }
 
+/** The scene-seed check that refused, and the object and slot it refused. */
+struct SceneSeedRefusal final {
+    const char* check = "none";
+    std::uint32_t objectTag{};
+    std::uint32_t slotIndex{};
+};
+
+/** @return False after recording the refused check and its target. */
+[[nodiscard]] bool refuse_scene(SceneSeedRefusal& refusal,
+                                const char* check,
+                                std::uint32_t objectTag = 0,
+                                std::uint32_t slotIndex = 0) noexcept {
+    refusal = {check, objectTag, slotIndex};
+    return false;
+}
+
 /** @return True when two SDK scene rows name the same outbound object slot. */
 [[nodiscard]] bool same_scene_target(const sdk::AuthoredSceneSeed& left,
                                      const sdk::AuthoredSceneSeed& right) noexcept {
@@ -176,16 +192,17 @@ namespace sdk = state::activity_sdk;
 [[nodiscard]] bool collect_scene_seeds(const sdk::BoundView& view,
                                        const sdk::MissionSeedSummary& summary,
                                        Scratch& scratch,
-                                       std::size_t& outputCount) noexcept {
+                                       std::size_t& outputCount,
+                                       SceneSeedRefusal& refusal) noexcept {
     outputCount = 0;
     if (view.catalog == nullptr) {
-        return false;
+        return refuse_scene(refusal, "no_catalog");
     }
     const sdk::Catalog& catalog = *view.catalog;
     const sdk::format::Scenario* const scenario = sdk::bound_scenario(view);
     const auto objects = catalog.objects();
     if (scenario == nullptr) {
-        return false;
+        return refuse_scene(refusal, "no_scenario");
     }
 
     for (const sdk::format::Occurrence& occurrence :
@@ -196,7 +213,7 @@ namespace sdk = state::activity_sdk;
         if (occurrence.scenarioIndex != summary.scenarioRow
             || occurrence.bubbleIndex != summary.bubbleRow
             || occurrence.objectIndex >= objects.size()) {
-            return false;
+            return refuse_scene(refusal, "occurrence_mismatch");
         }
         const sdk::format::Object& object = objects[occurrence.objectIndex];
         bool hasSceneSlot = false;
@@ -209,16 +226,19 @@ namespace sdk = state::activity_sdk;
             continue;
         }
         if (outputCount >= scratch.rosterSceneSeeds.size()) {
-            return false;
+            return refuse_scene(refusal, "capacity", object.objectTag);
         }
 
         const std::size_t first = outputCount;
         std::size_t produced = 0;
         const auto available = std::span(scratch.rosterSceneSeeds).subspan(first);
-        if (sdk::materialize_authored_scene_seeds(catalog, object, available, produced)
-                != sdk::AuthoredSceneSeedStatus::ready
-            || produced > available.size()) {
-            return false;
+        const sdk::AuthoredSceneSeedStatus status =
+            sdk::materialize_authored_scene_seeds(catalog, object, available, produced);
+        if (status != sdk::AuthoredSceneSeedStatus::ready) {
+            return refuse_scene(refusal, sdk::status_name(status), object.objectTag);
+        }
+        if (produced > available.size()) {
+            return refuse_scene(refusal, "capacity", object.objectTag);
         }
 
         std::size_t uniqueCount = first;
@@ -231,7 +251,8 @@ namespace sdk = state::activity_sdk;
                     continue;
                 }
                 if (!same_scene_seed(retained, candidate)) {
-                    return false;
+                    return refuse_scene(
+                        refusal, "conflicting_seed", candidate.objectTag, candidate.slotIndex);
                 }
                 duplicate = true;
                 break;
@@ -269,15 +290,18 @@ namespace sdk = state::activity_sdk;
  * A seed whose object is not materialized waits; the game builds that object itself.
  */
 [[nodiscard]] bool validate_scene_targets(std::span<const sdk::AuthoredSceneSeed> seeds,
-                                          std::span<const layouts::RosterGroup> groups) noexcept {
+                                          std::span<const layouts::RosterGroup> groups,
+                                          SceneSeedRefusal& refusal) noexcept {
     for (const sdk::AuthoredSceneSeed& seed : seeds) {
+        // The baseline body never carries the resource, so an absent resource is still a seed.
         if (seed.objectTag == 0 || seed.registryKey == 0 || seed.resourceTag == 0
-            || seed.resourceTag == sdk::format::kAbsentIndex
             || seed.slotType != message::kAuthoredSceneSlotType
             || seed.slotIndex > message::kMaximumSlotIndex
-            || seed.authSchema != message::kAuthoredSceneAuthSchema
-            || seed_slot_matches(seed, groups) > 1) {
-            return false;
+            || seed.authSchema != message::kAuthoredSceneAuthSchema) {
+            return refuse_scene(refusal, "invalid_seed", seed.objectTag, seed.slotIndex);
+        }
+        if (seed_slot_matches(seed, groups) > 1) {
+            return refuse_scene(refusal, "several_slots", seed.objectTag, seed.slotIndex);
         }
     }
     return true;
@@ -370,12 +394,40 @@ MissionSeedRosterResult append_initial_mission_seed(Session& session,
     const state::activity::membership::ClientPlacement placement =
         client_placement(session, refresh);
     const std::int32_t heldRegion = state::activity::membership::instantiated_region(placement);
+    // The public link keeps its own bubble loaded and never instantiates the selected region,
+    // so the window also closes on the link that reports one.
+    const std::int32_t liveRegion = state::activity::membership::instantiated_region(
+        state::activity::membership::reported_placement(
+            state::activity::membership::live_region_session(state::activity::kAbsentSessionId)));
     // The window closes on the exact packed region, so a sibling state of one bubble counts.
+    // Only this link's own arrival may close it: a sibling link's region is not this client's
+    // world, and closing early publishes the full set before the client can accept it.
     if (!adopting && lease.regionArrivalPending
         && mission_seed_arrival_window_closed(heldRegion, lease.plan.effectiveRegion)) {
         lease.regionArrivalPending = false;
     }
     const bool arrivalWindow = !adopting && lease.regionArrivalPending;
+    if (arrivalWindow) {
+        // Publication holds the previous plan until the client instantiates the selected region.
+        // Name both regions, because a wait that never ends looks the same as a slow one.
+        std::array<char, 192> wait{};
+        const int waitWritten = std::snprintf(
+            wait.data(),
+            wait.size(),
+            "ev=activity stage=mission_seed_arrival held=%d live=%d selected=%u previous=%u "
+            "rev=%llu/%llu",
+            heldRegion,
+            liveRegion,
+            lease.plan.effectiveRegion,
+            lease.previousPlan.effectiveRegion,
+            static_cast<unsigned long long>(lease.revision),
+            static_cast<unsigned long long>(lease.publishedRevision));
+        if (waitWritten > 0) {
+            core::log::write(core::log::Channel::server,
+                             core::log::Level::debug,
+                             {wait.data(), static_cast<std::size_t>(waitWritten)});
+        }
+    }
     const ActivityMissionSeedPlan& activePlan = arrivalWindow ? lease.previousPlan : lease.plan;
     const std::uint32_t selectedRegion =
         lease.configured ? activePlan.effectiveRegion : effectiveRegion;
@@ -388,6 +440,26 @@ MissionSeedRosterResult append_initial_mission_seed(Session& session,
         selectedRegion / middleware::content::packages::tables::kSliceSetIndexFactor;
     if (selectedBubble >= layouts::kBubbleCapacity
         || ((hostedBubbles >> selectedBubble) & 1U) == 0) {
+        // A selection this link cannot host leaves the lease unpublished with no refusal, so
+        // name the bubble and the link's hosted set.
+        if (lease.configured && lease.revision != lease.publishedRevision) {
+            std::array<char, 192> unhosted{};
+            const int unhostedWritten =
+                std::snprintf(unhosted.data(),
+                              unhosted.size(),
+                              "ev=activity stage=mission_seed_unhosted bubble=%u hosted=0x%016llX"
+                              " region=%u rev=%llu/%llu",
+                              selectedBubble,
+                              static_cast<unsigned long long>(hostedBubbles),
+                              selectedRegion,
+                              static_cast<unsigned long long>(lease.revision),
+                              static_cast<unsigned long long>(lease.publishedRevision));
+            if (unhostedWritten > 0) {
+                core::log::write(core::log::Channel::server,
+                                 core::log::Level::debug,
+                                 {unhosted.data(), static_cast<std::size_t>(unhostedWritten)});
+            }
+        }
         return MissionSeedRosterResult::inactive;
     }
     const std::size_t available = scratch.rosterGroups.size() - canonicalGroupCount;
@@ -420,11 +492,21 @@ MissionSeedRosterResult append_initial_mission_seed(Session& session,
     }
 
     std::size_t sceneSeedCount = 0;
-    if (!collect_scene_seeds(view, summary, scratch, sceneSeedCount)
-        || sceneSeedCount > scratch.rosterSceneSeeds.size()
+    SceneSeedRefusal sceneRefusal{};
+    // collect_scene_seeds never writes past the scratch array, so its count can size the span.
+    if (!collect_scene_seeds(view, summary, scratch, sceneSeedCount, sceneRefusal)
         || !validate_scene_targets(std::span(scratch.rosterSceneSeeds).first(sceneSeedCount),
-                                   materialized.first(summary.groupCount))) {
-        return refuse_seed("scene_seeds");
+                                   materialized.first(summary.groupCount),
+                                   sceneRefusal)) {
+        std::array<char, 128> reason{};
+        const int written = std::snprintf(reason.data(),
+                                          reason.size(),
+                                          "scene_seeds check=%s object=0x%08X slot=%u",
+                                          sceneRefusal.check,
+                                          sceneRefusal.objectTag,
+                                          sceneRefusal.slotIndex);
+        return refuse_seed(written > 0 ? std::string_view(reason.data())
+                                       : std::string_view("scene_seeds"));
     }
 
     // A publication must not shrink the registered group set: a group left out is never torn down

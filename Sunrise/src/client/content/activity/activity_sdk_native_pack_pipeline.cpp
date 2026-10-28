@@ -17,6 +17,7 @@
 
 #include "../../../state/activity_sdk/runtime.h"
 #include "activity_sdk_activity_enrichment_inventory.h"
+#include "activity_sdk_actor_ability_inventory.h"
 #include "activity_sdk_actor_rsat_inventory.h"
 #include "activity_sdk_authored_scene_inventory.h"
 #include "activity_sdk_behavior_inventory.h"
@@ -206,7 +207,12 @@ lua_source(const state::activity_sdk::identity::Expected& identity,
             storage.entityTypeDefinitions,
             storage.sobjectRsatFieldBindings,
             storage.actorStateNames,
-            worldSources};
+            storage.actorSequenceTables,
+            storage.actorSequenceEntries,
+            storage.actorSequenceBindings,
+            worldSources,
+            storage.combatObjectiveGroups,
+            storage.actorAbilities};
 }
 
 } // namespace
@@ -350,6 +356,10 @@ Status stage(const wchar_t* sdkDirectory,
                 topology, squadFacts, &resolve_actor, &actorRows.actorClasses, squadRows)) {
             return Status::squadLink;
         }
+        if (!actor_ability_inventory::build(
+                topology, squadFacts, squadRows, &read_tag, &packageContext, actorRows)) {
+            return Status::actorRsat;
+        }
         report(progress, progressContext, Phase::authoredSceneFacts);
         authored_scene::Facts sceneFacts{};
         if (!authored_scene::derive_facts(topology, squadFacts, sceneFacts)) {
@@ -362,11 +372,13 @@ Status stage(const wchar_t* sdkDirectory,
                                                     : Status::authoredSceneLinks;
         }
         report(progress, progressContext, Phase::dialogueCues);
-        if (!attach_dialogue_cue_counts(topology, squadFacts, packageContext, topologyDetails)) {
+        if (!attach_dialogue_cue_counts(
+                topology, squadFacts, packageContext, topologyDetails, sceneRows)) {
             return cancelled(cancel, cancelContext) ? Status::cancelled : Status::dialogueCues;
         }
         report(progress, progressContext, Phase::authoredText);
-        if (!attach_authored_text(topology, squadFacts, packageContext, sceneRows)) {
+        if (!attach_combat_objective_groups(topology, squadFacts, packageContext, sceneRows)
+            || !attach_authored_text(topology, squadFacts, packageContext, sceneRows)) {
             return cancelled(cancel, cancelContext) ? Status::cancelled : Status::authoredText;
         }
         if (cancelled(cancel, cancelContext)) {

@@ -11,8 +11,9 @@ namespace {
 
 namespace catalog = state::build_data::scriptables;
 
-// Package slot types of an incoming trigger reference and of its target.
+// Package slot types that watch a volume: the player trigger and the player monitor.
 constexpr std::uint16_t kIncomingTriggerSlotType = 31;
+constexpr std::uint16_t kIncomingMonitorSlotType = 30;
 constexpr std::uint8_t kTargetTriggerSlotType = 60;
 // Fixed capacity for one pass's incoming trigger references.
 constexpr std::size_t kIncomingReferenceCapacity = 262'144;
@@ -40,7 +41,7 @@ struct Candidate final {
 
 } // namespace
 
-/** Retains every state-local type-31 name reference compatible with a type-60 trigger owner. */
+/** Retains every type-31 and type-30 reference compatible with a type-60 trigger owner. */
 bool append_trigger_volume_incoming_references(catalog::Snapshot& output,
                                                TriggerVolumeLinkCancelCheck cancel) noexcept {
     output.triggerVolumeIncomingReferences.clear();
@@ -66,7 +67,8 @@ bool append_trigger_volume_incoming_references(catalog::Snapshot& output,
             }
             const catalog::Slot& sourceSlot = output.slots[reference.sourceSlotRow];
             if (sourceSlot.objectRow != reference.sourceObjectRow
-                || sourceSlot.slotType != kIncomingTriggerSlotType) {
+                || (sourceSlot.slotType != kIncomingTriggerSlotType
+                    && sourceSlot.slotType != kIncomingMonitorSlotType)) {
                 continue;
             }
             candidates.push_back({reference.targetObjectRow,

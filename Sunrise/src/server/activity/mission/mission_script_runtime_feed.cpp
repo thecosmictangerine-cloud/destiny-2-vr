@@ -19,6 +19,7 @@
 #include "../../../state/activity/mission/runtime.h"
 #include "../../../state/activity/runtime.h"
 #include "../host_runtime.h"
+#include "mission_script_region.h"
 #include "mission_script_runtime_internal.h"
 #include "mission_script_vm.h"
 
@@ -36,8 +37,6 @@ struct PendingMissionEvent final {
     bool missionSequenceObserved{};
     bool senseAvailable{};
     bool clientMessageAvailable{};
-    bool callbackEligible{};
-    bool eligibilityResolved{};
     bool occupied{};
 };
 
@@ -83,6 +82,7 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
     case host::EventKind::triggerEntered:
     case host::EventKind::triggerExited:
     case host::EventKind::squadState:
+    case host::EventKind::squadProvoked:
     case host::EventKind::entitySpawned:
     case host::EventKind::entityDied:
     case host::EventKind::sceneFinished:
@@ -95,6 +95,8 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
     case host::EventKind::cinematicTerminated:
     case host::EventKind::actorPathState:
     case host::EventKind::damageState:
+    case host::EventKind::deviceState:
+    case host::EventKind::regionChanged:
     case host::EventKind::objectState:
     case host::EventKind::fireteamState:
     case host::EventKind::objectInteracted:
@@ -108,6 +110,9 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
 /** True when the event may reach a callback for this instance's ActivityClient generation. */
 [[nodiscard]] bool eligible_event(const RuntimeInstance& instance,
                                   const host::Event& event) noexcept {
+    if (event.attemptGeneration != 0 && event.attemptGeneration != instance.attempt.generation) {
+        return false;
+    }
     if (event.kind == host::EventKind::timerElapsed) {
         return true;
     }
@@ -122,6 +127,7 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
            || event.kind == host::EventKind::triggerEntered
            || event.kind == host::EventKind::triggerExited
            || event.kind == host::EventKind::squadState
+           || event.kind == host::EventKind::squadProvoked
            || event.kind == host::EventKind::entitySpawned
            || event.kind == host::EventKind::entityDied
            || event.kind == host::EventKind::sceneFinished
@@ -133,6 +139,8 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
            || event.kind == host::EventKind::cinematicStarted
            || event.kind == host::EventKind::actorPathState
            || event.kind == host::EventKind::damageState
+           || event.kind == host::EventKind::deviceState
+           || event.kind == host::EventKind::regionChanged
            || event.kind == host::EventKind::objectState
            || event.kind == host::EventKind::fireteamState
            || event.kind == host::EventKind::objectInteracted
@@ -213,10 +221,6 @@ void clear_pending_event(PendingMissionEvent& pending) noexcept {
     }
     pending->nextAttempt = 0;
     pending->event = input.event;
-    if (instance != nullptr) {
-        pending->callbackEligible = eligible_event(*instance, input.event);
-        pending->eligibilityResolved = true;
-    }
     pending->occupied = true;
     return true;
 }
@@ -301,11 +305,7 @@ void drain_pending_mission_events(std::uint64_t now) noexcept {
                 }
                 pending.missionSequenceObserved = true;
             }
-            if (!pending.eligibilityResolved) {
-                pending.callbackEligible = eligible_event(*instance, pending.event);
-                pending.eligibilityResolved = true;
-            }
-            if (!pending.callbackEligible) {
+            if (!eligible_event(*instance, pending.event)) {
                 if (!commit_mission_state(
                         *instance, instance->missionStarted, pending.event.missionSequence)) {
                     clear_pending_events(instance->view.binding);
@@ -518,8 +518,6 @@ void reset_pending_events_for_reattach(const state::activity::SessionBinding& bi
         pending.nextAttempt = 0;
         pending.attempts = 0;
         pending.missionSequenceObserved = false;
-        pending.callbackEligible = false;
-        pending.eligibilityResolved = false;
     }
 }
 
@@ -611,6 +609,8 @@ lua_vm::CallStatus dispatch_event(RuntimeInstance& instance,
                      {legs.data(), static_cast<std::size_t>(written)});
         }
     }
+    instance.dispatchAttemptGeneration = event.attemptGeneration;
+    instance.dispatchInputSequence = event.missionSequence;
     const lua_vm::CallStatus status = lua_vm::dispatch(instance.vm, event, clientMessage, now);
     if (event.kind == host::EventKind::clientStateChanged) {
         // A pending-region report can name the next slice while the player still holds the old
@@ -619,6 +619,10 @@ lua_vm::CallStatus dispatch_event(RuntimeInstance& instance,
             instance.activeRegion = event.heldRegionIndex;
         } else if (event.currentRegionIndex >= 0) {
             instance.activeRegion = event.currentRegionIndex;
+        }
+        host::Event changed{};
+        if (firstAttempt && make_region_changed(event, changed)) {
+            push_script_event(instance, changed);
         }
     }
     if (firstAttempt && event.kind == host::EventKind::incidentReceived) {
@@ -636,22 +640,27 @@ lua_vm::CallStatus dispatch_event(RuntimeInstance& instance,
         push_damage_edges(instance, *sense);
         push_actor_path_edges(instance, *sense);
         push_squad_edges(instance, *sense);
+        push_combatant_damage_edges(instance, *sense);
+        push_device_edges(instance, *sense);
         push_scene_edges(instance, *sense);
         push_objective_edges(instance, *sense);
     }
+    instance.dispatchAttemptGeneration = 0;
+    instance.dispatchInputSequence = 0;
     note_vm_status(instance, "event", lua_vm::status_name(status));
     if (firstAttempt && instance.eventsSeen == 1) {
         log_line(core::log::Level::info,
                  &instance,
                  "dispatch",
                  lua_vm::status_name(status),
-                 event.kind == host::EventKind::senseUpdate            ? "sense"
-                 : event.kind == host::EventKind::clientStateChanged   ? "client_state"
-                 : event.kind == host::EventKind::incidentReceived     ? "incident"
-                 : event.kind == host::EventKind::entitySlotsRequested ? "entity_slots_requested"
-                 : event.kind == host::EventKind::timerElapsed         ? "timer"
-                 : event.kind == host::EventKind::effectResult         ? "effect_result"
-                                                                       : "client_message");
+                 event.kind == host::EventKind::senseUpdate          ? "detail=sense"
+                 : event.kind == host::EventKind::clientStateChanged ? "detail=client_state"
+                 : event.kind == host::EventKind::incidentReceived   ? "detail=incident"
+                 : event.kind == host::EventKind::entitySlotsRequested
+                     ? "detail=entity_slots_requested"
+                 : event.kind == host::EventKind::timerElapsed ? "detail=timer"
+                 : event.kind == host::EventKind::effectResult ? "detail=effect_result"
+                                                               : "detail=client_message");
     }
     const std::uint64_t nextInputSequence =
         host_feed_row(event.kind) ? event.missionSequence : instance.lastMissionSequence;
@@ -669,14 +678,14 @@ lua_vm::CallStatus dispatch_event(RuntimeInstance& instance,
                      &instance,
                      "event",
                      "committed",
-                     event.kind == host::EventKind::senseUpdate          ? "sense"
-                     : event.kind == host::EventKind::clientStateChanged ? "client_state"
-                     : event.kind == host::EventKind::incidentReceived   ? "incident"
+                     event.kind == host::EventKind::senseUpdate          ? "detail=sense"
+                     : event.kind == host::EventKind::clientStateChanged ? "detail=client_state"
+                     : event.kind == host::EventKind::incidentReceived   ? "detail=incident"
                      : event.kind == host::EventKind::entitySlotsRequested
-                         ? "entity_slots_requested"
-                     : event.kind == host::EventKind::timerElapsed ? "timer"
-                     : event.kind == host::EventKind::effectResult ? "effect_result"
-                                                                   : "client_message");
+                         ? "detail=entity_slots_requested"
+                     : event.kind == host::EventKind::timerElapsed ? "detail=timer"
+                     : event.kind == host::EventKind::effectResult ? "detail=effect_result"
+                                                                   : "detail=client_message");
         }
         return status;
     }

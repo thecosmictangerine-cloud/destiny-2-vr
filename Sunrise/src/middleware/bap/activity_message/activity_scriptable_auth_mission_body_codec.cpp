@@ -7,7 +7,7 @@
 #include "scriptable_auth_internal.h"
 
 // The fixed-width scriptable-auth bodies that drive mission progress and the HUD: sequences,
-// cinematics, objective resets, tasks, dialogue, directives, the encounter observer, the
+// cinematics, objective resets, tasks, directives, the encounter observer, the
 // public-event sensor and the area watcher. Each family has one encoder and one checker.
 
 namespace sunrise::middleware::bap::activity_message::scriptable_auth {
@@ -23,14 +23,14 @@ constexpr std::size_t kSequenceReferenceCount = 128U;
 /** Field widths of the type-3 objective reset body, in bits. */
 constexpr std::uint8_t kType3ValueWidth = 7;
 constexpr std::uint8_t kType3GenerationWidth = 31;
-/** Values the client reads as a fired dialogue cue; anything else leaves it inactive. */
-constexpr std::uint64_t kDialogueActiveWorld = 1;
-constexpr std::int8_t kDialogueInactiveMode = -1;
-constexpr std::int8_t kDialogueFireMode = 2;
 /** Field widths of the type-68 directive lanes, in bits. */
 constexpr std::uint8_t kDirectiveStateWidth = 2;
 constexpr std::uint8_t kDirectiveAuxStateWidth = 3;
 constexpr std::uint8_t kDirectiveActiveIndexWidth = 3;
+/** Marker modes the HUD eligibility pass reads from lane +100. */
+constexpr std::uint32_t kTrackedMarkerMode = 0;
+constexpr std::uint32_t kFlaggedMarkerMode = 1;
+constexpr std::uint32_t kWaypointMarkerMode = 2;
 
 /**
  * Writes the 353-bit 0x808099C4 child with no timer: epoch -1, all other fields 0.
@@ -49,18 +49,28 @@ constexpr std::uint8_t kDirectiveActiveIndexWidth = 3;
     return writer.write(kNoTimerEpoch, kWideIntegerWidth) && writer.write(0, kReal32Width);
 }
 
+/** Writes an absent reference or an exact slot with the ClientRef type and index biases. */
+[[nodiscard]] bool write_directive_reference(bits::Writer& writer,
+                                             const Type2LaneClientRef& target) noexcept {
+    return target.slotIndex < 0
+               ? write_absent_client_ref(writer)
+               : auth_fields::write_client_ref(writer,
+                                               target.registryKey,
+                                               static_cast<std::uint32_t>(target.slotType),
+                                               static_cast<std::uint16_t>(target.slotIndex));
+}
+
 /** Writes one 239-bit authored HUD marker subrecord, targeting the given slot or none. */
 [[nodiscard]] bool write_directive_marker(bits::Writer& writer,
-                                          const Type2LaneClientRef& target) noexcept {
-    // The client copies .0 into its target. The first hash of .2 must be the absent key, or the
-    // client runs a second authored-name lookup.
-    return writer.write(target.registryKey, 32)
-           && writer.write(static_cast<std::uint8_t>(target.slotType), kClientRefTypeWidth)
-           && writer.write(static_cast<std::uint32_t>(target.slotIndex + kClientRefIndexBias),
-                           kClientRefIndexWidth)
-           && write_absent_client_ref(writer) && writer.write(kClientRefAbsentKey, 32)
-           && writer.write(0, 32) && writer.write(0, 32) && writer.write(0, 32)
-           && writer.write(0, kBoolWidth);
+                                          const Type2LaneClientRef& target,
+                                          std::uint32_t nameHash = kClientRefAbsentKey,
+                                          std::uint32_t bubbleHash = 0) noexcept {
+    // The client copies .0 into its target when that resolves. The first hash of .2 is the
+    // navpoint's name, which the client resolves to a position itself; the next word is the
+    // navpoint's bubble, which decides whether the marker is a route to another bubble.
+    return write_directive_reference(writer, target) && write_absent_client_ref(writer)
+           && writer.write(nameHash, 32) && writer.write(bubbleHash, 32) && writer.write(0, 32)
+           && writer.write(0, 32) && writer.write(0, kBoolWidth);
 }
 
 /** Writes one of the three complete type-68 state lanes. */
@@ -68,7 +78,10 @@ constexpr std::uint8_t kDirectiveActiveIndexWidth = 3;
                                          std::uint32_t nameHash,
                                          std::int32_t elementIndex,
                                          std::int8_t state,
-                                         const Type2LaneClientRef& target = {}) noexcept {
+                                         const Type2LaneClientRef& target = {},
+                                         std::uint32_t targetNameHash = kClientRefAbsentKey,
+                                         std::uint32_t targetBubbleHash = 0,
+                                         const Type2LaneClientRef& waypoint = {}) noexcept {
     if (!writer.write(nameHash, 32)
         || !writer.write(std::bit_cast<std::uint32_t>(elementIndex) + kSigned32Bias, 32)
         || !writer.write(static_cast<std::uint32_t>(state) + 1U, kDirectiveStateWidth)
@@ -80,12 +93,21 @@ constexpr std::uint8_t kDirectiveActiveIndexWidth = 3;
             return false;
         }
     }
-    if (!writer.write(1, kDirectiveStateWidth) || !write_absent_client_ref(writer)
-        || !writer.write(target.slotIndex >= 0 ? 3U : 1U, kDirectiveAuxStateWidth)) {
+    // Lane +92 is the player-set reference and +100 the marker mode the builder applies while the
+    // player is in that set: 0 tracks, 1 needs the candidate flag, 2 never tracks, 3 builds none.
+    const std::uint32_t markerMode = waypoint.slotIndex >= 0 ? kWaypointMarkerMode
+                                     : target.slotIndex >= 0 ? kTrackedMarkerMode
+                                                             : kFlaggedMarkerMode;
+    if (!writer.write(1, kDirectiveStateWidth) || !write_directive_reference(writer, waypoint)
+        || !writer.write(markerMode, kDirectiveAuxStateWidth)) {
         return false;
     }
     for (std::size_t index = 0; index < 4; ++index) {
-        if (!write_directive_marker(writer, index == 0 ? target : Type2LaneClientRef{})) {
+        const bool first = index == 0;
+        if (!write_directive_marker(writer,
+                                    first ? target : Type2LaneClientRef{},
+                                    first ? targetNameHash : kClientRefAbsentKey,
+                                    first ? targetBubbleHash : 0U)) {
             return false;
         }
     }
@@ -331,91 +353,6 @@ bool validate_type38_body(std::span<const std::byte> input, std::size_t bitCount
     return bitCount == kType38BitCount && decode_type38_body(input, generation);
 }
 
-/** Finds the next positive dialogue fire sequence without wrapping. */
-bool next_type53_sequence(const Type53SequenceGuard& guard,
-                          std::uint16_t cueIndex,
-                          std::int32_t& next) noexcept {
-    next = 0;
-    if (cueIndex >= guard.last.size() || guard.last[cueIndex] < 0
-        || guard.last[cueIndex] == (std::numeric_limits<std::int32_t>::max)()) {
-        return false;
-    }
-    next = guard.last[cueIndex] + 1;
-    return next > 0;
-}
-
-/** Encodes one dialogue pulse with the schema's optional world field present only for its cue. */
-bool encode_type53(const Type53Preset& preset,
-                   const Type53SequenceGuard& guard,
-                   std::span<std::byte> output,
-                   std::size_t& written) noexcept {
-    written = 0;
-    if (preset.cueIndex >= kType53EntryCount || preset.sequence <= 0
-        || preset.sequence <= guard.last[preset.cueIndex] || output.size() < kType53ByteCount) {
-        return false;
-    }
-    bits::Writer writer(output.first(kType53ByteCount));
-    bool encoded = write_absent_client_ref(writer);
-    for (std::size_t index = 0; encoded && index < kType53EntryCount; ++index) {
-        const bool selected = index == preset.cueIndex;
-        const std::int32_t sequence = selected ? preset.sequence : guard.last[index];
-        const std::uint32_t wireSequence = std::bit_cast<std::uint32_t>(sequence) + kSigned32Bias;
-        const std::int8_t mode = selected ? kDialogueFireMode : kDialogueInactiveMode;
-        encoded =
-            writer.write(0, kWideIntegerWidth) && writer.write(selected ? 1U : 0U, kBoolWidth);
-        if (encoded && selected) {
-            encoded = writer.write(kDialogueActiveWorld, kWideIntegerWidth);
-        }
-        encoded =
-            encoded && write_absent_client_ref(writer) && writer.write(wireSequence, kSigned32Width)
-            && writer.write(static_cast<std::uint32_t>(static_cast<std::int32_t>(mode) + kModeBias),
-                            kModeWidth);
-    }
-    return encoded && writer.bit_count() == kType53BitCount && writer.finish(written)
-           && written == kType53ByteCount;
-}
-
-/** Validates the closed pulse form rather than accepting arbitrary type-53 references. */
-bool validate_type53_body(std::span<const std::byte> input, std::size_t bitCount) noexcept {
-    if (bitCount != kType53BitCount || input.size() != kType53ByteCount) {
-        return false;
-    }
-    bits::Reader reader(input);
-    if (!read_absent_client_ref(reader)) {
-        return false;
-    }
-    std::size_t activeCount = 0;
-    for (std::size_t index = 0; index < kType53EntryCount; ++index) {
-        std::uint64_t tick = 0;
-        std::uint64_t hasWorld = 0;
-        std::uint64_t world = 0;
-        std::uint64_t wireSequence = 0;
-        std::uint64_t wireMode = 0;
-        if (!reader.read(kWideIntegerWidth, tick) || !reader.read(kBoolWidth, hasWorld)
-            || (hasWorld != 0 && !reader.read(kWideIntegerWidth, world))
-            || !read_absent_client_ref(reader) || !reader.read(kSigned32Width, wireSequence)
-            || !reader.read(kModeWidth, wireMode)) {
-            return false;
-        }
-        const std::int32_t sequence =
-            std::bit_cast<std::int32_t>(static_cast<std::uint32_t>(wireSequence) - kSigned32Bias);
-        const std::int32_t mode =
-            static_cast<std::int32_t>(wireMode) - static_cast<std::int32_t>(kModeBias);
-        if (tick != 0) {
-            return false;
-        }
-        if (hasWorld != 0) {
-            if (hasWorld != 1 || world != kDialogueActiveWorld || sequence <= 0
-                || mode != kDialogueFireMode || ++activeCount != 1) {
-                return false;
-            }
-        } else if (mode != kDialogueInactiveMode) {
-            return false;
-        }
-    }
-    return activeCount == 1 && finish_padding(reader);
-}
-
 /** Encodes one complete three-lane type-68 directive state. */
 bool encode_type68(const Type68Preset& preset,
                    std::span<std::byte> output,
@@ -431,27 +368,28 @@ bool encode_type68(const Type68Preset& preset,
         preset.navpoint.slotIndex < 0 || (preset.visible && preset.state == 0);
     if (!valid_reference(preset.audience, kType70SlotType)
         || !valid_reference(preset.navpoint, kType47SlotType) || !navpointAllowed
-        || output.size() < kType68ByteCount || preset.state < 0 || preset.state > 2
+        || !valid_reference(preset.waypoint, kType60SlotType)
+        || (preset.waypoint.slotIndex >= 0 && !preset.visible) || output.size() < kType68ByteCount
+        || preset.state < 0 || preset.state > 2
         || (preset.visible
             && (preset.nameHash == 0 || preset.nameHash == kClientRefAbsentKey
                 || preset.elementIndex < 0))) {
         return false;
     }
     bits::Writer writer(output.first(kType68ByteCount));
-    // The audience ClientRef stays unset when no sensor was named: type 0, index -1.
     bool encoded =
-        writer.write(preset.audience.registryKey, 32)
-        && writer.write(static_cast<std::uint32_t>(preset.audience.slotType) + 1U,
-                        kClientRefTypeWidth)
-        && writer.write(static_cast<std::uint32_t>(preset.audience.slotIndex) + kSigned16Bias,
-                        kClientRefIndexWidth)
-        && write_absent_client_ref(writer);
+        write_directive_reference(writer, preset.audience) && write_absent_client_ref(writer);
     for (std::size_t index = 0; encoded && index < kType68EntryCount; ++index) {
-        encoded =
-            index == 0 && preset.visible
-                ? write_directive_entry(
-                      writer, preset.nameHash, preset.elementIndex, preset.state, preset.navpoint)
-                : write_directive_entry(writer, kClientRefAbsentKey, 0, -1);
+        encoded = index == 0 && preset.visible
+                      ? write_directive_entry(writer,
+                                              preset.nameHash,
+                                              preset.elementIndex,
+                                              preset.state,
+                                              preset.navpoint,
+                                              preset.navpointNameHash,
+                                              preset.navpointBubbleHash,
+                                              preset.waypoint)
+                      : write_directive_entry(writer, kClientRefAbsentKey, 0, -1);
     }
     encoded = encoded && writer.write(preset.visible ? 1U : 0U, kDirectiveActiveIndexWidth);
     return encoded && writer.bit_count() == kType68BitCount && writer.finish(written)

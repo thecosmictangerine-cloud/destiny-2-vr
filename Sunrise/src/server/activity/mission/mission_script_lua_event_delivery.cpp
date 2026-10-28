@@ -38,12 +38,28 @@ push_incident_revision_member(lua_State* state, const host::Event& event, std::s
         return "squad.place";
     case ActionKind::activateAuthoredScene:
         return "scene.activate";
+    case ActionKind::stopAuthoredScene:
+        return "scene.stop";
+    case ActionKind::signalAuthoredScene:
+        return "scene.send_event";
     case ActionKind::setObjectActive:
         return "slot.set_object_active";
     case ActionKind::setDeviceChannel:
         return "slot.set_channel";
     case ActionKind::applySlotAuth:
         return {};
+    case ActionKind::runActorProgram:
+        return "slot.run_atoms";
+    case ActionKind::retireActor:
+        return "slot.retire_actor";
+    case ActionKind::setInteractableObject:
+        return "slot.set_interactable_object";
+    case ActionKind::setGhostLink:
+        return "slot.set_ghost_link";
+    case ActionKind::watchDamage:
+        return "slot.watch_damage";
+    case ActionKind::assignCombatObjective:
+        return "slot.assign_combat_objective";
     case ActionKind::setLifetime:
         return "lifetime.set";
     case ActionKind::restartCheckpoint:
@@ -51,6 +67,7 @@ push_incident_revision_member(lua_State* state, const host::Event& event, std::s
     case ActionKind::fireTrigger:
         return "slot.fire_trigger";
     case ActionKind::playSequence:
+    case ActionKind::playActorSequence:
         return "slot.play_sequence";
     case ActionKind::setCinematicActive:
         return "slot.set_cinematic_active";
@@ -62,6 +79,8 @@ push_incident_revision_member(lua_State* state, const host::Event& event, std::s
         return "slot.advance_task";
     case ActionKind::playDialogueCue:
         return "slot.play_dialogue_cue";
+    case ActionKind::holdSpawn:
+        return "mission.hold_spawn";
     case ActionKind::selectMissionState:
         return "mission.select_state";
     }

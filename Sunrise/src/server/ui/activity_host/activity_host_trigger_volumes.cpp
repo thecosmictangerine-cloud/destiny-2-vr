@@ -377,7 +377,9 @@ void draw_trigger_names(const catalog::Snapshot& snapshot,
         }
     }
     if (!drew) {
-        ImGui::TextDisabled("Unnamed trigger");
+        // The key and slot index match the SDK's slot declarations and the host logs.
+        ImGui::TextDisabled(
+            "Unnamed trigger 0x%08X/%u", table.registryKey, static_cast<unsigned>(table.slotIndex));
     }
 }
 
@@ -402,7 +404,7 @@ void draw_provenance(const catalog::Snapshot& snapshot,
                 table.configTag,
                 table.componentOrdinal,
                 table.identityMatchCount);
-    ImGui::Text("incoming type-31 references: %u", owner.incomingReferenceMatchCount);
+    ImGui::Text("incoming type-31 and type-30 references: %u", owner.incomingReferenceMatchCount);
     if (owner.incomingReferenceCount == 1
         && owner.firstIncomingReference < snapshot.triggerVolumeIncomingReferences.size()) {
         const catalog::TriggerVolumeIncomingReference& incoming =

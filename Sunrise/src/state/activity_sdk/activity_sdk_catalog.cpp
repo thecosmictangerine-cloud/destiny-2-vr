@@ -184,6 +184,24 @@ std::span<const format::DialogueCueText> Catalog::dialogue_cue_texts() const noe
     return rows<format::DialogueCueText>(header_, view_, format::SectionIndex::dialogueCueTexts);
 }
 
+std::span<const format::DialogueCue> Catalog::dialogue_cues() const noexcept {
+    return rows<format::DialogueCue>(header_, view_, format::SectionIndex::dialogueCues);
+}
+
+std::span<const format::ActorAbility> Catalog::actor_abilities() const noexcept {
+    return rows<format::ActorAbility>(header_, view_, format::SectionIndex::actorAbilities);
+}
+
+std::span<const format::ActorAbilityTarget> Catalog::actor_ability_targets() const noexcept {
+    return rows<format::ActorAbilityTarget>(
+        header_, view_, format::SectionIndex::actorAbilityTargets);
+}
+
+std::span<const format::CombatObjectiveGroup> Catalog::combat_objective_groups() const noexcept {
+    return rows<format::CombatObjectiveGroup>(
+        header_, view_, format::SectionIndex::combatObjectiveGroups);
+}
+
 std::span<const format::DirectiveElement> Catalog::directive_elements() const noexcept {
     return rows<format::DirectiveElement>(header_, view_, format::SectionIndex::directiveElements);
 }
@@ -275,6 +293,19 @@ std::span<const format::SobjectRsatFieldBinding>
 Catalog::sobject_rsat_field_bindings() const noexcept {
     return rows<format::SobjectRsatFieldBinding>(
         header_, view_, format::SectionIndex::sobjectRsatFieldBindings);
+}
+
+std::span<const format::ActorSequenceTable> Catalog::actor_sequence_tables() const noexcept {
+    return rows<format::ActorSequenceTable>(
+        header_, view_, format::SectionIndex::actorSequenceTables);
+}
+std::span<const format::ActorSequenceEntry> Catalog::actor_sequence_entries() const noexcept {
+    return rows<format::ActorSequenceEntry>(
+        header_, view_, format::SectionIndex::actorSequenceEntries);
+}
+std::span<const format::ActorSequenceBinding> Catalog::actor_sequence_bindings() const noexcept {
+    return rows<format::ActorSequenceBinding>(
+        header_, view_, format::SectionIndex::actorSequenceBindings);
 }
 
 std::span<const format::ActorStateName> Catalog::actor_state_names() const noexcept {

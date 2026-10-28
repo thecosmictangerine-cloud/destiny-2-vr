@@ -59,7 +59,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the timer reference collection: `count` and `at`, else nil. */
+/** Lua index for the timer reference collection: `resolve` and `capacity`, else nil. */
 [[nodiscard]] int timer_ref_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kTimerRefCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);
@@ -97,7 +97,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the variable reference collection: `count` and `at`, else nil. */
+/** Lua index for the variable reference collection: `resolve` and `capacity`, else nil. */
 [[nodiscard]] int variable_ref_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kVariableRefCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);

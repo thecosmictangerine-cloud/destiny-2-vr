@@ -1,86 +1,62 @@
-# Project Sunrise, with a VR mod on branch `vr`
+# Destiny 2 VR: Project Sunrise with a VR mod
 
-You are looking at a fork of [stanuwu/Sunrise](https://github.com/stanuwu/Sunrise), the offline
-Destiny 2 server emulator. Everything here is theirs except a monoscopic 6DOF VR mod, which is
-what this fork exists for. Head tracking, motion controllers, and the weapon held where your hand
-actually is.
+You are looking at branch `vr` of [Destiny 2 VR](https://github.com/thecosmictangerine-cloud/destiny-2-vr), a fork
+of [stanuwu/Sunrise](https://github.com/stanuwu/Sunrise), the offline Destiny 2 preservation project. Everything
+here is theirs except the VR mod, which is what this fork exists for.
 
-**GitHub is showing you this file instead of Sunrise's own README, which is still there at
-[`README.md`](../README.md) and is the one to read for what Sunrise is.**
+**To play, download the zip from the [Releases](https://github.com/thecosmictangerine-cloud/destiny-2-vr/releases)
+page** and read the [project page](https://github.com/thecosmictangerine-cloud/destiny-2-vr) first. Never put the
+DLL into your normal Steam copy of Destiny 2 (online, anti-cheat, ban risk).
 
-> ### Status: proof of concept. Not maintained.
->
-> Written over two days in September 2026 and tested on exactly one headset (Meta Quest 3 over
-> Link) and one Windows 11 machine. Fork it if you want it to go further.
+GitHub is showing you this file instead of Sunrise's own README, which is still there at
+[`README.md`](../README.md) and is the one to read for what Sunrise is.
 
-## See exactly what was added, in one click
+## What the fork changes in Sunrise
 
-**[Compare `7e3875d` against `vr`](https://github.com/thecosmictangerine-cloud/destiny-2-vr/compare/7e3875d...vr)**
-
-`7e3875d` is the upstream Sunrise commit this branch is built on. That comparison is the whole
-truth about this fork: 65 files, of which **5 belong to Sunrise and take 48 added lines between
-them**. The entire diff contains one single deleted line, and it is a build property being
-extended with an include path.
-
-| | Files | Lines added |
-| --- | --- | --- |
-| Sunrise files modified | 5 | 48 |
-| The mod, `Sunrise/src/client/hooks/vr/` | 12 | 5,243 |
-| Khronos OpenXR headers, vendored unmodified | 3 | 7,125 |
-| Test harness, `scripts/` and `mockxr/` | 43 | 5,164 |
-| READMEs added by this fork, including this one | 2 | 119 |
-
-Or from a clone:
-
-```
-git remote add upstream https://github.com/stanuwu/Sunrise.git
-git fetch upstream
-git diff upstream/master vr --stat
-```
-
-## The four call sites
-
-Sunrise gains one accessor it did not previously expose, and three calls hung off two hooks it
-already had. Remove them and the build is upstream again.
-
-| Sunrise file | What was added |
-| --- | --- |
-| `hooks/teleport/teleport_lifecycle.cpp` | `vr::poll_keys()` and `vr::apply_camera()` after the existing `capture_camera_pose()` |
-| `hooks/graphics/renderer/graphics_renderer_lifecycle.cpp` | `vr::present_frame()` at the end of `present()` |
-| `hooks/teleport/runtime.h` and `teleport_move.cpp` | `camera_block()`, returning the camera pose block base |
-| `Sunrise.vcxproj` | Registration of the 12 new sources and the OpenXR include path |
-
-All 48 lines are reproduced verbatim in
-[docs/UPSTREAM-FOOTPRINT.md](https://github.com/thecosmictangerine-cloud/destiny-2-vr/blob/main/docs/UPSTREAM-FOOTPRINT.md).
-
-## Where things are
+Measured against Sunrise **0.5.1**, which this branch merges: **9 Sunrise files, 133 lines added and 1 removed.**
+Everything else the fork adds lives in directories of its own:
 
 | Path | What |
 | --- | --- |
-| [`Sunrise/src/client/hooks/vr/`](../Sunrise/src/client/hooks/vr/) | The mod. Has its own README mapping the 12 files. |
-| [`mockxr/`](../mockxr/) | A fake OpenXR runtime that exercises the whole lifecycle with no headset. |
-| [`scripts/`](../scripts/) | Build, deploy, and the measurement harness the mod was verified with. |
-| Branch `main` | All project documentation, including the research on the engine and the executable's anti-tamper layer. |
+| [`Sunrise/src/client/hooks/vr/`](../Sunrise/src/client/hooks/vr/) | The VR module. |
+| `Sunrise/vendor/openxr/include/` | The Khronos OpenXR headers, vendored unmodified. |
+| [`mockxr/`](../mockxr/) | A mock OpenXR runtime that runs the whole mod with no headset. |
+| [`scripts/`](../scripts/) | Build, deploy, release packing, and the test batteries built on the mock. |
+| [`package/`](../package/) | What goes into the player's zip besides the DLL: installer, settings, README. |
 
-Start with the [documentation branch](https://github.com/thecosmictangerine-cloud/destiny-2-vr/tree/main),
-not with the code. It explains how to build and run this, and why the mod is shaped the way it is.
+The Sunrise files gain call sites into the VR module (the camera hook, the present, the world step), one accessor
+for the camera pose block, a guard in the detour transaction, the source registration in `Sunrise.vcxproj`, and in
+`dllmain.cpp` a check that closes the game unless it is the Sunrise build of `destiny2.exe`
+(`vr_game_check.h`). The one removed line is the include path property, extended with `vendor\openxr\include`.
+
+From a clone:
+
+```
+git remote add upstream https://github.com/stanuwu/Sunrise.git
+git fetch upstream --tags
+git diff 0.5.1 vr --stat -- . ':!Sunrise/src/client/hooks/vr' ':!scripts' ':!mockxr' ':!Sunrise/vendor/openxr' ':!package' ':!.github'
+```
+
+## Building and releasing
+
+```powershell
+scripts\build.ps1                          # build\x64\Release\steam_api64.dll (VS 2022 Build Tools, C++20)
+scripts\deploy.ps1                         # into the test install
+scripts\Make-Release.ps1 -Version 0.1.0    # build\dist\Destiny2VR-0.1.0.zip
+```
+
+`build.ps1` passes `PlatformToolset=v143` (the project asks for VS 2026's v145) and `PreferredToolArchitecture=x64`
+(the 32-bit compiler runs out of heap on this codebase), and caps the compilers at 4 for 16 GB of RAM.
+`Test-Lifecycle.ps1` in `scripts/testing/` boots the game on the mock with VR on and lives through the runtime's
+failures (headset off, lost link, stalls).
 
 ## License
 
-Sunrise is **GPL-3.0** and so is this fork. The VR module includes Sunrise headers and compiles
-into their DLL, so it is a derivative work with no ambiguity. Upstream's `LICENSE` is intact and
-the modifications are marked.
-
-Two directories have no dependency on Sunrise at all and are additionally offered under **MIT**,
-so they can be reused elsewhere: `mockxr/` and `scripts/`. See [`mockxr/LICENSE`](../mockxr/LICENSE).
-
-`Sunrise/vendor/openxr/include/` holds the Khronos OpenXR headers, vendored unmodified under
-Apache-2.0.
+Sunrise is **GPL-3.0** and so is this fork: the VR module includes Sunrise headers and compiles into their DLL.
+Upstream's `LICENSE` is intact. `mockxr/` and `scripts/` have no dependency on Sunrise and are additionally offered
+under **MIT** (see [`mockxr/LICENSE`](../mockxr/LICENSE)). The OpenXR headers are Khronos', Apache-2.0 OR MIT.
 
 ## How this was built
 
-Every line of the mod, the harness and the documentation was written by Claude, Anthropic's coding
-agent, driven by prompts. The reverse engineering went the same way: the agent launched the game,
-read process memory, wrote probe DLLs, and read back logs and screenshots to check its own work.
-There was no human code review. The one thing it could not do was wear the headset, so latency,
-comfort and scale were checked by a person.
+The mod, the harness and the documentation were written by Claude, Anthropic's coding agent, driven by prompts; the
+reverse engineering went the same way. What needs a headset (latency, comfort, scale) was checked by a person.

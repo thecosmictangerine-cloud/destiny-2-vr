@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "../../../state/activity/membership/definition.h"
 #include "mission_script_lua_internal.h"
 
 namespace sunrise::server::activity::mission::lua_vm::detail {
@@ -28,7 +29,7 @@ using Channel = scriptable_auth::Type23Channel;
     return 1;
 }
 
-/** Lua index for the device channel collection: `count` and `at`, else nil. */
+/** Lua index for the device channel collection: `count` or a channel name, else nil. */
 [[nodiscard]] int device_channel_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kDeviceChannelCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);
@@ -74,7 +75,7 @@ using Channel = scriptable_auth::Type23Channel;
     return 1;
 }
 
-/** Lua index for the device transition collection: `count` and `at`, else nil. */
+/** Lua index for the device transition collection: `count`, `at` or a transition name. */
 [[nodiscard]] int device_transition_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kDeviceTransitionCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);
@@ -120,7 +121,7 @@ using Channel = scriptable_auth::Type23Channel;
     return 1;
 }
 
-/** Lua index for the lifetime state collection: `count` and `at`, else nil. */
+/** Lua index for the lifetime state collection: `count`, `at` and `default`, else nil. */
 [[nodiscard]] int lifetime_state_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kLifetimeStateCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);
@@ -192,6 +193,10 @@ void register_enum_metatables(lua_State* state) {
 
 /** Serves the activity table's enum collections. @return False for any other key. */
 bool push_enum_activity_member(lua_State* state, std::string_view key) {
+    if (key == "client_teleport_reset") {
+        lua_pushinteger(state, state::activity::membership::kClientTeleportResetState);
+        return true;
+    }
     if (key == "device_channels") {
         push_handle(state, kDeviceChannelCollectionMetatable, DeviceChannelCollectionHandle{});
         return true;

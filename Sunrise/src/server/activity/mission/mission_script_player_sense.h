@@ -58,9 +58,13 @@ struct PlayerLifeObservation final {
     }
 };
 
+/** State fields a participation report carries besides the key. */
+inline constexpr std::uint8_t kLifeSeenState =
+    kLifeSeenRegion | kLifeSeenLoaded | kLifeSeenSettled | kLifeSeenGhost;
+
 /**
- * Merges one decoded type-13 body into the level. The body is a full snapshot, so an absent
- * identity or region withdraws the old evidence.
+ * Merges one decoded type-13 delta into the level. An absent field is unchanged; the client
+ * sends the region once and never sends the key.
  */
 inline void
 update_player_life(PlayerLifeObservation& level,
@@ -70,15 +74,6 @@ update_player_life(PlayerLifeObservation& level,
         const bool identity = value.schemaRow == kParticipationIdentitySchema
                               && value.fieldOrdinal == kParticipationKeyOrdinal;
         if (!value.present) {
-            if (identity) {
-                level.playerKey = 0;
-                level.seen &= static_cast<std::uint8_t>(~kLifeSeenKey);
-            }
-            if (value.schemaRow == kParticipationStateSchema
-                && value.fieldOrdinal == kParticipationRegionOrdinal) {
-                level.region = -1;
-                level.seen &= static_cast<std::uint8_t>(~kLifeSeenRegion);
-            }
             continue;
         }
         if (identity) {

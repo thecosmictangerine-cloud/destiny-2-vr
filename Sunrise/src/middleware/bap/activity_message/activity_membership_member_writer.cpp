@@ -30,8 +30,13 @@ constexpr std::int32_t kLegStateBias = 1;
 constexpr std::uint8_t kLeaveReasonWire = 1;
 /** The nested identity block has presence bits on fields 0 through 14. */
 constexpr std::size_t kIdentityPresenceFieldCount = 15;
-/** The minimal nested player blob is 18 bytes, including one zero pad bit. */
-constexpr std::uint16_t kPlayerBlobByteCount = 18;
+/** The nested player blob is 19 bytes: 149 field bits and three zero pad bits. */
+constexpr std::uint16_t kPlayerBlobByteCount = 19;
+constexpr std::uint8_t kPlayerBlobPadBits = 3;
+/** The blob's team byte is 6 bits at bias 1. It must equal participation snapshot byte 56, so
+ *  wire 1 stores the same 0. */
+constexpr std::uint32_t kPlayerTeamWire = 1;
+constexpr std::uint8_t kPlayerTeamWidth = 6;
 /** The remote member's player-state field zero carries the native-view gate. */
 constexpr std::uint8_t kRemoteViewGate = 0x10;
 /** Player-state field zero is a six-bit scalar. */
@@ -86,12 +91,17 @@ template <std::size_t Size>
     return true;
 }
 
-/** Writes the nested 18-byte player blob. */
+/**
+ * Writes the nested 19-byte player blob.
+ * Order: lead, header bit, the 136-byte block's four presence bits with the team byte present,
+ * the 232-byte block's six clear bits, then the soid pair behind its presence bit.
+ */
 [[nodiscard]] bool write_player_blob(encoding::bits::Writer& writer,
                                      const client_identity::ClientIdentity& identity) noexcept {
-    return writer.write(1, 3) && writer.write(0, 1) && writer.write(0, 10) && writer.write(1, 1)
-           && writer.write(identity.accountSoid, 64) && writer.write(identity.field5, 64)
-           && writer.write(0, 1);
+    return writer.write(1, 3) && writer.write(0, 1) && writer.write(0, 1) && writer.write(1, 1)
+           && writer.write(kPlayerTeamWire, kPlayerTeamWidth) && writer.write(0, 2)
+           && writer.write(0, 6) && writer.write(1, 1) && writer.write(identity.accountSoid, 64)
+           && writer.write(identity.field5, 64) && writer.write(0, kPlayerBlobPadBits);
 }
 
 /**

@@ -18,26 +18,19 @@
 
 namespace sunrise::server::bap {
 
-/** Notes that a committed publication replaced investment state before the next freshness query. */
-using InvestmentPublicationConsumer = void (*)() noexcept;
-
 /** Makes the next investment refresh pump take one more slice. */
 using InvestmentSliceConsumer = void (*)() noexcept;
 
 /**
- * Registers the Client's investment consumers; the Client sets them once at activation.
- * @param publication Committed investment publication report.
+ * Registers the Client's slice consumer; the Client sets it once at activation.
  * @param slice Extra investment refresh slice request.
- * @return False when either consumer is null or the slots are already taken.
+ * @return False when the consumer is null or the slot is already taken.
  */
-[[nodiscard]] bool register_client_investment_consumers(InvestmentPublicationConsumer publication,
-                                                        InvestmentSliceConsumer slice) noexcept;
+[[nodiscard]] bool
+register_client_investment_slice_consumer(InvestmentSliceConsumer slice) noexcept;
 
-/** Clears the Client's investment consumers at Client shutdown. */
-void unregister_client_investment_consumers() noexcept;
-
-/** Reports a committed investment publication. Does nothing while no Client is registered. */
-void notify_investment_publication() noexcept;
+/** Clears the Client's slice consumer at Client shutdown. */
+void unregister_client_investment_slice_consumer() noexcept;
 
 /** Asks for one more investment refresh slice. Does nothing while no Client is registered. */
 void request_investment_slice() noexcept;
@@ -262,14 +255,17 @@ activity_authority_reset_snapshot(const state::activity::SessionBinding& binding
     std::uint16_t bitCount,
     std::int32_t expectedRegion,
     std::uint64_t expectedGeneration,
-    const activity::host::ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const activity::host::ScriptableOutputReservation* reservation = nullptr,
+    activity::host::ScriptableOverrideKind kind =
+        activity::host::ScriptableOverrideKind::sdkAuth) noexcept;
 
-/** Queues a type-31 pulse only while exactly one authenticated link owns the binding. */
+/** Queues a type-31 arm or disarm only while exactly one authenticated link owns the binding. */
 [[nodiscard]] bool request_activity_type31_override(
     const state::activity::SessionBinding& binding,
     const activity::host::ScriptableTarget& target,
     std::int32_t expectedRegion,
-    const activity::host::ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const activity::host::ScriptableOutputReservation* reservation = nullptr,
+    bool enabled = true) noexcept;
 
 /** Queues a generated state-local type-31 pulse while its exact mission-seed state is live. */
 [[nodiscard]] bool request_activity_state_local_type31_override(
@@ -278,7 +274,8 @@ activity_authority_reset_snapshot(const state::activity::SessionBinding& binding
     const state::build_data::scenarios::RosterGroup& stateLocalRosterGroup,
     std::int32_t expectedRegion,
     std::uint64_t expectedGeneration,
-    const activity::host::ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const activity::host::ScriptableOutputReservation* reservation = nullptr,
+    bool enabled = true) noexcept;
 
 /** Queues one authored sequence restart only while its exact mission-seed state is live. */
 [[nodiscard]] bool request_activity_state_local_sequence_override(
@@ -316,7 +313,10 @@ activity_authority_reset_snapshot(const state::activity::SessionBinding& binding
     const state::build_data::scenarios::RosterGroup& stateLocalRosterGroup,
     std::int32_t expectedRegion,
     std::uint64_t expectedGeneration,
-    const activity::host::ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const activity::host::ScriptableOutputReservation* reservation = nullptr,
+    const activity::host::AuthoredSceneDependencies& dependencies = {},
+    std::uint32_t eventKey = 0,
+    bool stop = false) noexcept;
 
 /** Queues one authored dialogue line only while its exact mission-seed state is live. */
 [[nodiscard]] bool request_activity_state_local_dialogue_override(
@@ -327,7 +327,8 @@ activity_authority_reset_snapshot(const state::activity::SessionBinding& binding
     std::uint16_t authoredCueCount,
     std::int32_t expectedRegion,
     std::uint64_t expectedGeneration,
-    const activity::host::ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const activity::host::ScriptableOutputReservation* reservation = nullptr,
+    middleware::bap::activity_message::scriptable_auth::Type2LaneClientRef filter = {}) noexcept;
 
 /** Queues one objective reset only while its exact mission-seed state is live. */
 [[nodiscard]] bool request_activity_state_local_objective_reset(
@@ -359,7 +360,11 @@ activity_authority_reset_snapshot(const state::activity::SessionBinding& binding
     std::uint64_t expectedGeneration,
     const activity::host::ScriptableOutputReservation* reservation = nullptr,
     std::array<std::int8_t, 4> authoredProfile = {},
-    state::gameplay::squad_entity_retirement::Eligibility squadRetirement = {}) noexcept;
+    state::gameplay::squad_entity_retirement::Eligibility squadRetirement = {},
+    std::optional<middleware::bap::activity_message::squad_auth::Destination> destination =
+        std::nullopt,
+    std::optional<middleware::bap::activity_message::squad_auth::SpawnRule> spawnRule =
+        std::nullopt) noexcept;
 
 /** Cancels one exact typed override revision while excluding activity-link publication. */
 [[nodiscard]] bool

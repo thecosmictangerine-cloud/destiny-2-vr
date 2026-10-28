@@ -50,6 +50,7 @@ struct Arena final {
 
 /** Candidate state and actions are invisible until a protected callback returns. */
 struct Candidate final {
+    std::vector<SlotDefinition> objectBatch{};
     std::vector<Intent> intents{};
     std::array<ScriptVariable, kVariableCapacity> variables{};
     std::array<MissionTimer, kTimerCapacity> timers{};
@@ -97,6 +98,13 @@ struct CallFrame final {
 
 /** Complete per-activity VM state; no allocation is shared with another instance. */
 struct Impl final {
+    state::activity::mission::AttemptState attempt{};
+    std::vector<state::activity::mission::DeviceRequestReport> deviceRequests{};
+    std::uint64_t deviceRequestGeneration{};
+    std::vector<state::activity::mission::SquadPopulation> squadPopulations{};
+    /** Ghost-link levels the runtime last published, readable outside their own callback. */
+    std::array<GhostLinkRow, kGhostLinkCapacity> ghostLevels{};
+    std::uint8_t ghostLevelCount{};
     Arena arena{};
     ProgramIdentity identity{};
     DefinitionApi definitions{};
@@ -119,6 +127,13 @@ struct Impl final {
     std::uint32_t phase{};
     /** Effective authored region declared by program.initial_state, when present. */
     std::int32_t initialStateRegion{-1};
+    /** Spawn set program.initial_state.spawn_set_hash names; zero when the program names none. */
+    std::uint32_t initialStateSpawnSet{};
+    /** Objects program.initial_state.omit keeps out of every seed the lease materializes. */
+    std::array<state::activity::mission::MissionSeedOmission,
+               state::activity::mission::kMissionSeedOmitCapacity>
+        initialStateOmissions{};
+    std::uint8_t initialStateOmissionCount{};
     std::size_t arenaBytesAfterClose{};
     std::array<char, 256> lastError{};
     lua_State* state{};
@@ -174,13 +189,10 @@ inline void attach_impl(lua_State* state, Impl& impl) noexcept {
     return index < impl.eventReferences.size() ? impl.eventReferences[index] : LUA_NOREF;
 }
 
-/**
- * Raises a Lua error and never returns.
- * luaL_error unwinds the protected call, but its declaration does not say so. Without this, a
- * refusal in a function that returns a value would need an unreachable fallback after it.
- */
+/** Lua errors must leave the protected call. */
 [[noreturn]] inline void raise_lua_error(lua_State* state, const char* message) {
     luaL_error(state, message);
+    __assume(0);
 }
 
 /** Raises a Lua error when no mission callback is running. */

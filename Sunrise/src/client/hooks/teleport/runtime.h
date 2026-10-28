@@ -109,6 +109,13 @@ void apply_pending(void* component) noexcept;
 [[nodiscard]] void* local_player_component() noexcept;
 
 /**
+ * Finds the rigid body a physics component drives. Reads only, so a stale component is safe.
+ * @param component Physics component.
+ * @return The body, or null when the chain breaks.
+ */
+[[nodiscard]] void* body(void* component) noexcept;
+
+/**
  * Writes the linear velocity of the body a physics component drives.
  * @param component Physics component.
  * @param velocity Three lanes to store.

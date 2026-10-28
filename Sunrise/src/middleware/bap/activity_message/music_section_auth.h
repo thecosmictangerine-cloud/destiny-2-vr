@@ -15,6 +15,7 @@ namespace sunrise::middleware::bap::activity_message::music_section {
 
 namespace fields = auth_fields;
 
+// Type 11 uses these component and Auth schema identities.
 inline constexpr std::uint8_t kSlotType = 11;
 inline constexpr std::uint32_t kComponentClass = 0x80804E8EU;
 inline constexpr std::uint32_t kSchema = 0x80804F58U;

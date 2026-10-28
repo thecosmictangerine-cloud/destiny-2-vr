@@ -13,6 +13,9 @@
 
 namespace sunrise::server::activity::mission::lua_vm::detail {
 
+/** Spawn rules are type-66 slots. */
+constexpr std::uint32_t kSpawnRuleSlotType = 66;
+
 /** Lua index for a squad handle: its named fields and collections. */
 [[nodiscard]] int squad_index(lua_State* state) {
     const auto* const handle =
@@ -83,8 +86,9 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
 }
 
 /**
- * Stages one squad placement: squad:place{counts = SquadCountVector, mode = SquadMode}.
- * Both parameters are optional and both carry their own bounds, so neither is range tested.
+ * Stages one squad placement: squad:place{counts, mode, retire_on_return, spawn_rule}.
+ * Every parameter is optional; the counts and mode carry their own bounds. A spawn rule is a
+ * type-66 slot of the squad's own object that replaces the package rule.
  */
 [[nodiscard]] int squad_place(lua_State* state) {
     const auto* const handle =
@@ -95,8 +99,8 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
         return luaL_error(state, "activity squad is stale or invalid");
     }
     // Only these named arguments are accepted; any other key is refused.
-    static constexpr std::array<std::string_view, 3> kDeclared{
-        "counts", "mode", "retire_on_return"};
+    static constexpr std::array<std::string_view, 4> kDeclared{
+        "counts", "mode", "retire_on_return", "spawn_rule"};
     refuse_unknown_arguments(state, kDeclared);
     CallFrame& frame = active_frame(state);
     Intent intent{};
@@ -119,6 +123,17 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
     SquadModeHandle mode{};
     static_cast<void>(optional_argument(state, "mode", kSquadModeMetatable, mode));
     intent.squadMode = mode.mode;
+    lua_getfield(state, 2, "spawn_rule");
+    if (!lua_isnil(state, -1)) {
+        const auto* const rule =
+            static_cast<const SlotHandle*>(luaL_checkudata(state, -1, kSlotMetatable));
+        SlotDefinition ruleSlot{};
+        if (!current_slot(state, *rule, ruleSlot) || ruleSlot.slotType != kSpawnRuleSlotType) {
+            return luaL_error(state, "spawn_rule requires a current authored type-66 slot");
+        }
+        intent.squadSpawnRuleRow = static_cast<std::int32_t>(ruleSlot.nativeRow);
+    }
+    lua_pop(state, 1);
     intent.squadRetireOnReturn = optional_boolean_argument(state, "retire_on_return", false);
     return queue_intent(state, frame, intent);
 }

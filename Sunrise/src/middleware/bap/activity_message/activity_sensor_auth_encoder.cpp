@@ -71,8 +71,9 @@ constexpr std::uint32_t kMaximumRegion = 0x7FFFFFFF;
     }
     std::size_t topLevelRecords = 0;
     for (std::size_t index = 0; index < roster.topLevelGroupCount; ++index) {
-        if (roster.groups[index].retired
-            || !add_client_records(roster.groups[index].slotTypes.size(), topLevelRecords)) {
+        // A retired key keeps its ordinal and registers nothing, so it costs no client record.
+        if (!roster.groups[index].retired
+            && !add_client_records(roster.groups[index].slotTypes.size(), topLevelRecords)) {
             return false;
         }
     }
@@ -93,11 +94,15 @@ constexpr std::uint32_t kMaximumRegion = 0x7FFFFFFF;
                 }
                 matched = index;
             }
-            if (matched == roster.groupCount) return false;
+            if (matched == roster.groupCount) {
+                return false;
+            }
             if (!roster.groups[matched].retired
                 && (++activeGroups > kClientGroupCapacity
-                    || !add_client_records(roster.groups[matched].slotTypes.size(), activeRecords)))
+                    || !add_client_records(roster.groups[matched].slotTypes.size(),
+                                           activeRecords))) {
                 return false;
+            }
             referenced[matched] = true;
         }
     }
@@ -248,7 +253,9 @@ constexpr std::uint32_t kMaximumRegion = 0x7FFFFFFF;
     bool keyPlaced = false;
     for (std::size_t group = 0; encoded && group < snapshot.roster.groupCount; ++group) {
         const Group& row = snapshot.roster.groups[group];
-        if (row.retired) continue;
+        if (row.retired) {
+            continue;
+        }
         // The filler word after the key is read and discarded.
         encoded = writer.write(1, kPresenceWidth) && writer.write(row.key, kKeyWidth)
                   && writer.write(0, kKeyWidth);

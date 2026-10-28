@@ -45,6 +45,8 @@
 #include "../teleport/runtime.h"
 #include "runtime.h"
 #include "vr_ads.h"
+#include "vr_debug.h"
+#include "vr_dual.h"
 #include "vr_gpu.h"
 #include "vr_math.h"
 #include "vr_prehook.h"
@@ -265,6 +267,8 @@ std::atomic<std::uint64_t> g_shotsForeign{0};
 /** The last shot, for the log (written on the firing thread, reported on the present thread). */
 struct ShotRecord final {
     std::uint64_t serial{};
+    /** The weapon object the launch was for (the launcher's first argument). */
+    std::uintptr_t weapon{};
     int count{};
     bool rewritten{};
     V3 origPos{};
@@ -322,6 +326,30 @@ bool barrel_world(V3& muzzle, M3& basis, bool* sighted = nullptr) noexcept {
     return math::finite(muzzle) && math::finite(basis.c[0]);
 }
 
+/**
+ * The LEFT gun's barrel in the world, this frame: the dual-wield module's left shot (the right gun's
+ * shot as measured on that weapon, mirrored onto the left controller), carried from the room into
+ * the world exactly as the right gun's is.
+ */
+bool left_barrel_world(V3& muzzle, M3& basis, bool* sighted = nullptr) noexcept {
+    math::Affine shot{};
+    bool isSighted = false;
+    if (!dual::left_shot(shot, &isSighted)) {
+        return false;
+    }
+    const Pose engine = engine_pose();
+    const V3 eye{engine.position[0], engine.position[1], engine.position[2]};
+    muzzle = eye + shot.t;
+    basis = math::orthonormalize(shot.m);
+    if (sighted != nullptr) {
+        *sighted = isSighted;
+    }
+    return math::finite(muzzle) && math::finite(basis.c[0]);
+}
+
+/** Set by the launch rewrite for the round being launched on this thread: which gun it leaves from. */
+thread_local bool t_launchLeft = false;
+
 void on_launch(std::uint64_t, std::uint8_t* frame) noexcept {
     const auto mode = static_cast<ShotMode>(g_shotMode.load(std::memory_order_relaxed));
     if (mode == ShotMode::off) {
@@ -349,6 +377,7 @@ void on_launch(std::uint64_t, std::uint8_t* frame) noexcept {
     const V3 engineFwd{engine.forward[0], engine.forward[1], engine.forward[2]};
 
     ShotRecord rec{};
+    rec.weapon = static_cast<std::uintptr_t>(prehook::arg(frame, 0));
     rec.count = static_cast<int>(count);
     rec.origPos = p0;
     rec.origFwd = r0.c[0];
@@ -359,10 +388,17 @@ void on_launch(std::uint64_t, std::uint8_t* frame) noexcept {
     // Only the local player's own shot: it starts within reach of this player's eye and leaves
     // along this player's aim. Anything else that launches -- another player, an AI, a turret --
     // is left exactly as the game made it.
-    const bool mine = math::length(p0 - eye) < 2.0F && math::dot(r0.c[0], engineFwd) > 0.9F && enabled();
+    // The left gun's rounds are recognised by the weapon they are launched for (or, for a twin of the
+    // weapon in the right hand, by the dual-wield module's own record of who pulled which trigger):
+    // they leave from wherever the game keeps that weapon -- its holster -- which no position test
+    // would accept.
+    const bool left = enabled() && dual::launch_hand(rec.weapon) == 1;
+    t_launchLeft = left;
+    const bool mine = left || (math::length(p0 - eye) < 2.0F && math::dot(r0.c[0], engineFwd) > 0.9F && enabled());
     V3 muzzle{};
     M3 barrel{};
-    if (mode == ShotMode::aim && mine && barrel_world(muzzle, barrel, &rec.sighted)) {
+    const bool placed = left ? left_barrel_world(muzzle, barrel, &rec.sighted) : barrel_world(muzzle, barrel, &rec.sighted);
+    if (mode == ShotMode::aim && mine && placed) {
         // D carries the game's fire rig onto the barrel: a rotation from the character's aim to the
         // gun's, applied to every fire point and every offset between them, so a multi-barrel or
         // multi-pellet pattern keeps its shape and simply leaves from the gun.
@@ -472,7 +508,7 @@ void after_aim_ray(std::uint64_t) noexcept {
     }
     V3 muzzle{};
     M3 barrel{};
-    if (!barrel_world(muzzle, barrel)) {
+    if (!(t_launchLeft ? left_barrel_world(muzzle, barrel) : barrel_world(muzzle, barrel))) {
         return;
     }
     const V3 dir = barrel.c[0];
@@ -618,10 +654,10 @@ void report_shot() noexcept {
     }
     g_reportedShot = s.serial;
     const float turn = std::acos(std::clamp(math::dot(s.origFwd, s.newFwd), -1.0F, 1.0F)) * 57.29578F;
-    reportf("ev=vr.aim shot serial=%llu points=%d rewritten=%d orig_pos=%.3f,%.3f,%.3f orig_fwd=%.4f,%.4f,%.4f "
+    reportf("ev=vr.aim shot serial=%llu weapon=%p points=%d rewritten=%d orig_pos=%.3f,%.3f,%.3f orig_fwd=%.4f,%.4f,%.4f "
             "orig_muzzle=%.3f,%.3f,%.3f new_pos=%.3f,%.3f,%.3f new_fwd=%.4f,%.4f,%.4f eye=%.3f,%.3f,%.3f "
             "engine_fwd=%.4f,%.4f,%.4f turned_deg=%.2f sighted=%d total=%llu rewritten_total=%llu foreign=%llu",
-            static_cast<unsigned long long>(s.serial), s.count, s.rewritten ? 1 : 0, s.origPos.x, s.origPos.y,
+            static_cast<unsigned long long>(s.serial), reinterpret_cast<void*>(s.weapon), s.count, s.rewritten ? 1 : 0, s.origPos.x, s.origPos.y,
             s.origPos.z, s.origFwd.x, s.origFwd.y, s.origFwd.z, s.origMuzzle.x, s.origMuzzle.y, s.origMuzzle.z,
             s.newPos.x, s.newPos.y, s.newPos.z, s.newFwd.x, s.newFwd.y, s.newFwd.z, s.eye.x, s.eye.y, s.eye.z,
             s.engineFwd.x, s.engineFwd.y, s.engineFwd.z, s.rewritten ? turn : 0.0F, s.sighted ? 1 : 0,
@@ -739,6 +775,30 @@ void draw(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain* sw
 
 } // namespace
 
+bool right_shot_in_controller(math::Affine& shot, bool* sighted) noexcept {
+    const Shot s = shot_geometry();
+    if (!s.valid) {
+        return false;
+    }
+    // Against the RAW controller (before the rotational seat): the frame the dual-wield module places
+    // the left gun in, and the one the recorded gun was measured against.
+    xr::HeadPose h{};
+    xr::HandPose l{};
+    xr::HandPose r{};
+    (void)xr::camera_sample(h, l, r);
+    if (!r.valid) {
+        return false;
+    }
+    const M3 raw = math::orthonormalize(M3{{v3(r.forward), -v3(r.right), v3(r.up)}});
+    const V3 palm = v3(r.palm);
+    shot.m = math::transpose(raw) * s.basis;
+    shot.t = math::transpose(raw) * (s.muzzle - palm);
+    if (sighted != nullptr) {
+        *sighted = s.sighted;
+    }
+    return math::finite(shot.t);
+}
+
 void present(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain* swapChain) noexcept {
     ++g_frame;
     if (g_frame % kPollPeriod == 0) {
@@ -746,7 +806,7 @@ void present(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain*
     }
     // The shot is redirected from the first frame VR is up, like the weapon's own configuration:
     // before F9 nothing here touches the engine.
-    if (!g_launchTried.load(std::memory_order_acquire) && enabled() && xr::active()) {
+    if (!g_launchTried.load(std::memory_order_acquire) && enabled() && xr::active() && !debug::has("nodetour aim")) {
         install_launch();
     }
     report_shot();

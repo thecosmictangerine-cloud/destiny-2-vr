@@ -60,7 +60,6 @@ bool Parser::activity_settings(state::activity::defaults::ActivityDefaults& outp
         return false;
     }
     bool hasDefaultDestination = false;
-    bool hasArrivalOverrides = false;
     bool hasRosterKeyFromIdentity = false;
     bool hasRosterKeyOnAllSlots = false;
     if (consume('}')) {
@@ -76,11 +75,6 @@ bool Parser::activity_settings(state::activity::defaults::ActivityDefaults& outp
                 return false;
             }
             hasDefaultDestination = true;
-        } else if (key == "arrival_overrides") {
-            if (hasArrivalOverrides || !arrival_overrides(output)) {
-                return false;
-            }
-            hasArrivalOverrides = true;
         } else if (key == "roster_key_from_identity") {
             if (hasRosterKeyFromIdentity || !boolean(output.rosterKeyFromIdentity)) {
                 return false;

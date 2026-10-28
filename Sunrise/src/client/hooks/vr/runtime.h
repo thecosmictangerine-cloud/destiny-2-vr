@@ -95,4 +95,14 @@ void turn_room(float radians) noexcept;
  */
 [[nodiscard]] float body_yaw_error() noexcept;
 
+/** @return The body servo's learned mouse counts per radian of the engine camera's yaw. */
+[[nodiscard]] float counts_per_radian() noexcept;
+
+/**
+ * Sees every physics component the engine syncs (Sunrise's physics-sync detour, the one tick that
+ * visits them all): how a vehicle the player rides is found, since mounting one takes the player's own
+ * body away (vr_mode.cpp, docs/SWORD-SPARROW.md).
+ */
+void observe_physics(void* component) noexcept;
+
 } // namespace sunrise::client::hooks::vr

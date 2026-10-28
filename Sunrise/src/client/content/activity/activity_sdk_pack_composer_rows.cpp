@@ -485,6 +485,20 @@ translate_native_rows(const Inputs& inputs, const detail::StringResolver& linker
     output.sobjectRsatDescriptors = actorRsat.sobjectRsatDescriptors;
     output.sobjectRsatFieldBindings = actorRsat.sobjectRsatFieldBindings;
     output.actorStateNames = actorRsat.actorStateNames;
+    output.actorSequenceTables = actorRsat.sequenceTables;
+    output.actorSequenceBindings = actorRsat.sequenceBindings;
+    output.actorAbilities = actorRsat.actorAbilities;
+    output.actorAbilityTargets = actorRsat.actorAbilityTargets;
+    output.actorSequenceEntries.reserve(actorRsat.sequenceEntries.size());
+    for (const auto& input : actorRsat.sequenceEntries) {
+        auto row = input.row;
+        if (!link_string(linker, input.id, row.id) || !link_string(linker, input.name, row.name)
+            || !link_string(linker, input.symbol, row.symbol)
+            || !link_string(linker, input.sourcePath, row.sourcePath)) {
+            return false;
+        }
+        output.actorSequenceEntries.push_back(row);
+    }
     output.entityTypeDefinitions.resize(actorRsat.entityTypes.size());
     for (std::size_t index = 0; index < actorRsat.entityTypes.size(); ++index) {
         const actor_rsat_inventory::EntityTypeDefinition& input = actorRsat.entityTypes[index];
@@ -650,6 +664,8 @@ translate_native_rows(const Inputs& inputs, const detail::StringResolver& linker
             return false;
         }
     }
+    output.dialogueCues = authoredScenes.dialogueCues;
+    output.combatObjectiveGroups = authoredScenes.combatObjectiveGroups;
     output.dialogueCueTexts.resize(authoredScenes.dialogueCueTexts.size());
     for (std::size_t index = 0; index < authoredScenes.dialogueCueTexts.size(); ++index) {
         const authored_scene_inventory::DialogueCueText& input =

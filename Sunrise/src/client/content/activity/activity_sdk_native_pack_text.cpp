@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <map>
 #include <span>
 #include <string>
 #include <string_view>
@@ -66,10 +67,17 @@ add_relative(std::size_t member, std::int64_t relative, std::size_t& target) noe
     std::uint32_t classId = 0;
     std::uint32_t padding = 0;
     if (!read_value(bytes, field, rawCount) || rawCount > format::kAbsentIndex
-        || !read_value(bytes, field + 8U, relative) || !add_relative(field + 8U, relative, header)
-        || !read_value(bytes, header, repeated) || repeated != rawCount
-        || !read_value(bytes, header + 8U, classId) || classId != expectedClass
-        || !read_value(bytes, header + 12U, padding) || padding != 0
+        || !read_value(bytes, field + 8U, relative)) {
+        return false;
+    }
+    if (rawCount == 0 && relative == 0) {
+        data = 0;
+        count = 0;
+        return true;
+    }
+    if (!add_relative(field + 8U, relative, header) || !read_value(bytes, header, repeated)
+        || repeated != rawCount || !read_value(bytes, header + 8U, classId)
+        || classId != expectedClass || !read_value(bytes, header + 12U, padding) || padding != 0
         || rawCount > (std::numeric_limits<std::size_t>::max)() / stride) {
         return false;
     }
@@ -107,6 +115,88 @@ struct AuthoredDirectiveCandidate final {
 };
 
 } // namespace
+
+/**
+ * Keeps authored group ordinals and task counts tied to the exact objective slot.
+ * @param topology Canonical slots.
+ * @param facts Descriptor sources for those slots.
+ * @param packageContext Installed package reader.
+ * @param output Receives the native group rows.
+ * @return False when repeated definitions disagree or the package reader fails.
+ */
+bool attach_combat_objective_groups(const topology_inventory::Snapshot& topology,
+                                    const squads::Facts& facts,
+                                    PackageContext& packageContext,
+                                    authored_scene::Snapshot& output) {
+    // Objective descriptors contain 40-byte groups at +136 and 40-byte tasks at group +16.
+    constexpr std::size_t kGroupsField = 136U;
+    constexpr std::size_t kTasksField = 16U;
+    constexpr std::size_t kRowStride = 40U;
+    constexpr std::uint32_t kGroupClass = 0x80807D8FU;
+    constexpr std::uint32_t kTaskClass = 0x80807D95U;
+    std::unordered_map<std::uint64_t, std::vector<std::uint32_t>> configs{};
+    std::map<std::uint32_t, std::vector<std::uint32_t>> slots{};
+    try {
+        for (const squads::DescriptorFact& descriptor : facts.descriptors) {
+            if (descriptor.slotIndex >= topology.slots.size()
+                || topology.slots[descriptor.slotIndex].slotType != format::kObjectiveSlotType
+                || descriptor.componentClass != format::kObjectiveComponentClass
+                || descriptor.senseSchema != format::kObjectiveSenseSchema
+                || descriptor.authSchema != format::kObjectiveAuthSchema) {
+                continue;
+            }
+            const std::uint64_t descriptorKey =
+                (static_cast<std::uint64_t>(descriptor.configTag) << 32U)
+                | descriptor.descriptorOffset;
+            auto found = configs.find(descriptorKey);
+            if (found == configs.end()) {
+                std::vector<std::byte> bytes{};
+                std::uint32_t configClass = 0;
+                std::size_t groupData = 0;
+                std::size_t groupCount = 0;
+                if (!read_tag(&packageContext, descriptor.configTag, bytes, configClass)
+                    || !read_array(bytes,
+                                   descriptor.descriptorOffset + kGroupsField,
+                                   kRowStride,
+                                   kGroupClass,
+                                   groupData,
+                                   groupCount)) {
+                    return false;
+                }
+                std::vector<std::uint32_t> taskCounts{};
+                for (std::size_t group = 0; group < groupCount; ++group) {
+                    std::size_t taskData = 0;
+                    std::size_t taskCount = 0;
+                    if (!read_array(bytes,
+                                    groupData + group * kRowStride + kTasksField,
+                                    kRowStride,
+                                    kTaskClass,
+                                    taskData,
+                                    taskCount)) {
+                        return false;
+                    }
+                    taskCounts.push_back(static_cast<std::uint32_t>(taskCount));
+                }
+                found = configs.emplace(descriptorKey, std::move(taskCounts)).first;
+            }
+            const auto [slot, inserted] = slots.emplace(descriptor.slotIndex, found->second);
+            if (!inserted && slot->second != found->second) {
+                return false;
+            }
+            if (cancelled(packageContext.cancel, packageContext.cancelContext)) {
+                return false;
+            }
+        }
+        for (const auto& [slot, taskCounts] : slots) {
+            for (std::uint32_t group = 0; group < taskCounts.size(); ++group) {
+                output.combatObjectiveGroups.push_back({slot, group, taskCounts[group]});
+            }
+        }
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
 
 /** Extracts localized dialogue aliases and safe authored directive elements. */
 bool attach_authored_text(const topology_inventory::Snapshot& topology,
@@ -376,7 +466,8 @@ bool attach_authored_text(const topology_inventory::Snapshot& topology,
 bool attach_dialogue_cue_counts(const topology_inventory::Snapshot& topology,
                                 const squads::Facts& facts,
                                 PackageContext& packageContext,
-                                topology_enrichment::Snapshot& enrichment) {
+                                topology_enrichment::Snapshot& enrichment,
+                                authored_scene::Snapshot& authoredRows) {
     if (topology.slots.size() != enrichment.slots.size()) {
         return false;
     }
@@ -418,6 +509,7 @@ bool attach_dialogue_cue_counts(const topology_inventory::Snapshot& topology,
                 continue;
             }
             std::uint64_t agreedCount = 0;
+            std::vector<dialogue_groups::Definition> agreedDefinitions{};
             bool sawDescriptor = false;
             bool resolved = true;
             for (const squads::DescriptorFact& descriptor : facts.descriptors) {
@@ -439,15 +531,17 @@ bool attach_dialogue_cue_counts(const topology_inventory::Snapshot& topology,
                     break;
                 }
                 const CachedTag* authored = nullptr;
-                std::uint64_t count = 0;
+                std::vector<dialogue_groups::Definition> definitions{};
                 if (!package(listTag, authored) || authored == nullptr
-                    || !read_value(std::span(authored->bytes), 8U, count) || count == 0
-                    || count > format::kDialogueMaximumCueCount
-                    || (agreedCount != 0 && agreedCount != count)) {
+                    || authored->classId != format::kDialogueAuthoredListClass
+                    || !dialogue_groups::definitions(authored->bytes, definitions)
+                    || definitions.empty()
+                    || (agreedCount != 0 && agreedDefinitions != definitions)) {
                     resolved = false;
                     break;
                 }
-                agreedCount = count;
+                agreedCount = definitions.size();
+                agreedDefinitions = std::move(definitions);
             }
             if (cancelled(packageContext.cancel, packageContext.cancelContext)) {
                 return false;
@@ -455,6 +549,11 @@ bool attach_dialogue_cue_counts(const topology_inventory::Snapshot& topology,
             if (resolved && sawDescriptor && agreedCount != 0) {
                 enriched.dialogueCueCount = static_cast<std::uint32_t>(agreedCount);
                 enriched.flags |= format::kSlotDialogueCuesExact;
+                for (std::uint32_t cue = 0; cue < agreedDefinitions.size(); ++cue) {
+                    const auto& definition = agreedDefinitions[cue];
+                    authoredRows.dialogueCues.push_back(
+                        {slotRow, cue, definition.hash, definition.authoredWindowSeconds});
+                }
             }
         }
         return true;

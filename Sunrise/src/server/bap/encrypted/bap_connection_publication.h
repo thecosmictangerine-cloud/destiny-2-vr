@@ -21,7 +21,6 @@ struct ConnectionFields {
     /** Set when this transaction commits one client-authored type-23 identity. */
     bool receivesClientIdentity{};
     /** Set by a join or a transition-token change, which are the client starting a load. */
-    bool opensTransitionWindow{};
     /** Set by a join alone, which re-arms the roster warm-up the new container needs. */
     bool joinsActivity{};
 };

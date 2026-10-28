@@ -34,6 +34,7 @@ struct Snapshot final {
 
 /** Durable accepted-input cursors used to prove whether a retained feed interval is complete. */
 struct InputSequenceSnapshot final {
+    std::uint64_t attemptGeneration{kFirstAttemptGeneration};
     std::uint64_t committed{};
     std::uint64_t issued{};
     bool faulted{};
@@ -68,7 +69,8 @@ bind(const SessionBinding& binding, const ProgramKey& program, Snapshot& output)
 
 /** Atomically issues the next durable per-binding Host mission-input sequence. */
 [[nodiscard]] bool issue_input_sequence(const SessionBinding& binding,
-                                        std::uint64_t& output) noexcept;
+                                        std::uint64_t& output,
+                                        std::uint64_t* attemptGeneration = nullptr) noexcept;
 
 /** Copies one exact mission record for a read-only view. */
 [[nodiscard]] bool state_snapshot(const SessionBinding& binding, Snapshot& output) noexcept;
@@ -109,21 +111,47 @@ bind(const SessionBinding& binding, const ProgramKey& program, Snapshot& output)
                                           std::uint64_t expectedIntentSequence,
                                           std::uint64_t expectedHostOutputRevision) noexcept;
 
-/** Releases an unstaged Host output assignment while retaining the durable intent. */
-[[nodiscard]] Status release_intent_output(const SessionBinding& binding,
-                                           const ProgramKey& program,
-                                           std::uint64_t expectedMissionRevision,
-                                           std::uint64_t expectedIntentSequence,
-                                           std::uint64_t expectedHostOutputRevision,
-                                           Snapshot& output) noexcept;
+/** Releases one output assignment while retaining the durable intent and optional parent reset. */
+[[nodiscard]] Status
+release_intent_output(const SessionBinding& binding,
+                      const ProgramKey& program,
+                      std::uint64_t expectedMissionRevision,
+                      std::uint64_t expectedIntentSequence,
+                      std::uint64_t expectedHostOutputRevision,
+                      Snapshot& output,
+                      const SquadPopulation* preparedParent = nullptr) noexcept;
 
 /** Removes the durable head only after its exact Host output revision was staged. */
-[[nodiscard]] Status acknowledge_intent_output(const SessionBinding& binding,
-                                               const ProgramKey& program,
-                                               std::uint64_t expectedMissionRevision,
-                                               std::uint64_t expectedIntentSequence,
-                                               std::uint64_t expectedHostOutputRevision,
-                                               Snapshot& output) noexcept;
+[[nodiscard]] Status
+acknowledge_intent_output(const SessionBinding& binding,
+                          const ProgramKey& program,
+                          std::uint64_t expectedMissionRevision,
+                          std::uint64_t expectedIntentSequence,
+                          std::uint64_t expectedHostOutputRevision,
+                          Snapshot& output,
+                          const DeviceRequestReport* device = nullptr,
+                          const SquadPopulation* population = nullptr,
+                          std::span<const SquadPopulation> scenePopulations = {}) noexcept;
+
+/** Retains count evidence only for the exact transported spawn generation. */
+[[nodiscard]] Status observe_squad_population(const SessionBinding& binding,
+                                              const ProgramKey& program,
+                                              const SquadPopulationReport& report,
+                                              Snapshot& output) noexcept;
+
+/** Joins accepted device deltas to the exact staged requests they satisfy. */
+[[nodiscard]] Status
+observe_device_report(const SessionBinding& binding,
+                      const ProgramKey& program,
+                      const DeviceReport& report,
+                      std::array<std::uint64_t, kDeviceChannelCount>& appliedRequests,
+                      Snapshot& output) noexcept;
+
+/** Re-arms matching device desires only after their Auth reaches a newer publication owner. */
+[[nodiscard]] Status
+renew_device_publications(const SessionBinding& binding,
+                          const DevicePublicationBoundary& boundary,
+                          std::span<const DevicePublication> publications) noexcept;
 
 /** Removes one successfully applied local effect whose durable head owns no Host output. */
 [[nodiscard]] Status acknowledge_intent(const SessionBinding& binding,

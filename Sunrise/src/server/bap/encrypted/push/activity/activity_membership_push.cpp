@@ -10,11 +10,9 @@
 #include <string_view>
 
 #include "../../../../../core/logging/log.h"
-#include "../../../../../core/settings/settings.h"
 #include "../../../../../middleware/bap/activity_message/replicate_membership.h"
 #include "../../../../../middleware/encoding/byte_order.h"
 #include "../../../../../middleware/secure_channel/runtime.h"
-#include "../../../../../state/activity/forced/activity_forced_destination.h"
 #include "../../../../../state/activity_sdk/generated_world/runtime.h"
 #include "../../../../../state/activity_sdk/runtime.h"
 #include "../../../../gameplay/gameplay_advertisement.h"
@@ -163,10 +161,6 @@ resolve_generated_world(const Session& session,
 /** @return True only when extracted package data selects a private Bubble Host lane. */
 [[nodiscard]] bool remote_member_allowed(const Session& session,
                                          std::int32_t effectiveRegion) noexcept {
-    const core::settings::Settings& settings = core::settings::get();
-    if (settings.client.regionPrivate || state::activity::forced::override_active()) {
-        return true;
-    }
     sdk::generated_world::GeneratedWorldView worldView{};
     bool isPublic = false;
     return resolve_generated_world(session, worldView)
@@ -217,7 +211,7 @@ make_base_snapshot(const Session& session,
     wire.teleport.state = snapshot.teleport.state;
     wire.teleport.token = snapshot.teleport.token;
     wire.teleport.sliceSetIndex = snapshot.teleport.sliceSetIndex;
-    wire.teleport.sliceSetHash = snapshot.teleport.sliceSetHash;
+    wire.teleport.spawnSetHash = snapshot.teleport.spawnSetHash;
     // The member's own region legs are mirrored back exactly as it reported them.
     wire.currentLeg = mirror_leg(snapshot.currentLeg, snapshot.hasCurrentLeg);
     wire.pendingLeg = mirror_leg(snapshot.pendingLeg, snapshot.hasPendingLeg);

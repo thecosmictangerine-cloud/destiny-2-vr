@@ -35,9 +35,7 @@
     },
     "custom_bootflow_textures": true,
     "socket_menu_routing": false,
-    "reveal_lore_books": true,
-    "region_private": false,
-    "pin_replicated_record": true
+    "reveal_lore_books": true
   },
   "server": {
     "bap_port": 30974,
@@ -69,55 +67,7 @@
         "stateful_bubble_mask": "0xCF",
         "initial_slice_set": 48,
         "spawn_set_hash": "0x811C9DC5"
-      },
-      "arrival_overrides": [
-        {
-          "package_name": "mission_ember",
-          "bubble": 6,
-          "slice_set": 49,
-          "spawn_set_hash": "0x2EA8FB98"
-        },
-        {
-          "package_name": "raid_envy_v310",
-          "bubble": 7
-        },
-        {
-          "package_name": "raid_gluttony_0",
-          "bubble": 2,
-          "slice_set": 17,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_gluttony_1",
-          "bubble": 2,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_gluttony_2",
-          "bubble": 2,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_gluttony_3",
-          "bubble": 2,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_gluttony_4",
-          "bubble": 2,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_gluttony_5",
-          "bubble": 2,
-          "spawn_set_hash": "0x8029E4B4"
-        },
-        {
-          "package_name": "raid_sunset",
-          "bubble": 1,
-          "spawn_set_hash": "0xBC6A3A37"
-        }
-      ]
+      }
     }
   },
   "complete_exotic_catalysts": true

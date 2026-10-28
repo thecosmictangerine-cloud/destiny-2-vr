@@ -10,7 +10,9 @@
 
 namespace sunrise::server::activity::host {
 struct ScriptableOutputReservation;
-}
+struct ScriptableTarget;
+struct PendingScriptableOverride;
+} // namespace sunrise::server::activity::host
 
 namespace sunrise::server::activity::activity_sdk_devices {
 
@@ -58,13 +60,51 @@ enum class Status : std::uint8_t {
                                        std::uint16_t bitCount,
                                        std::span<const std::byte> sdkBuildSha256) noexcept;
 
+/** Resolves an SDK objective decision and reserves its native squad update. */
+[[nodiscard]] Status
+assign_combat_objective_reserved(const state::activity_sdk::BoundView& view,
+                                 const state::activity::mission::TypedIntent& decision,
+                                 const host::ScriptableOutputReservation& reservation) noexcept;
+
+/** Resolves an actor's exact parent squad without exposing source plumbing to Lua. */
+[[nodiscard]] Status actor_program_source_squad(const state::activity_sdk::BoundView& view,
+                                                std::uint32_t actorSlot,
+                                                std::uint32_t& squadRow) noexcept;
+/** Resolves the SDK squad row only when the transported preparation names that exact parent. */
+[[nodiscard]] Status actor_program_parent_squad(const state::activity_sdk::BoundView& view,
+                                                std::uint32_t actorSlot,
+                                                const host::ScriptableTarget& expectedParent,
+                                                std::uint32_t& squadRow) noexcept;
+
+/** Runs a pinned program with native creation and program revisions. */
+[[nodiscard]] Status
+run_actor_program_reserved(const state::activity_sdk::BoundView& view,
+                           const state::activity::mission::TypedIntent& intent,
+                           const host::ScriptableOutputReservation& reservation) noexcept;
+
 /** Retains one type-2 actor channel for an operator action. */
 [[nodiscard]] Status set_combatant_channel(const state::activity_sdk::BoundView& view,
                                            std::uint32_t slotRow,
                                            std::uint32_t channelHash,
                                            float value) noexcept;
 
-/** Binds one type-2 combatant to its authored squad member for an operator action. */
+/** Plays an extracted actor-owned sequence while preserving the combatant's Auth state. */
+[[nodiscard]] Status play_combatant_sequence(const state::activity_sdk::BoundView& view,
+                                             std::uint32_t slotRow,
+                                             std::uint32_t sequenceRow) noexcept;
+
+/** Queues an extracted sequence only on its captured owner and reserved Host revision. */
+[[nodiscard]] Status
+play_combatant_sequence_reserved(const state::activity_sdk::BoundView& view,
+                                 const state::activity::mission::ActorSequenceOwner& expected,
+                                 std::uint32_t sequenceRow,
+                                 const host::ScriptableOutputReservation& reservation) noexcept;
+
+/** Cancels the combatant's atom program without changing actor binding or control fields. */
+[[nodiscard]] Status stop_combatant_sequence(const state::activity_sdk::BoundView& view,
+                                             std::uint32_t slotRow) noexcept;
+
+/** Arms one combatant for its scene's squad member spawn. */
 [[nodiscard]] Status bind_combatant_to_squad(const state::activity_sdk::BoundView& view,
                                              std::uint32_t slotRow) noexcept;
 
@@ -75,18 +115,19 @@ enum class Status : std::uint8_t {
                                      std::uint16_t bitCount) noexcept;
 
 /** Queues one exact compiled Auth body through an already owned durable Host revision. */
-[[nodiscard]] Status
-apply_auth_reserved(const state::activity_sdk::BoundView& view,
-                    std::uint32_t slotRow,
-                    std::uint32_t objectTag,
-                    std::uint32_t registryKey,
-                    std::uint32_t authSchema,
-                    std::uint16_t slotIndex,
-                    std::uint8_t slotType,
-                    std::span<const std::byte> body,
-                    std::uint16_t bitCount,
-                    std::span<const std::byte> sdkBuildSha256,
-                    const host::ScriptableOutputReservation& reservation) noexcept;
+[[nodiscard]] Status apply_auth_reserved(
+    const state::activity_sdk::BoundView& view,
+    std::uint32_t slotRow,
+    std::uint32_t objectTag,
+    std::uint32_t registryKey,
+    std::uint32_t authSchema,
+    std::uint16_t slotIndex,
+    std::uint8_t slotType,
+    std::span<const std::byte> body,
+    std::uint16_t bitCount,
+    std::span<const std::byte> sdkBuildSha256,
+    const host::ScriptableOutputReservation& reservation,
+    host::ScriptableOverrideKind kind = host::ScriptableOverrideKind::sdkAuth) noexcept;
 
 /**
  * Instantiates or removes package-authored type-4 entries, one push for the whole run.
@@ -111,7 +152,7 @@ set_combatant_channel_reserved(const state::activity_sdk::BoundView& view,
                                float value,
                                const host::ScriptableOutputReservation& reservation) noexcept;
 
-/** Binds one generated type-2 combatant to its authored squad member. */
+/** Arms one generated combatant for its scene's squad member spawn. */
 [[nodiscard]] Status
 bind_combatant_to_squad_reserved(const state::activity_sdk::BoundView& view,
                                  std::uint32_t slotRow,
@@ -156,18 +197,18 @@ set_channel_reserved(const state::activity_sdk::BoundView& view,
                                   std::uint32_t slotRow) noexcept;
 
 /**
- * Fires one type-31 trigger through an already owned durable Host revision.
- * The body carries no caller value. Its generation is minted by the Host from the per-target
- * guard, and the client fires the authored trigger/action graph from the auth body alone.
+ * Arms or disarms one type-31 trigger through an already owned durable Host revision.
+ * The Host mints the generation; the client fires the authored graph from the body alone.
  * @param view Pinned SDK view whose binding is revalidated.
  * @param slotRow Catalog row of the type-31 slot the pulse targets.
  * @param reservation Host output revision this caller already owns.
+ * @param enabled False disarms a trigger that has reported.
  * @return queued once the pulse is staged, or the exact refusal.
  */
-[[nodiscard]] Status
-fire_trigger_reserved(const state::activity_sdk::BoundView& view,
-                      std::uint32_t slotRow,
-                      const host::ScriptableOutputReservation& reservation) noexcept;
+[[nodiscard]] Status fire_trigger_reserved(const state::activity_sdk::BoundView& view,
+                                           std::uint32_t slotRow,
+                                           const host::ScriptableOutputReservation& reservation,
+                                           bool enabled = true) noexcept;
 
 /** @return Stable concise text for one device runtime result. */
 [[nodiscard]] const char* status_name(Status status) noexcept;

@@ -153,6 +153,12 @@ namespace {
     for (std::uint32_t index = 0; index < source.directiveElements.size(); ++index) {
         output.directivesBySlot[source.directiveElements[index].slotIndex].push_back(index);
     }
+    for (std::uint32_t index = 0; index < source.combatObjectiveGroups.size(); ++index) {
+        output.combatGroupsBySlot[source.combatObjectiveGroups[index].slotIndex].push_back(index);
+    }
+    for (std::uint32_t index = 0; index < source.actorAbilities.size(); ++index) {
+        output.abilitiesBySlot[source.actorAbilities[index].slotIndex].push_back(index);
+    }
     output.worldsByScenarioTag.reserve(source.scenarioWorldSources.size());
     for (std::uint32_t index = 0; index < source.scenarioWorldSources.size(); ++index) {
         if (!output.worldsByScenarioTag

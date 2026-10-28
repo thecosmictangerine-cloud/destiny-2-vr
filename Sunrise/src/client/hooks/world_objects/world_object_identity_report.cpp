@@ -85,7 +85,8 @@ void report_dynamic(std::uint32_t handle, const void* entry, std::uintptr_t call
 void observe_instance(std::uint32_t handle,
                       const void* entry,
                       std::int32_t objectListTag,
-                      std::int32_t entryIndex) noexcept {
+                      std::int32_t entryIndex,
+                      std::uintptr_t caller) noexcept {
     if (handle == kNone || objectListTag == -1 || entryIndex == -1 || g_resolvePair == nullptr
         || !g_accepting.load(std::memory_order_acquire)) {
         return;
@@ -111,6 +112,7 @@ void observe_instance(std::uint32_t handle,
                             handle,
                             pair.generation};
     AcquireSRWLockExclusive(&g_lock);
+    g_instantiateCaller = caller;
     retain(instance);
     const bool report = has_placement_identity(instance) && g_identityReportBudget > 0;
     if (report) {
@@ -275,7 +277,11 @@ __declspec(noinline) std::uint32_t* __fastcall instantiate(std::uint32_t* output
         if (objectListTag == -1 || entryIndex == -1) {
             report_dynamic(*result, entry, reinterpret_cast<std::uintptr_t>(_ReturnAddress()));
         } else {
-            observe_instance(*result, entry, objectListTag, entryIndex);
+            observe_instance(*result,
+                             entry,
+                             objectListTag,
+                             entryIndex,
+                             reinterpret_cast<std::uintptr_t>(_ReturnAddress()));
         }
     }
     return result;

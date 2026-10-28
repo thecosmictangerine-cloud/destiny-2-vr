@@ -84,6 +84,11 @@ void poll() noexcept {
     (void)publish_from(component);
 }
 
+/** Reports the player's physics component. */
+void* component() noexcept {
+    return g_component.load(std::memory_order_relaxed);
+}
+
 /** Drops the published position. */
 void reset() noexcept {
     g_component.store(nullptr, std::memory_order_relaxed);

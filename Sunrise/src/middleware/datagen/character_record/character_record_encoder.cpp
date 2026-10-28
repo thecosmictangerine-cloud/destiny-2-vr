@@ -1,8 +1,12 @@
 #include "character_record_encoder.h"
 
 #include <algorithm>
+#include <array>
+#include <cstdio>
 #include <cstring>
+#include <span>
 
+#include "../../../core/logging/log.h"
 #include "appearance/internal.h"
 
 namespace sunrise::middleware::datagen::character_record {
@@ -61,6 +65,53 @@ constexpr std::size_t kCardFlagOffset = 8;
     return true;
 }
 
+/** Longest perk-bank report line, including the trailing entries. */
+constexpr std::size_t kBankReportCapacity = 1'024;
+
+/**
+ * Reports one perk bank's occupied entries. Diagnostic only.
+ * @param family Record family the bank belongs to.
+ * @param bank Bank name.
+ * @param entries Bank contents.
+ */
+void report_perk_bank(const char* family,
+                      const char* bank,
+                      std::span<const std::uint16_t> entries) noexcept {
+    std::array<char, kBankReportCapacity> line{};
+    int written = std::snprintf(
+        line.data(), line.size(), "ev=appearance stage=perk_bank family=%s bank=%s", family, bank);
+    if (written <= 0) {
+        return;
+    }
+    for (const std::uint16_t entry : entries) {
+        if (entry == layout::kEmptyDefinitionIndex) {
+            continue;
+        }
+        const auto used = static_cast<std::size_t>(written);
+        if (used >= line.size()) {
+            break;
+        }
+        const int more = std::snprintf(line.data() + used, line.size() - used, " %u", entry);
+        if (more <= 0) {
+            break;
+        }
+        written += more;
+    }
+    core::log::write(core::log::Channel::server, core::log::Level::debug, line.data());
+}
+
+/**
+ * Reports all four perk banks of one record. Diagnostic only.
+ * @param family Record family the banks belong to.
+ * @param block Appearance block carrying the banks.
+ */
+void report_perk_banks(const char* family, const layout::Appearance& block) noexcept {
+    report_perk_bank(family, "index", block.indexBank);
+    report_perk_bank(family, "weaponA", block.smallBankA);
+    report_perk_bank(family, "weaponB", block.smallBankB);
+    report_perk_bank(family, "weaponC", block.smallBankC);
+}
+
 /** @param light Equipment light. @return The trailing summary block both records carry. */
 [[nodiscard]] layout::Summary build_summary(std::int32_t light,
                                             std::uint16_t titleRecordIndex) noexcept {
@@ -110,6 +161,7 @@ bool encode_family3(const state::CharacterState& character,
         || !build_shared(character, instances, light, identity, block)) {
         return false;
     }
+    report_perk_banks("3", block);
     const auto record = output.first(kFamily3RecordSize);
     copy_record(identity,
                 block,
@@ -141,6 +193,7 @@ bool encode_family0(const state::CharacterState& character,
         || !build_shared(character, instances, light, identity, block)) {
         return false;
     }
+    report_perk_banks("0", block);
     const auto record = output.first(kFamily0RecordSize);
     copy_record(identity,
                 block,

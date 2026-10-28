@@ -197,9 +197,17 @@ void observe_player_life(RuntimeInstance& instance,
             || observation.valueCount > sense.valueCount - observation.firstValue) {
             continue;
         }
+        PlayerLifeObservation& level =
+            instance.playerLife[observation.key.slotIndex - kFirstParticipationSlot];
         update_player_life(
-            instance.playerLife[observation.key.slotIndex - kFirstParticipationSlot],
-            std::span(sense.values).subspan(observation.firstValue, observation.valueCount));
+            level, std::span(sense.values).subspan(observation.firstValue, observation.valueCount));
+        // The host writes its own player key on every participation record of this link, so a
+        // record that reports state is that player's.
+        if ((level.seen & kLifeSeenKey) == 0 && (level.seen & kLifeSeenState) != 0
+            && instance.playerKey != 0) {
+            level.playerKey = instance.playerKey;
+            level.seen |= kLifeSeenKey;
+        }
     }
 }
 
@@ -214,10 +222,49 @@ void push_script_event(RuntimeInstance& instance, const host::Event& event) noex
         return;
     }
     try {
-        instance.scriptEvents.push_back(event);
+        host::Event admitted = event;
+        if (admitted.attemptGeneration == 0) {
+            admitted.attemptGeneration = instance.dispatchAttemptGeneration != 0
+                                             ? instance.dispatchAttemptGeneration
+                                             : instance.attempt.generation;
+        }
+        instance.scriptEvents.push_back(admitted);
     } catch (const std::bad_alloc&) {
-        log_line(core::log::Level::warn, &instance, "script_event", "allocation_failure");
+        fault_instance(instance, "mission event allocation failed");
     }
+}
+
+/**
+ * Queues an exact host-policy transition without consuming a client mission-input sequence.
+ * @param binding Activity generation that accepted the damage.
+ * @param sourceGeneration ActivityClient generation that owns the policy.
+ * @param registryKey Authored squad registry key.
+ * @param slotIndex Native squad slot index.
+ */
+void report_squad_provoked(const state::activity::SessionBinding& binding,
+                           std::uint64_t sourceGeneration,
+                           std::uint32_t registryKey,
+                           std::uint16_t slotIndex) noexcept {
+    if (sourceGeneration == 0 || registryKey == 0
+        || slotIndex > static_cast<std::uint16_t>((std::numeric_limits<std::int16_t>::max)())) {
+        return;
+    }
+    AcquireSRWLockExclusive(&g_lock);
+    auto* instance = find_instance(binding);
+    if (instance != nullptr && instance->view.activityClientGeneration == sourceGeneration) {
+        host::Event event{};
+        event.kind = host::EventKind::squadProvoked;
+        event.binding = binding;
+        event.sequence = instance->missionStateRevision;
+        event.missionSequence = instance->lastMissionSequence;
+        event.sourceGeneration = sourceGeneration;
+        event.tick = GetTickCount64();
+        event.firstRegistryKey = registryKey;
+        event.firstSlotType = sdk::format::kSquadSlotType;
+        event.firstSlotIndex = slotIndex;
+        push_script_event(*instance, event);
+    }
+    ReleaseSRWLockExclusive(&g_lock);
 }
 
 /** Retains the last VM stage and status shown on the panel. */
@@ -244,6 +291,9 @@ void clear_instance(RuntimeInstance& instance, bool clearPending) noexcept {
     instance.programKey = {};
     instance.lastVmStage = {};
     instance.lastVmStatus = {};
+    instance.attempt = {};
+    instance.dispatchAttemptGeneration = 0;
+    instance.dispatchInputSequence = 0;
     instance.eventsSeen = 0;
     instance.eventsCommitted = 0;
     instance.intentsTransportStaged = 0;
@@ -287,6 +337,8 @@ void clear_instance(RuntimeInstance& instance, bool clearPending) noexcept {
     instance.ghostObservations = {};
     instance.actorPathObservations = {};
     instance.squadObservations = {};
+    instance.combatantDamageObservations = {};
+    instance.deviceObservations = {};
     instance.sceneObservations = {};
     instance.objectiveObservations = {};
     instance.sessionRoster = {};
@@ -326,6 +378,34 @@ RuntimeInstance* free_instance() noexcept {
 /** Copies one committed authoritative snapshot into the runtime's exact compare baseline. */
 void accept_mission_state(RuntimeInstance& instance,
                           const mission_state::Snapshot& snapshot) noexcept {
+    if (instance.attempt.generation != snapshot.state.attempt.generation) {
+        instance.triggerOccupancy = {};
+        instance.squadObservations = {};
+        instance.ghostObservations = {};
+        instance.damageObservations = {};
+        instance.combatantDamageObservations = {};
+        instance.deviceObservations = {};
+        instance.objectInteractionObservations = {};
+        instance.actorPathObservations = {};
+        instance.sceneObservations = {};
+        instance.objectiveObservations = {};
+        // Player life is kept: the client sends only changed fields and never resends the region.
+        instance.fireteamLifePublished = false;
+        instance.timerPending = false;
+        instance.pendingTimerEvent = {};
+    }
+    instance.attempt = snapshot.state.attempt;
+    lua_vm::publish_attempt(instance.vm, instance.attempt);
+    if (!lua_vm::publish_device_requests(
+            instance.vm, snapshot.state.deviceRequests, instance.view.activityClientGeneration)) {
+        lua_vm::fault(instance.vm, "device request snapshot allocation failed");
+        instance.programStatus = ProgramStatus::programError;
+    }
+    publish_ghost_levels(instance);
+    if (!lua_vm::publish_populations(instance.vm, snapshot.state.squadPopulations)) {
+        lua_vm::fault(instance.vm, "population snapshot allocation failed");
+        instance.programStatus = ProgramStatus::programError;
+    }
     instance.missionStateRevision = snapshot.state.revision;
     instance.lastMissionSequence = snapshot.state.inputSequence;
     instance.activityStateRevision = snapshot.activityStateRevision;
@@ -530,6 +610,7 @@ void service_timers(std::uint64_t now) noexcept {
                 continue;
             }
             instance.pendingTimerEvent = {};
+            instance.pendingTimerEvent.attemptGeneration = instance.attempt.generation;
             instance.pendingTimerEvent.binding = instance.view.binding;
             instance.pendingTimerEvent.timerName = selected->key;
             instance.pendingTimerEvent.sequence = selected->sequence;
@@ -583,28 +664,62 @@ void initialize() noexcept {
 }
 
 /** One pass: attach, start, events, timers, then delivery for every open instance. */
+namespace {
+
+// A step this long blocks the game's loopback sends; the step that took it is named.
+constexpr std::uint64_t kSlowStepMilliseconds = 40;
+
+/** Runs one step of the mission tick and logs it when it runs past the slow limit. */
+template <typename Step> void timed_step(const char* name, Step&& step) noexcept {
+    const std::uint64_t started = GetTickCount64();
+    step();
+    const std::uint64_t elapsed = GetTickCount64() - started;
+    if (elapsed < kSlowStepMilliseconds) {
+        return;
+    }
+    std::array<char, core::log::kLineCapacity> line{};
+    const int written = std::snprintf(line.data(),
+                                      line.size(),
+                                      "ev=core stage=service result=slow step=mission.%s ms=%llu",
+                                      name,
+                                      static_cast<unsigned long long>(elapsed));
+    if (written > 0) {
+        core::log::write(core::log::Channel::server,
+                         core::log::Level::warn,
+                         {line.data(), static_cast<std::size_t>(written)});
+    }
+}
+
+} // namespace
+
+/**
+ * Runs one mission tick under the runtime lock, timing each step.
+ * @param now Service tick every step measures its deadlines from.
+ */
 void service(std::uint64_t now) noexcept {
     AcquireSRWLockExclusive(&g_lock);
     if (!g_enabled || !g_pathReady) {
         ReleaseSRWLockExclusive(&g_lock);
         return;
     }
-    synchronize_instances(now);
-    service_pending_starts(now);
-    consume_delivery_events(now);
-    consume_mission_inputs(now);
-    retire_scriptless_inputs();
-    service_timers(now);
-    service_script_events(now);
-    for (RuntimeInstance& instance : g_instances) {
-        if (instance.occupied) {
-            if (instance.programStatus == ProgramStatus::programError) {
-                reconcile_terminal_delivery(instance);
-            } else {
-                dispatch_intent(instance, now);
+    timed_step("synchronize", [now] { synchronize_instances(now); });
+    timed_step("starts", [now] { service_pending_starts(now); });
+    timed_step("delivery_events", [now] { consume_delivery_events(now); });
+    timed_step("inputs", [now] { consume_mission_inputs(now); });
+    timed_step("scriptless", [] { retire_scriptless_inputs(); });
+    timed_step("timers", [now] { service_timers(now); });
+    timed_step("script_events", [now] { service_script_events(now); });
+    timed_step("dispatch", [now] {
+        for (RuntimeInstance& instance : g_instances) {
+            if (instance.occupied) {
+                if (instance.programStatus == ProgramStatus::programError) {
+                    reconcile_terminal_delivery(instance);
+                } else {
+                    dispatch_intent(instance, now);
+                }
             }
         }
-    }
+    });
     ReleaseSRWLockExclusive(&g_lock);
 }
 

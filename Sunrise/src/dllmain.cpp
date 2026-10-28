@@ -4,6 +4,7 @@
 
 #include "client/hooks/egress/runtime.h"
 #include "client/hooks/network/investment/internal.h"
+#include "client/hooks/vr/vr_game_check.h"
 #include "core/runtime/core_runtime.h"
 #include "steam/runtime/internal.h"
 #include "steam/runtime/runtime.h"
@@ -16,6 +17,8 @@ HMODULE g_module{};
 
 /** @return True when the egress guard and Core initialize from this DLL module. */
 extern "C" __declspec(dllexport) bool SunriseInitialize() noexcept {
+    // VR fork: any executable but the Sunrise build is closed before a hook goes in (vr_game_check.h).
+    sunrise::client::hooks::vr::game_check::stop_unless_sunrise_build();
     if (!sunrise::client::hooks::egress::install() || !sunrise::core::initialize(g_module)) {
         return false;
     }
@@ -37,6 +40,7 @@ extern "C" __declspec(dllexport) bool SunriseShutdown() noexcept {
 
 /** @return True when the Steam-compatible runtime initializes. */
 extern "C" __declspec(dllexport) bool SteamAPI_Init() noexcept {
+    sunrise::client::hooks::vr::game_check::stop_unless_sunrise_build();
     return sunrise::steam::initialize(g_module);
 }
 

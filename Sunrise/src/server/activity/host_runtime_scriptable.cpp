@@ -5,9 +5,13 @@
 
 #include "../../middleware/bap/activity_message/mission_auth_patch.h"
 #include "../../middleware/bap/activity_message/sensor_auth_update.h"
+#include "../../middleware/bap/activity_message/squad_objective_state.h"
 #include "../../state/activity/mission/runtime.h"
 #include "../../state/activity/runtime.h"
 #include "../gameplay/squad_entity_retirement.h"
+#include "host_runtime_actor_program.h"
+#include "host_runtime_counter_auth.h"
+#include "host_runtime_ghost_link.h"
 #include "host_runtime_internal.h"
 
 namespace sunrise::server::activity::host {
@@ -18,29 +22,10 @@ namespace scene = middleware::bap::activity_message::sensor_auth_update;
 namespace squad = middleware::bap::activity_message::squad_auth;
 using namespace detail;
 
-/** Authored-scene activation generations are positive signed 32-bit values. */
+/** Scene activation generations are positive int32 values. */
 constexpr std::uint32_t kMaximumAuthoredSceneGeneration = 0x7FFFFFFFU;
 
-/** Encodes the fixed type-43 body with no dependencies, scalar input, or events. */
-[[nodiscard]] bool encode_authored_scene(std::uint32_t generation,
-                                         std::span<std::byte> output,
-                                         std::size_t& written) noexcept {
-    written = 0;
-    if (generation == 0 || generation > kMaximumAuthoredSceneGeneration
-        || output.size() < scene::kAuthoredSceneAuthByteCount) {
-        return false;
-    }
-    const std::uint32_t wireGeneration = generation + 0x80000000U;
-    output[0] = static_cast<std::byte>(wireGeneration >> 24U);
-    output[1] = static_cast<std::byte>(wireGeneration >> 16U);
-    output[2] = static_cast<std::byte>(wireGeneration >> 8U);
-    output[3] = static_cast<std::byte>(wireGeneration);
-    std::fill(output.begin() + 4, output.begin() + scene::kAuthoredSceneAuthByteCount, std::byte{});
-    written = scene::kAuthoredSceneAuthByteCount;
-    return true;
-}
-
-/** @return True when both values name the same full ClientRef slot. */
+/** @return True for the same full slot target. */
 [[nodiscard]] bool same_target(const ScriptableTarget& left,
                                const ScriptableTarget& right) noexcept {
     return left.objectTag == right.objectTag && left.registryKey == right.registryKey
@@ -51,14 +36,14 @@ constexpr std::uint32_t kMaximumAuthoredSceneGeneration = 0x7FFFFFFFU;
            && left.stateLocalRoster == right.stateLocalRoster;
 }
 
-/** @return True when both routes resolve to the same wire ClientRef. */
+/** @return True for the same wire ClientRef. */
 [[nodiscard]] bool same_client_ref(const ScriptableTarget& left,
                                    const ScriptableTarget& right) noexcept {
     return left.objectTag == right.objectTag && left.registryKey == right.registryKey
            && left.slotIndex == right.slotIndex && left.slotType == right.slotType;
 }
 
-/** @return True when both retained generated groups are byte-for-byte identical in used fields. */
+/** @return True when the used group fields match. */
 [[nodiscard]] bool same_group(const state::build_data::scenarios::RosterGroup& left,
                               const state::build_data::scenarios::RosterGroup& right) noexcept {
     if (!state::build_data::scenarios::valid_roster_group(left)
@@ -77,7 +62,7 @@ constexpr std::uint32_t kMaximumAuthoredSceneGeneration = 0x7FFFFFFFU;
     return true;
 }
 
-/** @return True when one caller still owns the exact unarmed lane held by this instance. */
+/** @return True when the caller owns this unarmed lane. */
 [[nodiscard]] bool same_reservation(const ScriptableOutputReservation& left,
                                     const ScriptableOutputReservation& right) noexcept {
     return same_binding(left.binding, right.binding)
@@ -86,14 +71,14 @@ constexpr std::uint32_t kMaximumAuthoredSceneGeneration = 0x7FFFFFFFU;
            && left.resetGeneration != 0 && left.token != 0 && left.revision != 0;
 }
 
-/** Clears one unarmed reservation without touching the committed output counter. */
+/** Clears an unarmed reservation; the committed counter stays. */
 void clear_reservation(Instance& instance) noexcept {
     instance.scriptableReservation = {};
     instance.view.scriptableReservedRevision = 0;
     instance.view.scriptableReservationPending = false;
 }
 
-/** @return True when the target carries one exact supported type/schema pair. */
+/** @return True for one exact supported type and schema pair. */
 [[nodiscard]] bool supported_target(const ScriptableTarget& target) noexcept {
     const bool generatedStateLocal = target.stateLocalRoster && target.stateLocalRegion >= 0
                                      && target.rosterGroupIndex == kGeneratedRosterGroupIndex
@@ -106,7 +91,7 @@ void clear_reservation(Instance& instance) noexcept {
            && (generatedStateLocal || canonical);
 }
 
-/** Finds unused storage for a full-slot guard without mutating it. */
+/** @return Unused guard storage, or null. */
 [[nodiscard]] ScriptableGuard* free_guard(Instance& instance) noexcept {
     for (ScriptableGuard& guard : instance.scriptableGuards) {
         if (!guard.occupied) {
@@ -116,12 +101,12 @@ void clear_reservation(Instance& instance) noexcept {
     return nullptr;
 }
 
-/** @return True when this kind carries no push-side behaviour beyond its retained body. */
+/** @return True when this kind needs only its retained body. */
 [[nodiscard]] bool tail_eligible(ScriptableOverrideKind kind) noexcept {
     return kind != ScriptableOverrideKind::lifetime && kind != ScriptableOverrideKind::squad;
 }
 
-/** @return True when this instance already holds a committed body for the same ClientRef. */
+/** @return True when a pending body holds this ClientRef. */
 [[nodiscard]] bool pending_holds_target(const Instance& instance,
                                         const ScriptableTarget& target) noexcept {
     if (instance.view.outputPending && same_client_ref(instance.pendingScriptable.target, target)) {
@@ -135,7 +120,7 @@ void clear_reservation(Instance& instance) noexcept {
     return false;
 }
 
-/** @return True when another body may commit before the pending push carries the head out. */
+/** @return True when this body fits behind the pending head. */
 [[nodiscard]] bool tail_has_room(const Instance& instance,
                                  const ScriptableRequest& request) noexcept {
     return instance.view.outputPending && tail_eligible(request.kind)
@@ -160,21 +145,6 @@ namespace detail {
     return true;
 }
 
-/** @return True when one carried group contains the target's exact selected auth slot. */
-[[nodiscard]] bool
-valid_state_local_group(const ScriptableTarget& target,
-                        const state::build_data::scenarios::RosterGroup& group) noexcept {
-    const std::size_t slot = target.rosterSlotOffset;
-    return target.stateLocalRoster && target.stateLocalRegion >= 0
-           && target.rosterGroupIndex == kGeneratedRosterGroupIndex
-           && target.sdkObjectIndex != kNoSdkObjectIndex
-           && state::build_data::scenarios::valid_roster_group(group) && group.objectTag != 0
-           && group.objectTag == target.objectTag && group.registryKey == target.registryKey
-           && slot < group.slotCount && group.slotTypes[slot] == target.slotType
-           && group.slotIndices[slot] == target.slotIndex
-           && (group.slotFlags[slot] & state::build_data::scenarios::kSlotAuthFlag) != 0;
-}
-
 /** @return True when the bit count and the body agree to within one trailing byte. */
 [[nodiscard]] bool valid_auth_storage(std::span<const std::byte> body,
                                       std::size_t bitCount) noexcept {
@@ -194,7 +164,8 @@ valid_state_local_group(const ScriptableTarget& target,
 [[nodiscard]] ScriptableGuard* find_guard(Instance& instance,
                                           const ScriptableTarget& target) noexcept {
     for (ScriptableGuard& guard : instance.scriptableGuards) {
-        if (guard.occupied && same_target(guard.target, target)) {
+        if (guard.occupied && same_client_ref(guard.target, target)
+            && guard.target.authSchema == target.authSchema) {
             return &guard;
         }
     }
@@ -207,10 +178,12 @@ valid_state_local_group(const ScriptableTarget& target,
     return left.squadRetirement == right.squadRetirement && left.revision == right.revision
            && left.kind == right.kind && same_target(left.target, right.target)
            && left.generation == right.generation
+           && left.actorSpawnGeneration == right.actorSpawnGeneration
            && left.expectedActivityClientGeneration == right.expectedActivityClientGeneration
            && left.sequence == right.sequence && left.dialogueSequence == right.dialogueSequence
            && left.dialogueCue == right.dialogueCue && left.bitCount == right.bitCount
            && left.byteCount == right.byteCount && left.channel == right.channel
+           && left.channelValue == right.channelValue && left.channelHash == right.channelHash
            && left.lifetimeState == right.lifetimeState && left.body == right.body
            && left.sdkCompiled == right.sdkCompiled
            && (!left.target.stateLocalRoster
@@ -245,10 +218,26 @@ valid_state_local_group(const ScriptableTarget& target,
     return true;
 }
 
+/** Sequence playback uses the activity's retained, enabled squad binding. */
+[[nodiscard]] const PendingScriptableOverride*
+retained_sequence_combatant(const Instance& instance, const ScriptableRequest& request) noexcept {
+    const auto* retained = actor_program::retained(instance, request.target);
+    auth::Type2ProgramLayout layout{};
+    return retained != nullptr
+                   && auth::inspect_type2_program(
+                       std::span(retained->body).first(retained->byteCount),
+                       retained->bitCount,
+                       layout)
+                   && layout.enabled && (layout.bindingWire == 2 || layout.bindingWire == 4)
+                   && layout.generation < squad::kMaximumGeneration
+               ? retained
+               : nullptr;
+}
+
 /** Queues one validated scriptable request in the shared ordered control lane. */
 [[nodiscard]] bool enqueue_request(ScriptableRequest request,
                                    const ScriptableOutputReservation* reservation) noexcept {
-    // A lifetime request changes activity state, so it carries no ClientRef slot to validate.
+    // Lifetime requests carry no ClientRef.
     const bool untargeted = request.kind == ScriptableOverrideKind::lifetime;
     if ((!untargeted && !supported_target(request.target))
         || !state::activity::binding_matches(request.binding)) {
@@ -267,7 +256,9 @@ valid_state_local_group(const ScriptableTarget& target,
         && instance->view.scriptableRevision + 1 == reservation->revision;
     const bool burst = request.burstMember && request.expectedRevision != 0
                        && tail_eligible(request.kind) && instance != nullptr;
-    if ((!burst && has_queued_control(request.binding))
+    if ((request.kind == ScriptableOverrideKind::combatantSequence
+         && (instance == nullptr || retained_sequence_combatant(*instance, request) == nullptr))
+        || (!burst && has_queued_control(request.binding))
         || (!burst && instance != nullptr && instance->view.outputPending)
         || (!burst && reservation != nullptr && !ownsReservation)
         || (!burst && reservation == nullptr && instance != nullptr
@@ -347,7 +338,7 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
         return;
     }
 
-    // A lifetime request owns no ClientRef slot, so it takes no full-slot counter guard.
+    // Lifetime requests use no slot guard.
     const bool untargeted = request.kind == ScriptableOverrideKind::lifetime;
     ScriptableGuard* guard = untargeted ? nullptr : find_guard(*instance, request.target);
     ScriptableGuard candidate{};
@@ -379,12 +370,25 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
         if (encoded) {
             const std::span<const std::int32_t> counts(request.requestedCounts.data(),
                                                        request.requestedCountLength);
-            encoded = squad::next_generation(candidate.squad, generation)
+            for (const auto& retained : instance->scriptableAuthEstate) {
+                if (!same_client_ref(retained.target, request.target)) {
+                    continue;
+                }
+                middleware::bap::activity_message::squad_objective::State source{};
+                encoded = middleware::bap::activity_message::squad_objective::read_state(
+                    std::span(retained.body).first(retained.byteCount), retained.bitCount, source);
+                candidate.squad.last = (std::max)(candidate.squad.last, source.spawnGeneration);
+                candidate.squad.hasLast = candidate.squad.last != 0;
+                break;
+            }
+            encoded = encoded && squad::next_generation(candidate.squad, generation)
                       && squad::encode({counts,
                                         generation,
                                         request.squadMode,
                                         request.nameHash,
-                                        request.squadAuthoredProfile},
+                                        request.squadAuthoredProfile,
+                                        request.squadDestination,
+                                        request.squadSpawnRule},
                                        candidate.squad,
                                        pending.body,
                                        written,
@@ -395,6 +399,35 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
             pending.bitCount = static_cast<std::uint16_t>(writtenBits);
         } else {
             encoded = false;
+        }
+    } else if (encoded && request.kind == ScriptableOverrideKind::squadObjective) {
+        namespace objective = middleware::bap::activity_message::squad_objective;
+        objective::State previous{};
+        for (const auto& retained : instance->scriptableAuthEstate) {
+            if (same_client_ref(retained.target, request.target)) {
+                encoded = objective::read_state(std::span(retained.body).first(retained.byteCount),
+                                                retained.bitCount,
+                                                previous);
+                break;
+            }
+        }
+        objective::Request assignment{request.target.registryKey,
+                                      0,
+                                      request.objectiveIndex,
+                                      request.entryIndex,
+                                      request.objectiveReserved,
+                                      request.objectiveRefreshAwareness};
+        encoded = encoded
+                  && objective::next_request(previous,
+                                             request.expectedObjectiveRevision,
+                                             request.objectiveReconsider,
+                                             request.objectivePreserveReservation,
+                                             assignment);
+        if (encoded) {
+            written = objective::byte_count(assignment);
+            pending.bitCount = static_cast<std::uint16_t>(objective::bit_count(assignment));
+            pending.generation = assignment.revision;
+            encoded = objective::encode(assignment, std::span(pending.body).first(written));
         }
     } else if (encoded && request.kind == ScriptableOverrideKind::combatantChannel) {
         std::uint32_t revision = 0;
@@ -425,10 +458,44 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
             encoded = false;
         }
         pending.generation = revision;
+    } else if (encoded
+               && (request.kind == ScriptableOverrideKind::combatantProgram
+                   || request.kind == ScriptableOverrideKind::combatantRetirement)) {
+        encoded = actor_program::encode(*instance, request, candidate, pending, written);
+    } else if (encoded && request.kind == ScriptableOverrideKind::combatantSequence) {
+        const auto* const retained = retained_sequence_combatant(*instance, request);
+        std::size_t bits = 0;
+        std::uint32_t generation = 0;
+        encoded =
+            retained != nullptr
+            && auth::replace_type2_sequence(std::span(retained->body).first(retained->byteCount),
+                                            retained->bitCount,
+                                            request.sequenceHash,
+                                            candidate.type2AtomGeneration,
+                                            pending.body,
+                                            written,
+                                            bits,
+                                            generation);
+        pending.bitCount = static_cast<std::uint16_t>(bits);
+        pending.generation = generation;
+    } else if (encoded
+               && (request.kind == ScriptableOverrideKind::interactableObject
+                   || request.kind == ScriptableOverrideKind::damageWatch)) {
+        encoded = counter_auth::encode(*instance, request, candidate, pending, written);
+    } else if (encoded && request.kind == ScriptableOverrideKind::ghostLink) {
+        encoded = ghost_link::encode(*instance, request, candidate, pending, written);
     } else if (encoded && request.kind == ScriptableOverrideKind::object) {
         pending.bitCount = static_cast<std::uint16_t>(auth::kType4BitCount);
         std::int32_t generation = 0;
-        encoded = auth::next_type4_generation(candidate.type4, generation)
+        std::uint32_t retainedGeneration = 0;
+        encoded = counter_auth::previous_revision(*instance, request.target, 0, retainedGeneration);
+        if (encoded
+            && retainedGeneration
+                   > static_cast<std::uint32_t>((std::max)(candidate.type4.last, 0))) {
+            candidate.type4.last = static_cast<std::int32_t>(retainedGeneration);
+            candidate.type4.hasLast = true;
+        }
+        encoded = encoded && auth::next_type4_generation(candidate.type4, generation)
                   && auth::encode_type4({generation, request.entryIndex, request.active},
                                         candidate.type4,
                                         pending.body,
@@ -458,6 +525,7 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
         pending.generation = static_cast<std::uint64_t>(generation);
     } else if (encoded && request.kind == ScriptableOverrideKind::type23) {
         pending.channel = request.channel;
+        pending.channelValue = request.value;
         pending.bitCount = static_cast<std::uint16_t>(auth::kType23BitCount);
         auth::Type23Body body{};
         auth::Type23SequenceGuard composedGuard = candidate.type23;
@@ -484,11 +552,7 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
         }
         pending.sequence = sequence;
     } else if (encoded && request.kind == ScriptableOverrideKind::type31) {
-        pending.bitCount = static_cast<std::uint16_t>(auth::kType31BitCount);
-        std::uint64_t generation = 0;
-        encoded = auth::next_type31_generation(candidate.type31, generation)
-                  && auth::encode_type31({generation}, candidate.type31, pending.body, written);
-        pending.generation = generation;
+        encoded = encode_trigger_pulse(request, candidate.type31, pending, written);
     } else if (encoded && request.kind == ScriptableOverrideKind::objectiveReset) {
         pending.bitCount = static_cast<std::uint16_t>(auth::kType3BitCount);
         std::int32_t generation = 0;
@@ -504,19 +568,39 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
                   && auth::encode_type38({generation}, candidate.type38, pending.body, written);
         pending.generation = static_cast<std::uint64_t>(generation);
     } else if (encoded && request.kind == ScriptableOverrideKind::authoredScene) {
-        pending.bitCount = scene::kAuthoredSceneAuthBitCount;
+        std::size_t bits = 0;
         std::uint32_t generation = 0;
         encoded = next_authored_scene_generation(candidate.authoredSceneGeneration, generation)
-                  && encode_authored_scene(generation, pending.body, written);
+                  && scene::encode_authored_scene_auth(
+                      generation, request.sceneDependencies, pending.body, written, bits);
+        pending.bitCount = static_cast<std::uint16_t>(bits);
         pending.generation = generation;
+    } else if (encoded
+               && (request.kind == ScriptableOverrideKind::authoredSceneEvent
+                   || request.kind == ScriptableOverrideKind::authoredSceneStop)) {
+        encoded = false;
+        for (const auto& retained : instance->scriptableAuthEstate) {
+            if (!same_client_ref(retained.target, request.target)) {
+                continue;
+            }
+            std::size_t bits = 0;
+            std::uint32_t generation = 0;
+            encoded = scene::update_authored_scene_auth(
+                          std::span(retained.body).first(retained.byteCount),
+                          retained.bitCount,
+                          request.sceneEventKey,
+                          request.kind == ScriptableOverrideKind::authoredSceneStop,
+                          pending.body,
+                          written,
+                          bits,
+                          generation)
+                      && generation == candidate.authoredSceneGeneration;
+            pending.bitCount = static_cast<std::uint16_t>(bits);
+            pending.generation = generation;
+            break;
+        }
     } else if (encoded && request.kind == ScriptableOverrideKind::dialogue) {
-        pending.bitCount = static_cast<std::uint16_t>(auth::kType53BitCount);
-        pending.dialogueCue = request.dialogueCue;
-        std::int32_t sequence = 0;
-        encoded = auth::next_type53_sequence(candidate.type53, request.dialogueCue, sequence)
-                  && auth::encode_type53(
-                      {request.dialogueCue, sequence}, candidate.type53, pending.body, written);
-        pending.dialogueSequence = sequence;
+        encoded = encode_dialogue_pulse(*instance, request, candidate.type53, pending, written);
     } else if (encoded && request.kind == ScriptableOverrideKind::sdkAuth) {
         written = request.authByteCount;
         pending.bitCount = request.authBitCount;
@@ -525,21 +609,20 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
     } else {
         encoded = false;
     }
-    // A mission API body carries only the root fields it sets, and the native override replaces
-    // the whole object. Compose it over the last transported body for the same ClientRef first.
+    // Sparse Auth replaces a whole object, so merge the transported body first.
     namespace patching = middleware::bap::activity_message::mission_auth_patch;
     const std::span<const std::byte> patch = std::span(pending.body).first(written);
     patching::Layout layout{};
     const bool rootPatch =
         encoded
         && (request.kind == ScriptableOverrideKind::squad
+            || request.kind == ScriptableOverrideKind::squadObjective
             || request.kind == ScriptableOverrideKind::sdkAuth)
         && patching::parse(request.target.authSchema, patch, pending.bitCount, layout);
     if (rootPatch) {
         std::span<const std::byte> previous{};
         std::size_t previousBits = 0;
-        // A tail never holds the same ClientRef as another pending body, so the predecessor is
-        // always in the transported estate.
+        // Pending tails have distinct ClientRefs; predecessors are transported.
         for (const auto& retained : instance->scriptableAuthEstate) {
             if (same_client_ref(retained.target, request.target)) {
                 previous = std::span(retained.body).first(retained.byteCount);
@@ -564,8 +647,7 @@ void apply_scriptable_control(const ScriptableRequest& request, std::uint64_t no
         ++g_refusedControls;
     } else {
         if (guard != nullptr && !guard->occupied) {
-            // Reserve only the target identity. Mutable lane state commits after transport stages
-            // the exact body; type 2 in particular retains a complete per-actor channel set.
+            // Reserve the identity now; commit lane state after transport.
             guard->target = request.target;
             guard->occupied = true;
         }

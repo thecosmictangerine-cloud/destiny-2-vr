@@ -204,7 +204,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the squad collection: `count` and `at`, else nil. */
+/** Lua index for the squad collection: `count`, `at` and `resolve`, else nil. */
 [[nodiscard]] int squad_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kSquadCollectionMetatable));
     Impl* const impl = impl_from_state(state);
@@ -223,7 +223,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the scene collection: `count` and `at`, else nil. */
+/** Lua index for the scene collection: `count`, `at` and `resolve`, else nil. */
 [[nodiscard]] int scene_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kSceneCollectionMetatable));
     Impl* const impl = impl_from_state(state);
@@ -242,7 +242,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the slot collection: `count` and `at`, else nil. */
+/** Lua index for the slot collection: `count`, `at` and `resolve`, else nil. */
 [[nodiscard]] int slot_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kSlotCollectionMetatable));
     Impl* const impl = impl_from_state(state);
@@ -261,7 +261,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the activity-message collection: `count` and `at`, else nil. */
+/** Lua index for the activity-message collection: `count`, `at`, `by_id` and `resolve`. */
 [[nodiscard]] int message_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kMessageCollectionMetatable));
     Impl* const impl = impl_from_state(state);

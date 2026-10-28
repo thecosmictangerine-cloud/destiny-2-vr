@@ -1,8 +1,10 @@
+#include <algorithm>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string_view>
+#include <tuple>
 
 #include "../../../state/activity/membership/definition.h"
 #include "mission_script_lua_internal.h"
@@ -14,6 +16,109 @@
 
 namespace sunrise::server::activity::mission::lua_vm::detail {
 namespace {
+
+/**
+ * Groups exact authored objects by native owner and reserves bounded output batches.
+ * @param state Lua call holding the context and named object list.
+ * @return One array of RequestKeys.
+ */
+[[nodiscard]] int context_activate_objects(lua_State* state) {
+    static_cast<void>(luaL_checkudata(state, 1, kContextMetatable));
+    // Only these named arguments belong to this API.
+    static constexpr std::array<std::string_view, 2> kDeclared{"slots", "active"};
+    refuse_unknown_arguments(state, kDeclared);
+    const bool active = optional_boolean_argument(state, "active", true);
+    lua_getfield(state, 2, "slots");
+    luaL_checktype(state, -1, LUA_TTABLE);
+    const int list = lua_gettop(state);
+    const std::size_t count = lua_rawlen(state, list);
+    std::size_t entries = 0;
+    lua_pushnil(state);
+    while (lua_next(state, list) != 0) {
+        if (!lua_isinteger(state, -2) || lua_tointeger(state, -2) < 1
+            || static_cast<std::uint64_t>(lua_tointeger(state, -2)) > count) {
+            return luaL_error(state, "object collection must be a dense list");
+        }
+        ++entries;
+        lua_pop(state, 1);
+    }
+    if (entries != count) {
+        return luaL_error(state, "object collection must be a dense list");
+    }
+    CallFrame& frame = active_frame(state);
+    frame.candidate.objectBatch.clear();
+    for (std::size_t index = 0; index < count; ++index) {
+        lua_rawgeti(state, list, static_cast<lua_Integer>(index + 1));
+        const auto* handle =
+            static_cast<const SlotHandle*>(luaL_testudata(state, -1, kSlotMetatable));
+        SlotDefinition slot{};
+        namespace format = ::sunrise::state::activity_sdk::format;
+        const bool resolved =
+            handle != nullptr ? current_slot(state, *handle, slot) : resolve_slot(state, -1, slot);
+        if (!resolved || slot.slotType != format::kObjectSlotType
+            || slot.componentClass != format::kObjectComponentClass
+            || slot.senseSchema != format::kObjectSenseSchema
+            || slot.authSchema != format::kObjectAuthSchema
+            || (slot.flags & format::kSlotSchemaJoinExact) == 0) {
+            return luaL_error(state, "object collection requires exact authored type-4 slots");
+        }
+        lua_pop(state, 1);
+        try {
+            frame.candidate.objectBatch.push_back(slot);
+        } catch (const std::bad_alloc&) {
+            frame.intentAllocationFailed = true;
+            return luaL_error(state, "object collection allocation failed");
+        }
+    }
+    auto& slots = frame.candidate.objectBatch;
+    std::sort(slots.begin(), slots.end(), [](const auto& a, const auto& b) noexcept {
+        return std::tie(a.objectTag, a.registryKey, a.nativeRow)
+               < std::tie(b.objectTag, b.registryKey, b.nativeRow);
+    });
+    for (std::size_t index = 1; index < slots.size(); ++index) {
+        if (slots[index - 1].nativeRow == slots[index].nativeRow) {
+            return luaL_error(state, "object collection repeats a SlotView");
+        }
+    }
+    lua_newtable(state);
+    lua_Integer requestCount = 0;
+    for (std::size_t first = 0; first < slots.size();) {
+        Intent intent{};
+        intent.kind = IntentKind::setObjectActive;
+        intent.active = active;
+        intent.firstRow = slots[first].nativeRow;
+        std::size_t next = first + 1;
+        while (next < slots.size() && slots[next].objectTag == slots[first].objectTag
+               && slots[next].registryKey == slots[first].registryKey
+               && intent.burstRowCount < intent.burstRows.size()) {
+            intent.burstRows[intent.burstRowCount++] = slots[next++].nativeRow;
+        }
+        static_cast<void>(queue_intent(state, frame, intent));
+        lua_rawseti(state, -2, ++requestCount);
+        first = next;
+    }
+    return 1;
+}
+
+/**
+ * Completes this attempt through the native lifetime owner.
+ * @param state Lua call holding
+ * the context and empty argument table.
+ * @return One RequestKey.
+ */
+[[nodiscard]] int context_complete_mission(lua_State* state) {
+    static_cast<void>(luaL_checkudata(state, 1, kContextMetatable));
+    // Only these named arguments belong to this API.
+    static constexpr std::array<std::string_view, 0> kDeclared{};
+    refuse_unknown_arguments(state, kDeclared);
+    if (impl_from_state(state)->attempt.complete) {
+        return luaL_error(state, "mission attempt is already complete");
+    }
+    Intent intent{};
+    intent.kind = IntentKind::setLifetime;
+    intent.lifetimeState = ::sunrise::state::activity::mission::kCompletedLifetimeState;
+    return queue_intent(state, active_frame(state), intent);
+}
 
 [[nodiscard]] int context_squad(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kContextMetatable));
@@ -31,6 +136,7 @@ namespace {
  */
 [[nodiscard]] int context_restart_checkpoint(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kContextMetatable));
+    // Only these named arguments belong to this API.
     static constexpr std::array<std::string_view, 3> kDeclared{
         "region", "spawn_set_hash", "release_request"};
     refuse_unknown_arguments(state, kDeclared);
@@ -56,6 +162,28 @@ namespace {
     intent.checkpointReleaseRequest = release;
     intent.effectiveRegion = static_cast<std::int32_t>(region);
     intent.checkpointSpawnHash = static_cast<std::uint32_t>(hash);
+    return queue_intent(state, active_frame(state), intent);
+}
+
+/**
+ * Holds the player's spawn, or releases it.
+ * A held spawn leaves the player without a body, so an opening cutscene runs before the arrival.
+ * @param state Lua call holding the context and one `active` boolean.
+ * @return One RequestKey.
+ */
+[[nodiscard]] int context_hold_spawn(lua_State* state) {
+    static_cast<void>(luaL_checkudata(state, 1, kContextMetatable));
+    // Only these named arguments belong to this API.
+    static constexpr std::array<std::string_view, 1> kDeclared{"active"};
+    refuse_unknown_arguments(state, kDeclared);
+    lua_getfield(state, 2, "active");
+    if (!lua_isboolean(state, -1)) {
+        return luaL_argerror(state, 2, "hold_spawn requires an active boolean");
+    }
+    Intent intent{};
+    intent.kind = IntentKind::holdSpawn;
+    intent.active = lua_toboolean(state, -1) != 0;
+    lua_pop(state, 1);
     return queue_intent(state, active_frame(state), intent);
 }
 
@@ -231,6 +359,16 @@ resolve_message_name(lua_State* state, std::string_view name, ActivityMessageDef
         push_activity(state);
     } else if (key == "lifetime") {
         push_lifetime(state);
+    } else if (key == "attempt_generation") {
+        push_u64_string(state, impl->attempt.generation);
+    } else if (key == "mission_complete") {
+        lua_pushboolean(state, impl->attempt.complete);
+    } else if (key == "complete_mission") {
+        lua_pushcfunction(state, &context_complete_mission);
+    } else if (key == "activate_objects") {
+        lua_pushcfunction(state, &context_activate_objects);
+    } else if (key == "cohort") {
+        lua_pushcfunction(state, &context_cohort);
     } else if (key == "peers") {
         push_peers(state);
     } else if (key == "squad") {
@@ -239,6 +377,8 @@ resolve_message_name(lua_State* state, std::string_view name, ActivityMessageDef
         lua_pushcfunction(state, &context_scene);
     } else if (key == "slot") {
         lua_pushcfunction(state, &context_slot);
+    } else if (key == "hold_spawn") {
+        lua_pushcfunction(state, &context_hold_spawn);
     } else if (key == "select_state") {
         lua_pushcfunction(state, &context_select_state);
     } else if (key == "restart_checkpoint") {
@@ -261,6 +401,7 @@ resolve_message_name(lua_State* state, std::string_view name, ActivityMessageDef
 
 void register_context_metatables(lua_State* state) {
     register_metatable(state, kContextMetatable, &context_index);
+    register_population_metatables(state);
 }
 
 } // namespace sunrise::server::activity::mission::lua_vm::detail

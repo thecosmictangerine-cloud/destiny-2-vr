@@ -96,19 +96,7 @@ class Values final {
 public:
     Values(DecodedPacket& packet, DecodedObject* object) noexcept
         : packet_(packet), object_(object) {}
-    /**
-     * Records one decoded field value, and marks truncation once storage is full.
-     * @param schema Owning schema hash.
-     * @param ordinal Field ordinal inside that schema.
-     * @param occurrence Flattened repeat index of the field.
-     * @param at Bit offset the value was read from.
-     * @param width Wire width in bits.
-     * @param kind Decoded value type.
-     * @param raw Unsigned wire value.
-     * @param signedRaw Signed value after bias removal.
-     * @param real Real value for real32 fields.
-     * @param present False when an optional field was absent.
-     */
+    /** Retains one field value, marking truncation when the packet's storage is full. */
     void put(std::uint32_t schema,
              std::uint16_t ordinal,
              std::uint32_t occurrence,
@@ -145,12 +133,7 @@ private:
     DecodedObject* object_{};
 };
 
-/**
- * Reads the presence bit that precedes an optional field.
- * @param optional False when the field is required, which is always present.
- * @param output Receives whether the field follows.
- * @return False when the bit does not fit the object's budget.
- */
+/** Required fields are present; optional fields consume one presence bit within the budget. */
 [[nodiscard]] bool present(Reader& reader, bool optional, bool& output) noexcept {
     output = true;
     if (!optional) {
@@ -163,11 +146,7 @@ private:
     output = raw != 0;
     return true;
 }
-/**
- * Reads one optional or required unsigned field and records it.
- * @param optional True when a presence bit precedes the value.
- * @return True when the presence bit and any value were complete.
- */
+/** Records an unsigned value only when its presence bit and selected value fit. */
 [[nodiscard]] bool read_unsigned(Reader& reader,
                                  Values& values,
                                  std::uint32_t schema,
@@ -196,13 +175,7 @@ private:
                exists);
     return true;
 }
-/**
- * Reads one optional or required signed field and removes its wire bias.
- * @param wireWidth Bits on the wire.
- * @param storageWidth Bits of the signed host field, used for sign extension.
- * @param bias Positive value added by the wire encoder.
- * @return True when the presence bit and any value were complete.
- */
+/** Removes wire bias and sign-extends to the host width after reading a complete selected field. */
 [[nodiscard]] bool read_signed(Reader& reader,
                                Values& values,
                                std::uint32_t schema,
@@ -254,13 +227,7 @@ private:
         schema, ordinal, occurrence, at, exists ? 1 : 0, ValueKind::boolean, raw, 0, 0.0F, exists);
     return true;
 }
-/**
- * Expands one quantized real back to its float value.
- * @param raw Field bits as read.
- * @param width Field width; 32 carries a raw float instead.
- * @param maximumBits Quantization ceiling, as float bits.
- * @return The decoded value. The lowest and highest levels are exact.
- */
+/** Quantized endpoints stay exact; width 32 carries raw float bits. */
 [[nodiscard]] float
 real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noexcept {
     if (width == 32) {
@@ -277,11 +244,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     const float step = maximum / static_cast<float>(levels - 2);
     return static_cast<float>(raw - 1) * step + step * 0.5F;
 }
-/**
- * Reads one optional or required real field, quantized or raw 32-bit.
- * @param maximumBits Quantization range, or zero for a raw 32-bit float.
- * @return True when the presence bit and any value were complete.
- */
+/** Records a real only when its presence bit and selected value fit. */
 [[nodiscard]] bool read_real(Reader& reader,
                              Values& values,
                              std::uint32_t schema,
@@ -312,12 +275,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     return true;
 }
 
-/**
- * Decodes the three device channels, each a real and a biased signed value.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes three device channels within the object's bit budget. */
 [[nodiscard]] NativeStatus decode_device(Reader& reader, Values& values) noexcept {
     for (std::uint16_t channel = 0; channel < 3; ++channel) {
         if (!read_real(reader, values, kDevice, channel * 2, 32, true)
@@ -334,12 +292,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     }
     return NativeStatus::complete;
 }
-/**
- * Decodes the occupancy block: two booleans then its signed counters.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes the occupancy flags and signed values within the object's bit budget. */
 [[nodiscard]] NativeStatus decode_occupancy(Reader& reader, Values& values) noexcept {
     return read_bool(reader, values, kOccupancy, 0, false)
                    && read_bool(reader, values, kOccupancy, 1, false)
@@ -362,12 +315,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
                ? NativeStatus::complete
                : NativeStatus::malformed;
 }
-/**
- * Decodes the scene block and its authored event and entry lists.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes a scene and refuses event counts above the native capacity. */
 [[nodiscard]] NativeStatus decode_scene(Reader& reader, Values& values) noexcept {
     if (!read_signed(
             reader, values, kScene, 0, 32, 32, (std::numeric_limits<std::int32_t>::min)(), false)
@@ -392,12 +340,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     }
     return NativeStatus::complete;
 }
-/**
- * Decodes the squad block, its counts, member list and real values.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes squad fields and bounded member lists within the object's bit budget. */
 [[nodiscard]] NativeStatus decode_squad(Reader& reader, Values& values) noexcept {
     if (!read_signed(reader, values, kSquad, 0, 31, 32, 0, true)
         || !read_signed(reader, values, kSquad, 1, 31, 32, 0, true)
@@ -452,12 +395,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     }
     return NativeStatus::complete;
 }
-/**
- * Decodes the objective block and its task list.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes the optional objective blocks and their fixed task arrays. */
 [[nodiscard]] NativeStatus decode_objective(Reader& reader, Values& values) noexcept {
     bool exists = false;
     if (!present(reader, true, exists)) {
@@ -489,12 +427,7 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
                ? NativeStatus::complete
                : NativeStatus::malformed;
 }
-/**
- * Decodes one object block, its spawn mask and its reply list.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes an object and accepts only the registered interaction and ownership replies. */
 [[nodiscard]] NativeStatus decode_object(Reader& reader, Values& values) noexcept {
     if (!read_signed(
             reader, values, kObject, 0, 32, 32, (std::numeric_limits<std::int32_t>::min)(), false)
@@ -523,9 +456,15 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     values.put(kObjectReplies, 0, 0, at, 2, ValueKind::unsignedInteger, count, 0, 0.0F, true);
     for (std::uint32_t index = 0; index < count; ++index) {
         std::uint64_t exists = 0, schema = 0;
-        if (!reader.read(1, exists)) return NativeStatus::malformed;
-        if (!exists) continue;
-        if (!reader.read(32, schema)) return NativeStatus::malformed;
+        if (!reader.read(1, exists)) {
+            return NativeStatus::malformed;
+        }
+        if (!exists) {
+            continue;
+        }
+        if (!reader.read(32, schema)) {
+            return NativeStatus::malformed;
+        }
         if (schema == kInteractionReply) {
             // The interaction latch and the revision that set it.
             if (!read_bool(reader, values, kInteractionReply, 0, false, index)
@@ -537,26 +476,22 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
                                 32,
                                 (std::numeric_limits<std::int32_t>::min)(),
                                 false,
-                                index))
+                                index)) {
                 return NativeStatus::malformed;
+            }
         } else if (schema == kOwnershipReply) {
             // The owner key is always written, zero when nobody holds the object.
             if (!read_bool(reader, values, kOwnershipReply, 0, false, index)
-                || !read_unsigned(reader, values, kOwnershipReply, 1, 64, false, index))
+                || !read_unsigned(reader, values, kOwnershipReply, 1, 64, false, index)) {
                 return NativeStatus::malformed;
-        } else
+            }
+        } else {
             return NativeStatus::unsupported;
+        }
     }
     return NativeStatus::complete;
 }
-/**
- * Decodes the combatant block: the accepted spawn and event generations, the atom runner's lane
- * cursor and accepted program generation, the eight keyed-lane generations with their result bits,
- * then the dependency subscription and the two actor latches.
- * @param reader Budget-limited MSB-first reader positioned at the block.
- * @param values Receives every decoded field value.
- * @return complete, or the status that stopped the block.
- */
+/** Decodes combatant generations, program state, keyed lanes and root flags within the budget. */
 [[nodiscard]] NativeStatus decode_combatant(Reader& reader, Values& values) noexcept {
     if (!read_signed(reader, values, kCombatant, 0, 31, 32, 0, true)
         || !read_real(reader, values, kCombatant, 1, 9, true, 0, kSpatialMaximumBits)
@@ -602,27 +537,30 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
     }
     return NativeStatus::complete;
 }
-/**
- * Decodes the type-13 participation body. The whole body is read before its Ghost flag counts,
- * because a player mid-load publishes a body with the flag but without a settled actor.
- */
+/** Validates the complete participation body before its Ghost flag becomes usable. */
 [[nodiscard]] NativeStatus decode_player(Reader& reader, Values& values) noexcept {
+    // The participation field uses a signed 32-bit midpoint bias.
     constexpr auto signedBias = (std::numeric_limits<std::int32_t>::min)();
     if (!read_signed(reader, values, kPlayerState, 0, 32, 32, signedBias, true)
         || !read_unsigned(reader, values, kPlayerState, 1, 32, true)) {
         return NativeStatus::malformed;
     }
     for (std::uint16_t ordinal = 2; ordinal <= 5; ++ordinal) {
-        if (!read_bool(reader, values, kPlayerState, ordinal, false))
+        if (!read_bool(reader, values, kPlayerState, ordinal, false)) {
             return NativeStatus::malformed;
+        }
     }
     if (!read_signed(reader, values, kPlayerState, 6, 3, 8, 1, false)
         || !read_signed(reader, values, kPlayerState, 7, 2, 8, 1, false)) {
         return NativeStatus::malformed;
     }
     std::uint64_t count = 0;
-    if (!reader.read(3, count)) return NativeStatus::malformed;
-    if (count > kPlayerScalarCountMaximum) return NativeStatus::unsafeCount;
+    if (!reader.read(3, count)) {
+        return NativeStatus::malformed;
+    }
+    if (count > kPlayerScalarCountMaximum) {
+        return NativeStatus::unsafeCount;
+    }
     for (unsigned index = 0; index < count; ++index) {
         if (!read_unsigned(reader, values, kPlayerScalars, 0, 32, false, index)
             || !read_real(reader, values, kPlayerScalars, 1, 32, false, index)) {
@@ -635,22 +573,32 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
         return NativeStatus::malformed;
     }
     for (std::uint16_t ordinal = 4; ordinal <= 6; ++ordinal) {
-        if (!read_bool(reader, values, kPlayerTail, ordinal, false)) return NativeStatus::malformed;
+        if (!read_bool(reader, values, kPlayerTail, ordinal, false)) {
+            return NativeStatus::malformed;
+        }
     }
     if (!read_unsigned(reader, values, kPlayerIdentity, 0, 64, true)
         || !read_unsigned(reader, values, kPlayerIdentity, 1, 5, false)
         || !read_signed(reader, values, kPlayerIdentity, 2, 6, 8, 3, false)) {
         return NativeStatus::malformed;
     }
-    if (!reader.read(6, count)) return NativeStatus::malformed;
-    if (count > kPlayerKeyCountMaximum) return NativeStatus::unsafeCount;
+    if (!reader.read(6, count)) {
+        return NativeStatus::malformed;
+    }
+    if (count > kPlayerKeyCountMaximum) {
+        return NativeStatus::unsafeCount;
+    }
     for (unsigned index = 0; index < count; ++index) {
         if (!read_unsigned(reader, values, kPlayerKeys, 0, 32, false, index)) {
             return NativeStatus::malformed;
         }
     }
-    if (!reader.read(6, count)) return NativeStatus::malformed;
-    if (count > kPlayerKeyCountMaximum) return NativeStatus::unsafeCount;
+    if (!reader.read(6, count)) {
+        return NativeStatus::malformed;
+    }
+    if (count > kPlayerKeyCountMaximum) {
+        return NativeStatus::unsafeCount;
+    }
     for (unsigned index = 0; index < count; ++index) {
         if (!read_unsigned(reader, values, kPlayerPairs, 0, 32, true, index)
             || !read_unsigned(reader, values, kPlayerPairs, 1, 64, true, index)) {
@@ -664,7 +612,9 @@ real_value(std::uint64_t raw, std::uint8_t width, std::uint32_t maximumBits) noe
         return NativeStatus::malformed;
     }
     bool exists = false;
-    if (!present(reader, true, exists)) return NativeStatus::malformed;
+    if (!present(reader, true, exists)) {
+        return NativeStatus::malformed;
+    }
     if (exists && !read_unsigned(reader, values, kPlayerOptional, 0, 32, false)) {
         return NativeStatus::malformed;
     }
@@ -753,14 +703,7 @@ void finish(SenseUpdate& update,
 }
 } // namespace
 
-/**
- * Decodes one sense update: its epoch pair, then each present sensor block.
- * @param input Complete sense-update payload.
- * @param resolver Native layout lookup for object schemas.
- * @param update Cleared first. Receives the epoch, the blocks and a decode status.
- * @param consumed Receives the bits read.
- * @return True when the epoch prefix and the root marker were valid.
- */
+/** Decodes epoch and sensor blocks with per-group budgets and exact zero padding. */
 bool decode_sense_update(std::span<const std::byte> input,
                          const Resolver& resolver,
                          SenseUpdate& update,

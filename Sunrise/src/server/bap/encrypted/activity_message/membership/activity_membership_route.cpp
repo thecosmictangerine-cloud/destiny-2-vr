@@ -57,7 +57,7 @@ make_identity(const service::client_identity::ClientIdentity& parsed) noexcept {
     update.teleport.state = parsed.teleport.state;
     update.teleport.token = parsed.teleport.token;
     update.teleport.sliceSetIndex = parsed.teleport.sliceSetIndex;
-    update.teleport.sliceSetHash = parsed.teleport.sliceSetHash;
+    update.teleport.spawnSetHash = parsed.teleport.spawnSetHash;
     update.hasTeleport = parsed.hasTeleport;
     // The legs are what name the player's bubble. Dropping them here leaves the host on the
     // destination's arrival slice set for the whole run, and no bubble crossing grants authority.

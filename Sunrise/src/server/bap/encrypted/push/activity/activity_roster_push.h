@@ -26,6 +26,8 @@ struct RefreshReport;
  * @param exactRegion Prepared transaction region to use before its State commit, or null.
  * @param solicited True when this answers a client request, which forbids repeat suppression.
  * @param refresh The message-18 refresh this answers, read before its commit, or null.
+ * @param allowEntityRetirement True when this body may carry a placed-entity purge.
+ * @param peerLeave True to answer activity msg 15: every group retired and nothing granted.
  * @return True when the roster is built and the type-5 frame encodes atomically.
  */
 [[nodiscard]] bool append_roster_notification(
@@ -39,7 +41,8 @@ struct RefreshReport;
     const EffectiveRegion* exactRegion = nullptr,
     bool solicited = false,
     const RefreshReport* refresh = nullptr,
-    bool allowEntityRetirement = true) noexcept;
+    bool allowEntityRetirement = true,
+    bool peerLeave = false) noexcept;
 
 /**
  * Settles a staged roster body that reached the caller.

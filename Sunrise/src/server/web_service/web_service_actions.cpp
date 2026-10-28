@@ -106,15 +106,13 @@ void select_character(const middleware::web_service::Message& message, Outcome& 
             core::log::Channel::server, core::log::Level::warn, "ev=ws504 stage=parse result=fail");
         return;
     }
-    bool changed = false;
-    if (!state::set_selected_character(picked.characterSoid, changed)) {
+    if (!state::set_selected_character(picked.characterSoid)) {
         core::log::write(core::log::Channel::server,
                          core::log::Level::warn,
                          "ev=ws504 stage=select result=unknown");
         return;
     }
     outcome.hasSelectedCharacter = true;
-    outcome.selectedCharacterChanged = changed;
     outcome.selectedCharacterSoid = picked.characterSoid;
 }
 

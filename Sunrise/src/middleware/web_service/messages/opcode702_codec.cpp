@@ -16,6 +16,9 @@ constexpr std::uint8_t kShortBits = 16;
 constexpr std::uint8_t kWordBits = 32;
 constexpr std::uint8_t kLongBits = 64;
 constexpr std::uint8_t kWorldBits = 5;
+constexpr std::uint8_t kSelectorBits = 3;
+/** The activity block's bytes ride at bias 128. */
+constexpr int kByteBias = 128;
 /** Fixed array lengths from the character writeback schema. */
 constexpr std::size_t kHeaderFloats = 3;
 constexpr std::size_t kSeenWords = 4;
@@ -53,10 +56,19 @@ bool read_header(Reader& reader) noexcept {
 /** The five-byte activity block carries the world-state field without an inner presence bit. */
 bool read_activity(Reader& reader, Request& output) noexcept {
     const auto block = [&output](Reader& fields) noexcept {
-        // Three biased bytes and one three-bit selector precede the world state.
-        constexpr std::size_t kPrefixBits = 3 * kByteBits + 3;
+        // Three bytes at bias 128 and one three-bit selector at bias 1 precede the world state.
         std::uint64_t value = 0;
-        if (!fields.skip(kPrefixBits) || !fields.read(kWorldBits, value)) {
+        for (std::int8_t& byte : output.activityBytes) {
+            if (!fields.read(kByteBits, value)) {
+                return false;
+            }
+            byte = static_cast<std::int8_t>(static_cast<int>(value) - kByteBias);
+        }
+        if (!fields.read(kSelectorBits, value)) {
+            return false;
+        }
+        output.activitySelector = static_cast<std::int8_t>(static_cast<int>(value) - 1);
+        if (!fields.read(kWorldBits, value)) {
             return false;
         }
         output.worldState = static_cast<std::uint8_t>(value);
@@ -79,6 +91,7 @@ bool read_roster(Reader& reader) noexcept {
         }
         return true;
     };
+    // The roster tail carries these seven optional wire fields in order.
     constexpr std::array<std::uint8_t, 7> kTailWidths{
         kLongBits, kLongBits, kWordBits, kWordBits, kByteBits, kByteBits, 4};
     if (!optional(reader, items)) {

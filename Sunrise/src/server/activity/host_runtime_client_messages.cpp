@@ -70,6 +70,11 @@ void append_client_message_detail(
 
 namespace detail {
 
+/** The Host lock keeps the framing intake head ordered with a borrowed output. */
+std::uint64_t latest_client_message_sequence() noexcept {
+    return g_clientMessageSequence;
+}
+
 /** Publishes one safe generic client envelope into the ordered mission-input feed. */
 void apply_client_message(const ClientMessageMissionInput& input, std::uint64_t now) noexcept {
     Instance* const instance = find_instance(input.binding);
@@ -79,6 +84,7 @@ void apply_client_message(const ClientMessageMissionInput& input, std::uint64_t 
     }
     touch(*instance);
     Event event{};
+    event.attemptGeneration = input.attemptGeneration;
     event.binding = input.binding;
     event.tick = now;
     event.kind = EventKind::clientMessageReceived;

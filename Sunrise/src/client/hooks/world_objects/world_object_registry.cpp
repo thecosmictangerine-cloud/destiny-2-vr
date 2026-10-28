@@ -39,8 +39,8 @@ constexpr std::size_t kRegistryCapacity = 16384;
 constexpr std::size_t kRegistryMask = kRegistryCapacity - 1;
 static_assert((kRegistryCapacity & kRegistryMask) == 0);
 
-/** Placement, entity and trace signatures resolved together in one image pass. */
-constexpr std::size_t kTargetCount = 20;
+/** Placement and entity signatures share one image scan. */
+constexpr std::size_t kTargetCount = 12;
 
 /** Native entry that instantiates a placed world object. */
 constexpr std::string_view kInstantiateSignatureText =
@@ -132,7 +132,7 @@ constexpr std::uint32_t kDatumIdentityBytes = sizeof(DatumIdentity);
 std::array<RegistryEntry, kRegistryCapacity> g_entries{};
 std::array<IdentityEntry, kRegistryCapacity> g_identities{};
 std::uint64_t g_overflowCount{};
-std::array<hooking::detour::Handle, 15> g_handles{};
+std::array<hooking::detour::Handle, 7> g_handles{};
 
 /** @return A stable open-address bucket for a native handle. */
 [[nodiscard]] constexpr std::size_t bucket(std::uint32_t handle) noexcept {
@@ -175,17 +175,22 @@ void adjust_identity(const Instance& instance, bool increment) noexcept {
         if (entry.state == EntryState::live && entry.key == key) {
             if (increment) {
                 ++entry.count;
-                if (entry.count == 2) {
-                    std::array<char, 192> line{};
+                // Every repeat is reported with its caller, so the pass that rebuilt it is named.
+                if (entry.count >= 2) {
+                    std::array<char, 224> line{};
+                    const std::uintptr_t caller = g_instantiateCaller >= g_moduleBase
+                                                      ? g_instantiateCaller - g_moduleBase
+                                                      : g_instantiateCaller;
                     const int written = std::snprintf(
                         line.data(),
                         line.size(),
                         "ev=world_object stage=placement result=duplicate list=0x%08X "
-                        "entry=%u identity=0x%016llX count=%u",
+                        "entry=%u identity=0x%016llX count=%u caller=+0x%llX",
                         instance.objectListTag,
                         instance.entryIndex,
                         static_cast<unsigned long long>(instance.placementIdentity),
-                        entry.count);
+                        entry.count,
+                        static_cast<unsigned long long>(caller));
                     if (written > 0) {
                         core::log::write(core::log::Channel::client,
                                          core::log::Level::debug,
@@ -279,15 +284,6 @@ struct Targets final {
     std::byte* glueMapping{};
     std::byte* entityPool{};
     std::byte* entityPolicy{};
-    std::byte* observer{};
-    std::byte* rebind{};
-    std::byte* iterator{};
-    std::byte* source{};
-    std::byte* resolveSource{};
-    std::byte* predicate{};
-    std::byte* bind{};
-    std::byte* teardown{};
-    std::byte* actorOwner{};
 };
 
 /** @return The main module's base, or zero when it cannot be read. */
@@ -297,8 +293,8 @@ struct Targets final {
 
 /**
  * Resolves every target in one image pass.
- * @param output Receives one address per target, in placement, entity and trace order.
- * @return False unless all three signature groups fill the list and every one matched once.
+ * @param output Receives one address per target, in placement and entity order.
+ * @return False unless both signature groups fill the list and every one matched once.
  */
 [[nodiscard]] bool resolve_targets(Targets& output) noexcept {
     output = {};
@@ -310,8 +306,8 @@ struct Targets final {
     for (std::size_t index = 0; index < main.count; ++index) {
         ranges[index] = patterns::ImageRange{main.sections[index]};
     }
-    const std::array<std::span<const patterns::Pattern>, 3> groups{
-        kPlacementSignatures, entity_patterns(), trace_patterns()};
+    const std::array<std::span<const patterns::Pattern>, 2> groups{kPlacementSignatures,
+                                                                   entity_patterns()};
     std::array<patterns::Pattern, kTargetCount> definitions{};
     std::size_t next = 0;
     for (const std::span<const patterns::Pattern>& group : groups) {
@@ -347,21 +343,7 @@ struct Targets final {
     output.glueMapping = matches[9].address;
     output.entityPool = matches[10].address;
     output.entityPolicy = matches[11].address;
-    output.observer = matches[12].address;
-    output.rebind = matches[13].address;
-    output.source = matches[14].address;
-    output.resolveSource = matches[15].address;
-    output.predicate = matches[16].address;
-    output.bind = matches[17].address;
-    output.teardown = matches[18].address;
-    output.actorOwner = matches[19].address;
-    // The iterator comes from the rebind body, which also proves the trace's return offsets.
-    return bind_rebind_calls(output.rebind,
-                             output.source,
-                             output.resolveSource,
-                             output.predicate,
-                             output.bind,
-                             output.iterator);
+    return true;
 }
 
 /** Binds the two datum globals encoded at fixed operands in the checked layout signature. */
@@ -388,6 +370,7 @@ std::size_t g_dynamicReportBudget{kIdentityReportBudget};
 std::size_t g_allocateReportBudget{kIdentityReportBudget};
 std::size_t g_logicalDestroyReportBudget{kIdentityReportBudget};
 std::uint64_t g_dynamicCount{};
+std::uintptr_t g_instantiateCaller{};
 /**
  * Handles the dynamic path built, so the destroy detour can say which of them the client tears
  * down. A dynamic build names no placed entry, so the identity registry never holds one, and
@@ -523,14 +506,6 @@ bool install() noexcept {
         hooking::detour::Spec{targets.createEntity, reinterpret_cast<void*>(&create_entity)},
         hooking::detour::Spec{targets.purgeEntities, reinterpret_cast<void*>(&purge_entities)},
         hooking::detour::Spec{targets.entityPolicy, reinterpret_cast<void*>(&entity_policy)},
-        hooking::detour::Spec{targets.observer, reinterpret_cast<void*>(&trace_observer)},
-        hooking::detour::Spec{targets.rebind, reinterpret_cast<void*>(&trace_rebind)},
-        hooking::detour::Spec{targets.iterator, reinterpret_cast<void*>(&trace_iterator)},
-        hooking::detour::Spec{targets.source, reinterpret_cast<void*>(&trace_source)},
-        hooking::detour::Spec{targets.resolveSource, reinterpret_cast<void*>(&trace_resolve)},
-        hooking::detour::Spec{targets.predicate, reinterpret_cast<void*>(&trace_predicate)},
-        hooking::detour::Spec{targets.bind, reinterpret_cast<void*>(&trace_bind)},
-        hooking::detour::Spec{targets.teardown, reinterpret_cast<void*>(&trace_teardown)},
     };
     if (!hooking::detour::install(specs, g_handles)) {
         g_resolvePair = nullptr;
@@ -558,36 +533,6 @@ bool install() noexcept {
     g_entityPolicyOriginal.store(reinterpret_cast<EntityPolicy>(g_handles[6].original),
                                  std::memory_order_release);
 
-    g_observerOriginal.store(reinterpret_cast<Observer>(g_handles[7].original),
-                             std::memory_order_release);
-    g_rebindOriginal.store(reinterpret_cast<Rebind>(g_handles[8].original),
-                           std::memory_order_release);
-    g_iteratorOriginal.store(reinterpret_cast<IteratorValue>(g_handles[9].original),
-                             std::memory_order_release);
-    g_sourceOriginal.store(reinterpret_cast<SourceRef>(g_handles[10].original),
-                           std::memory_order_release);
-    g_resolveSourceOriginal.store(reinterpret_cast<ResolveSource>(g_handles[11].original),
-                                  std::memory_order_release);
-    g_predicateOriginal.store(reinterpret_cast<Predicate>(g_handles[12].original),
-                              std::memory_order_release);
-    g_bindOriginal.store(reinterpret_cast<BindActor>(g_handles[13].original),
-                         std::memory_order_release);
-    g_teardownOriginal.store(reinterpret_cast<Teardown>(g_handles[14].original),
-                             std::memory_order_release);
-    g_actorOwner = reinterpret_cast<ActorOwner>(targets.actorOwner);
-    g_actorStrideStorage = reinterpret_cast<const std::uint32_t*>(
-        patterns::resolve_relative(targets.actorOwner + 20, targets.actorOwner + 24));
-    g_actorBaseStorage = reinterpret_cast<const std::uintptr_t*>(
-        patterns::resolve_relative(targets.actorOwner + 29, targets.actorOwner + 33));
-    g_rebindAddress = reinterpret_cast<std::uintptr_t>(targets.rebind);
-    g_observerAddress = reinterpret_cast<std::uintptr_t>(targets.observer);
-    g_sliceManager = reinterpret_cast<SliceManager>(
-        patterns::resolve_relative(targets.observer + 17, targets.observer + 21));
-    g_currentBubble = reinterpret_cast<CurrentBubble>(
-        patterns::resolve_relative(targets.observer + 30, targets.observer + 34));
-    g_rebindPasses.store(0);
-    g_rebindRows.store(0);
-    g_observerReports.store(0);
     g_accepting.store(true, std::memory_order_release);
     ReleaseSRWLockExclusive(&g_lock);
     core::log::write(core::log::Channel::client,
@@ -596,7 +541,7 @@ bool install() noexcept {
     return true;
 }
 
-/** Removes both lifetime hooks only after native calls have left their trampolines. */
+/** Removes the world hooks after native calls have left their trampolines. */
 bool uninstall() noexcept {
     AcquireSRWLockExclusive(&g_lock);
     if (std::none_of(g_handles.begin(), g_handles.end(), [](const auto& handle) {
@@ -607,7 +552,7 @@ bool uninstall() noexcept {
         return true;
     }
     g_accepting.store(false, std::memory_order_release);
-    const std::array<hooking::detour::ProtectedCodeEntry, 15> protectedEntries{
+    const std::array<hooking::detour::ProtectedCodeEntry, 7> protectedEntries{
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&instantiate)},
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&destroy)},
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&allocate)},
@@ -615,14 +560,6 @@ bool uninstall() noexcept {
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&create_entity)},
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&purge_entities)},
         hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&entity_policy)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_observer)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_rebind)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_iterator)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_source)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_resolve)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_predicate)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_bind)},
-        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(&trace_teardown)},
 
     };
     const hooking::detour::UninstallResult result =
@@ -638,20 +575,6 @@ bool uninstall() noexcept {
     g_createEntityOriginal.store(nullptr, std::memory_order_release);
     g_purgeEntitiesOriginal.store(nullptr, std::memory_order_release);
     g_entityPolicyOriginal.store(nullptr, std::memory_order_release);
-    g_observerOriginal.store(nullptr, std::memory_order_release);
-    g_rebindOriginal.store(nullptr, std::memory_order_release);
-    g_iteratorOriginal.store(nullptr, std::memory_order_release);
-    g_sourceOriginal.store(nullptr, std::memory_order_release);
-    g_resolveSourceOriginal.store(nullptr, std::memory_order_release);
-    g_predicateOriginal.store(nullptr, std::memory_order_release);
-    g_bindOriginal.store(nullptr, std::memory_order_release);
-    g_teardownOriginal.store(nullptr, std::memory_order_release);
-    g_actorOwner = nullptr;
-    g_actorBaseStorage = nullptr;
-    g_actorStrideStorage = nullptr;
-    g_sliceManager = nullptr;
-    g_currentBubble = nullptr;
-    g_rebindAddress = g_observerAddress = 0;
     g_entityRecordBase = 0;
     g_policyTrace = {};
     g_glueBaseStorage = nullptr;
@@ -665,7 +588,7 @@ bool uninstall() noexcept {
     return true;
 }
 
-/** @return True while both hooks are attached and accepting observations. */
+/** @return True while all world hooks accept observations. */
 bool is_installed() noexcept {
     AcquireSRWLockShared(&g_lock);
     const bool installed =

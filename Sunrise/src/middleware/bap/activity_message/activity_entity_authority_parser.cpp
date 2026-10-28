@@ -23,6 +23,7 @@ namespace {
 
 /** Removes the signed midpoint bias from one correlation field. */
 [[nodiscard]] constexpr std::int32_t decode_correlation(std::uint32_t wire) noexcept {
+    // The correlation field uses a signed 32-bit midpoint bias.
     constexpr std::uint32_t kSignedBias = 0x80000000U;
     return std::bit_cast<std::int32_t>(wire - kSignedBias);
 }

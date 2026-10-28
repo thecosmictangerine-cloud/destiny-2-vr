@@ -33,6 +33,7 @@
  *                          overwrite one row of the constant buffer a pixel shader reads at slot 0
  *   reticle hide|show      the ADS centre dot (default hidden while VR is on)
  *   snap                   the back buffer, as sent to the headset, to SVR_BackBuffer.bmp
+ *   snap scene             the UI scene composite's input (the whole frame), to SVR_Scene.bmp
  */
 
 #include "vr_gpu.h"
@@ -59,7 +60,13 @@
 #include "../../hooking/detour.h"
 #include "runtime.h"
 #include "vr_aim.h"
+#include "vr_frames.h"
+#include "vr_state.h"
 #include "vr_arms.h"
+#include "vr_body.h"
+#include "vr_dual.h"
+#include "vr_offhand.h"
+#include "vr_profile.h"
 #include "vr_d3d_slots.h"
 #include "xr_runtime.h"
 
@@ -136,6 +143,8 @@ struct LayoutInfo final {
     DXGI_FORMAT weightsFormat{DXGI_FORMAT_UNKNOWN};
     int indices{-1};
     DXGI_FORMAT indicesFormat{DXGI_FORMAT_UNKNOWN};
+    /** BLENDINDICES in ANY stream (the fields above are stream 0's): false means a rigid mesh. */
+    bool anyIndices{};
 };
 
 SRWLOCK g_registryLock = SRWLOCK_INIT;
@@ -896,8 +905,6 @@ bool should_hide(ID3D11DeviceContext* context, bool immediate) noexcept {
 
 constexpr std::size_t kHeaderRows = 8;
 constexpr std::size_t kMaxPaletteBones = 128;
-/** The arm skeleton's meshes carry 52 or 72 bones; the weapon's palette has 8. */
-constexpr std::size_t kMinArmBones = 40;
 constexpr UINT kPaletteBytes = 65536;
 constexpr UINT kViewBytes = 224;
 constexpr std::size_t kViewFloats = kViewBytes / 4;
@@ -927,7 +934,9 @@ struct MeshRequest final {
     std::array<float, 3> origin{};
 };
 
-enum class BufferKind : std::uint8_t { other, palette, view };
+/** world: a per-object palette (5120 bytes for an armour piece, 1024 for an object), vr_body.cpp. */
+/** object: the 128-byte per-draw object constants (a world matrix, a mesh header), watched for cloth. */
+enum class BufferKind : std::uint8_t { other, palette, view, world, object };
 
 std::atomic_bool g_rewriteOn{true};
 std::atomic_bool g_fovFix{true};
@@ -959,12 +968,27 @@ thread_local std::unordered_map<const void*, BufferKind> t_kinds;
  * thread and Unmap on another, which a per-thread table silently misses.
  */
 SRWLOCK g_rewriteMapLock = SRWLOCK_INIT;
-std::array<MapSlot, 16> g_rewriteMaps{};
+// 64: in third person the per-object palettes are watched too (vr_body.cpp), and an engine that Maps
+// several before Unmapping them must not overflow the table (a piece missed is a piece drawn).
+std::array<MapSlot, 64> g_rewriteMaps{};
+/** The object constant buffer whose contents are a hidden cloak's cloth, until it is re-Mapped. */
+std::atomic<ID3D11Resource*> g_skipCb11{nullptr};
+std::atomic<std::uint64_t> g_rigidArmSkips{0};
 std::atomic<std::uint64_t> g_viewsExamined{0};
 std::atomic<std::uint64_t> g_vmViewsSeen{0};
+/** Never reset (the two above are, by the report): for vr_state.cpp. */
+std::atomic<std::uint64_t> g_worldViewsTotal{0};
+std::atomic<std::uint64_t> g_vmViewsTotal{0};
 std::atomic<std::uint64_t> g_palettesExamined{0};
 
 bool rewrite_wanted() noexcept {
+    // Only in the world: on the screen the game is drawn as the flat game, viewmodel FOV and all.
+    return g_rewriteOn.load(std::memory_order_relaxed) && enabled() && state::view() == state::View::immersive;
+}
+
+/** The view constants are looked at whenever VR is on: the world camera's presence is how a menu
+ *  covering the screen is recognised, and how its closing is (vr_state.cpp). */
+bool observe_wanted() noexcept {
     return g_rewriteOn.load(std::memory_order_relaxed) && enabled();
 }
 
@@ -985,7 +1009,11 @@ BufferKind classify(ID3D11Resource* resource) noexcept {
         if ((desc.BindFlags & D3D11_BIND_CONSTANT_BUFFER) != 0 && desc.Usage == D3D11_USAGE_DYNAMIC) {
             kind = desc.ByteWidth == kPaletteBytes ? BufferKind::palette
                    : desc.ByteWidth == kViewBytes  ? BufferKind::view
-                                                   : BufferKind::other;
+                   : (desc.ByteWidth == 1024 || desc.ByteWidth == 2048 || desc.ByteWidth == 3072
+                      || desc.ByteWidth == 4096 || desc.ByteWidth == 5120)
+                       ? BufferKind::world
+                   : desc.ByteWidth == 128 ? BufferKind::object
+                                           : BufferKind::other;
         }
     }
     if (t_kinds.size() > 4096) {
@@ -1020,6 +1048,79 @@ std::array<SmallPalette, 8> g_small{};
 std::size_t g_smallNext = 0;
 
 /**
+ * Why near-camera skeletons were NOT taken for arms, for the stats line (the headset of 2026-10-16
+ * took the gloves but never the two gauntlet layers the mock takes at the same resolution). Written
+ * on whatever thread Unmaps, read and cleared on the present thread: counters and the last example
+ * only, never a log call from the engine's threads.
+ */
+struct PaletteRejects final {
+    /** Header and camera-relative root, but fewer rigid bones than an arm skeleton: the count, by
+     *  where the run of rigid bones stopped. */
+    std::atomic<std::uint64_t> shortRun{0};
+    std::atomic<std::uint32_t> lastBones{0};
+    /** The first non-rigid bone of the last short run: its three column lengths and largest dot. */
+    std::atomic<float> stopNorm0{0.0F};
+    std::atomic<float> stopNorm1{0.0F};
+    std::atomic<float> stopNorm2{0.0F};
+    std::atomic<float> stopDot{0.0F};
+    /** A valid header but the root failed: too far (metres) or not rigid. */
+    std::atomic<std::uint64_t> farRoot{0};
+    std::atomic<float> lastRootDistance{0.0F};
+    std::atomic<std::uint64_t> badRoot{0};
+};
+PaletteRejects g_rejects{};
+
+/**
+ * The arm skeleton, as the gloves carry it: every bone relative to bone 0 (the character's root, at
+ * the feet). An arm palette is any camera-relative palette whose bones are a PREFIX of this skeleton
+ * -- the Hunter's two gauntlet layers carry 52 bones, the Warlock's three carry 29 (2026-10-17 capture),
+ * and a count threshold threw the Warlock's away, so its arms were never posed. Compared relative to
+ * the root, a match holds whatever moved the whole viewmodel (the head, the weapon placed on the
+ * controller), so a gauntlet Unmapped before this frame's gloves still matches last frame's skeleton;
+ * a weapon's palette (its root beside the hand, 1-8 bones) matches nothing. Render thread.
+ */
+constexpr std::size_t kSkeletonMinBones = 60;
+constexpr std::size_t kArmMinBones = 12;
+struct ArmSkeleton final {
+    bool valid{};
+    std::size_t bones{};
+    std::array<math::Affine, kMaxPaletteBones> rel{};
+};
+ArmSkeleton g_skeleton{};
+
+void note_skeleton(const float* bone0, std::size_t bones) noexcept {
+    const math::Affine inv0 = math::inverse_rigid(math::read_rows(bone0));
+    for (std::size_t b = 0; b < bones; ++b) {
+        g_skeleton.rel[b] = inv0 * math::read_rows(bone0 + b * 12);
+    }
+    g_skeleton.bones = bones;
+    g_skeleton.valid = true;
+}
+
+/** Whether a camera-relative palette of `bones` rigid bones is a prefix of the arm skeleton. */
+bool prefix_of_skeleton(const float* bone0, std::size_t bones) noexcept {
+    if (!g_skeleton.valid || bones < kArmMinBones || bones > g_skeleton.bones) {
+        return false;
+    }
+    const math::Affine inv0 = math::inverse_rigid(math::read_rows(bone0));
+    for (std::size_t b = 1; b < bones; ++b) {
+        const math::Affine rel = inv0 * math::read_rows(bone0 + b * 12);
+        const math::Affine& ref = g_skeleton.rel[b];
+        // Animation moves a bone against the root between two frames (a sprint swings a hand ~3 cm);
+        // anything that is not this skeleton is off by decimetres and whole right angles.
+        if (math::length(rel.t - ref.t) > 0.08F) {
+            return false;
+        }
+        for (int c = 0; c < 3; ++c) {
+            if (math::dot(rel.m.c[c], ref.m.c[c]) < 0.95F) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/**
  * Looks at a palette as it is Unmapped. An arm palette is recognised by its root: camera-relative
  * and straight below the eye, at the feet (the viewmodel skeleton hangs from the camera; anything
  * in the world sits hundreds of metres from it, and the weapon's root is beside the hand).
@@ -1041,11 +1142,42 @@ void examine_palette(ID3D11Resource* resource, const float* data) noexcept {
             ++bones;
         }
     }
-    const bool arm = nearCamera && bones >= kMinArmBones;
+    // The gloves carry the whole skeleton (72 bones, every finger); every other arm piece a prefix of
+    // it (see g_skeleton). Taken from the game's own values, before anything here rewrites them.
+    const bool skeleton = nearCamera && bones >= kSkeletonMinBones;
+    if (skeleton) {
+        note_skeleton(bone0, bones);
+    }
+    const bool arm = skeleton || (nearCamera && prefix_of_skeleton(bone0, bones));
+    if (header && !nearCamera) {
+        const float distance = std::sqrt(bone0[3] * bone0[3] + bone0[7] * bone0[7] + bone0[11] * bone0[11]);
+        if (distance < 3.0F * 1.7321F) {
+            // Within reach of the camera, so a candidate: say which test it failed.
+            if (std::fabs(bone0[3]) < 3.0F && std::fabs(bone0[7]) < 3.0F && std::fabs(bone0[11]) < 3.0F) {
+                g_rejects.badRoot.fetch_add(1, std::memory_order_relaxed);
+            } else {
+                g_rejects.farRoot.fetch_add(1, std::memory_order_relaxed);
+                g_rejects.lastRootDistance.store(distance, std::memory_order_relaxed);
+            }
+        }
+    } else if (nearCamera && !arm && bones >= 12) {
+        // Bigger than a gun's palette, smaller than an arm's: where the rigid run stopped, and how.
+        const float* r = bone0 + bones * 12;
+        const auto norm = [&](int c) { return std::sqrt(r[c] * r[c] + r[4 + c] * r[4 + c] + r[8 + c] * r[8 + c]); };
+        const auto dot = [&](int a, int b) { return std::fabs(r[a] * r[b] + r[4 + a] * r[4 + b] + r[8 + a] * r[8 + b]); };
+        g_rejects.shortRun.fetch_add(1, std::memory_order_relaxed);
+        g_rejects.lastBones.store(static_cast<std::uint32_t>(bones), std::memory_order_relaxed);
+        g_rejects.stopNorm0.store(norm(0), std::memory_order_relaxed);
+        g_rejects.stopNorm1.store(norm(1), std::memory_order_relaxed);
+        g_rejects.stopNorm2.store(norm(2), std::memory_order_relaxed);
+        g_rejects.stopDot.store((std::max)({dot(0, 1), dot(0, 2), dot(1, 2)}), std::memory_order_relaxed);
+    }
     if (!arm) {
         if (resource == g_palette.resource) {
             g_palette.valid = false;
         }
+        // The off-hand weapon is recorded from, and replayed beside, the draws this palette skins.
+        offhand::note_palette(resource, data, bone0, bones, nearCamera && bones >= 1);
         // A small skinned palette hanging off the camera is the weapon's (8 bones on the guns seen
         // so far): its root is kept for the ADS learner, which may use it instead of the hand.
         if (nearCamera && bones >= 1) {
@@ -1060,6 +1192,7 @@ void examine_palette(ID3D11Resource* resource, const float* data) noexcept {
         }
         return;
     }
+    offhand::note_arm_palette(resource);
     const std::size_t floats = (kHeaderRows + 3 * bones) * 4;
     std::memcpy(g_palette.rows.data(), data, floats * sizeof(float));
     g_palette.resource = resource;
@@ -1098,19 +1231,53 @@ void examine_view(ID3D11Resource* resource, const float* data) noexcept {
     // the world keeps the back buffer's (measured with a GPU capture, 2026-10-15: P11/P00 = 1.778
     // with 1.074 written), which is what rules out the square reflection probes. While the module
     // is on, the FOV it wrote must match as well, so no other camera can stand in for the world.
-    bool world = perspective && p11 / p00 > 1.2F && p11 / p00 < 2.6F;
-    const float fov = xr::rendered_fov();
-    if (world && enabled() && fov > 0.1F && fov < 3.1F) {
-        world = std::fabs(p00 * std::tan(fov * 0.5F) - 1.0F) < 0.01F;
+    const float shape = p11 / p00;
+    bool world = perspective && shape > 1.2F && shape < 2.6F;
+    // In the world it is the FOV this module wrote; on the screen nothing is written and it is the
+    // engine's own, read from the camera block by the camera hook.
+    const bool immersive = state::view() == state::View::immersive;
+    const float fov = immersive ? xr::rendered_fov() : state::engine_fov();
+    if (perspective && enabled() && fov > 0.1F && fov < 3.1F) {
+        // With the module on, the FOV it wrote is the signature, and the aspect is whatever the
+        // display module made the render (the eye's, about 0.96, while VR runs: vr_display.cpp).
+        world = shape > 0.4F && shape < 2.6F && std::fabs(p00 * std::tan(fov * 0.5F) - 1.0F) < 0.01F;
+    }
+    if (world && immersive) {
+        // The camera the world is drawn with this frame: row 7 is its position, row 6 the view's BACK
+        // axis. It names the frame-ledger record the image comes from (xr_runtime.cpp), which is how
+        // the layer, the arms and the eye bookkeeping know what they are looking at. The view is
+        // re-Mapped hundreds of times a frame with the same camera: only a change is news.
+        // Matched on a change AND at least once per frame: a camera that does not move (a head held
+        // perfectly still, the mock's) would otherwise leave the ledger naming the record of the last
+        // change for ever -- and the arms posed with the controller as it was then, which dragged the
+        // gun after a hand that had stopped following the controller.
+        const float v[6] = {rows[28], rows[29], rows[30], -rows[24], -rows[25], -rows[26]};
+        static std::array<float, 6> s_lastWorld{};
+        static std::uint32_t s_lastWorldPresent = 0;
+        if (std::memcmp(s_lastWorld.data(), v, sizeof v) != 0 || s_lastWorldPresent != g_presents) {
+            std::memcpy(s_lastWorld.data(), v, sizeof v);
+            s_lastWorldPresent = g_presents;
+            xr::note_world_camera(v, v + 3);
+            frames::note(frames::Kind::worldView, 0, v);
+        }
+    } else if (viewmodel && frames::tracing()) {
+        const float v[6] = {rows[28], rows[29], rows[30], -rows[24], -rows[25], -rows[26]};
+        frames::note(frames::Kind::vmView, 0, v);
     }
     if (world) {
         g_worldP00.store(p00, std::memory_order_relaxed);
         g_worldP11.store(p11, std::memory_order_relaxed);
         g_worldTick.store(GetTickCount64(), std::memory_order_relaxed);
         g_worldViewsSeen.fetch_add(1, std::memory_order_relaxed);
+        g_worldViewsTotal.fetch_add(1, std::memory_order_relaxed);
+    }
+    if (!immersive) {
+        // On the screen only the counting above: the ledger and the viewmodel's FOV are the world's.
+        return;
     }
     if (viewmodel) {
         g_vmViewsSeen.fetch_add(1, std::memory_order_relaxed);
+        g_vmViewsTotal.fetch_add(1, std::memory_order_relaxed);
         g_vmView.resource = resource;
         g_vmView.rows = rows;
         g_vmView.valid = true;
@@ -1185,7 +1352,26 @@ struct DrawAction final {
     bool restore12{};
     bool restorePs11{};
     bool restorePs12{};
+    /** The off-hand module saw this draw before it and wants to see it after. */
+    bool offhand{};
 };
+
+/** The arm meshes' dequantisation scales (see is_arm_scale). */
+SRWLOCK g_armScaleLock = SRWLOCK_INIT;
+std::array<float, 16> g_armScales{};
+std::size_t g_armScaleCount = 0;
+
+void note_arm_scale(float scale) noexcept {
+    AcquireSRWLockExclusive(&g_armScaleLock);
+    bool known = false;
+    for (std::size_t i = 0; i < g_armScaleCount; ++i) {
+        known = known || std::fabs(g_armScales[i] - scale) < 1e-5F;
+    }
+    if (!known && g_armScaleCount < g_armScales.size()) {
+        g_armScales[g_armScaleCount++] = scale;
+    }
+    ReleaseSRWLockExclusive(&g_armScaleLock);
+}
 
 /** Queues an unknown arm mesh for readback, once. */
 void request_mesh(ID3D11DeviceContext* context, ID3D11Buffer* vb, UINT stride, UINT offset) noexcept {
@@ -1201,6 +1387,7 @@ void request_mesh(ID3D11DeviceContext* context, ID3D11Buffer* vb, UINT stride, U
     request.stride = stride;
     request.offset = offset;
     request.scale = g_palette.rows[16];
+    note_arm_scale(request.scale);
     request.origin = {g_palette.rows[20], g_palette.rows[21], g_palette.rows[22]};
     ID3D11InputLayout* layout = nullptr;
     context->IAGetInputLayout(&layout);
@@ -1307,6 +1494,62 @@ void take_dump_buffer(ID3D11DeviceContext* context) noexcept {
 }
 
 /** Decides what happens to a draw: skipped, recorded, and/or given our rewritten buffers. */
+/**
+ * The UI's scene composite. Destiny draws the finished, tonemapped world into the screen as an element
+ * of its UI canvas: one Draw of a four-vertex quad (vertex shader 7BDCE58C, pixel shader BDF29159),
+ * once per frame, reading the whole frame at slot 0. The canvas is never narrower than 16:10, so an
+ * eye-shaped back buffer (0.96) gets the world cropped to a 16:10 band -- while the texture this draw
+ * reads holds the whole eye-shaped frame (docs/DISPLAY.md). The presentation fills the rest from it.
+ * Found by GPU capture, 2026-10-16.
+ */
+constexpr std::uint32_t kSceneCompositePsh = 0xBDF29159;
+SRWLOCK g_sceneLock = SRWLOCK_INIT;
+/** Held reference to the composite's input, and the present it was last seen in. */
+ID3D11Texture2D* g_sceneTexture = nullptr;
+std::uint32_t g_scenePresent = 0;
+std::atomic<std::uint64_t> g_sceneSeen{0};
+
+void note_scene_composite(ID3D11DeviceContext* context) noexcept {
+    ID3D11PixelShader* ps = nullptr;
+    context->PSGetShader(&ps, nullptr, nullptr);
+    if (ps == nullptr) {
+        return;
+    }
+    const bool match = shader_checksum(ps) == kSceneCompositePsh;
+    ps->Release();
+    if (!match) {
+        return;
+    }
+    ID3D11ShaderResourceView* srv = nullptr;
+    context->PSGetShaderResources(0, 1, &srv);
+    if (srv == nullptr) {
+        return;
+    }
+    ID3D11Resource* resource = nullptr;
+    srv->GetResource(&resource);
+    srv->Release();
+    ID3D11Texture2D* texture = nullptr;
+    if (resource != nullptr) {
+        (void)resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&texture));
+        resource->Release();
+    }
+    if (texture == nullptr) {
+        return;
+    }
+    AcquireSRWLockExclusive(&g_sceneLock);
+    if (g_sceneTexture != texture) {
+        if (g_sceneTexture != nullptr) {
+            g_sceneTexture->Release();
+        }
+        g_sceneTexture = texture;
+    } else {
+        texture->Release();
+    }
+    g_scenePresent = g_presents;
+    ReleaseSRWLockExclusive(&g_sceneLock);
+    g_sceneSeen.fetch_add(1, std::memory_order_relaxed);
+}
+
 DrawAction on_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instances, UINT start,
                    INT base) noexcept {
     DrawAction action{};
@@ -1340,6 +1583,53 @@ DrawAction on_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT inst
             ps->Release();
         }
     }
+    // The UI's scene composite: a four-vertex quad that copies the finished, tonemapped world into the
+    // UI's canvas. Its input is the whole frame, before the UI crops it to its canvas.
+    if (immediate && kind == 1 && count == 4) {
+        note_scene_composite(context);
+    }
+    // A hidden cloak's cloth (vr_body.cpp hidden_cloth): the object constants just Unmapped are its own.
+    if (ID3D11Resource* const cloth = g_skipCb11.load(std::memory_order_acquire); cloth != nullptr && body::wanted()) {
+        ID3D11Buffer* bound = nullptr;
+        context->VSGetConstantBuffers(11, 1, &bound);
+        const bool same = bound != nullptr && static_cast<ID3D11Resource*>(bound) == cloth;
+        if (bound != nullptr) {
+            bound->Release();
+        }
+        if (same) {
+            g_hidden.fetch_add(1, std::memory_order_relaxed);
+            action.skip = true;
+            return action;
+        }
+    }
+    // An arm piece's rigid sub-mesh in third person (vr_body.h posed_arm_buffer): what the viewmodel never
+    // draws, left on the hidden body's bones -- skipped in every pass. Only for a layout known to carry no
+    // blend indices; an unknown layout is drawn.
+    if (immediate && body::wanted()) {
+        ID3D11Buffer* palette = nullptr;
+        context->VSGetConstantBuffers(11, 1, &palette);
+        bool rigidArm = false;
+        if (palette != nullptr && body::posed_arm_buffer(palette)) {
+            ID3D11InputLayout* layout = nullptr;
+            context->IAGetInputLayout(&layout);
+            if (layout != nullptr) {
+                AcquireSRWLockShared(&g_registryLock);
+                const auto found = g_layoutInfo.find(layout);
+                rigidArm = found != g_layoutInfo.end() && found->second.position >= 0 && !found->second.anyIndices;
+                ReleaseSRWLockShared(&g_registryLock);
+                layout->Release();
+            }
+        }
+        if (palette != nullptr) {
+            palette->Release();
+        }
+        if (rigidArm) {
+            g_hidden.fetch_add(1, std::memory_order_relaxed);
+            g_rigidArmSkips.fetch_add(1, std::memory_order_relaxed);
+            action.skip = true;
+            return action;
+        }
+    }
     if (g_anyHide.load(std::memory_order_relaxed) && should_hide(context, immediate)) {
         g_hidden.fetch_add(1, std::memory_order_relaxed);
         action.skip = true;
@@ -1350,6 +1640,10 @@ DrawAction on_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT inst
         record_draw(context, kind, count, instances, start, base);
     }
     prepare_rewrite(context, action);
+    if (immediate && rewrite_wanted()) {
+        offhand::before_draw(context, kind, count, instances, start, base);
+        action.offhand = true;
+    }
     t_inside = false;
     return action;
 }
@@ -1360,6 +1654,13 @@ void finish_draw(ID3D11DeviceContext* context, DrawAction& action) noexcept {
         after_draw(context, action);
         t_inside = false;
     }
+    // After the game's own draw: the off-hand weapon goes in right behind the first weapon or arm draw
+    // of each pass, with the pass's own targets and per-view constants still bound.
+    if (action.offhand && !t_inside) {
+        t_inside = true;
+        offhand::after_draw(context);
+        t_inside = false;
+    }
 }
 
 void on_map(ID3D11Resource* resource, UINT subresource, const D3D11_MAPPED_SUBRESOURCE* mapped) noexcept {
@@ -1368,7 +1669,13 @@ void on_map(ID3D11Resource* resource, UINT subresource, const D3D11_MAPPED_SUBRE
         return;
     }
     const bool patched = resource != nullptr && resource == g_patchBuffer.load(std::memory_order_relaxed);
-    if (subresource == 0 && (patched || (rewrite_wanted() && classify(resource) != BufferKind::other))) {
+    const BufferKind mapKind = subresource == 0 && observe_wanted() ? classify(resource) : BufferKind::other;
+    if (mapKind == BufferKind::world) {
+        body::note_map(mapped->RowPitch);
+    }
+    const bool watched = mapKind == BufferKind::palette || mapKind == BufferKind::view
+                         || ((mapKind == BufferKind::world || mapKind == BufferKind::object) && body::wanted());
+    if (subresource == 0 && (patched || watched)) {
         AcquireSRWLockExclusive(&g_rewriteMapLock);
         MapSlot* free = nullptr;
         bool stored = false;
@@ -1448,13 +1755,24 @@ void on_unmap(ID3D11Resource* resource, UINT subresource) noexcept {
                 g_patchCount.fetch_add(1, std::memory_order_relaxed);
             }
         }
-        if (data != nullptr && rewrite_wanted()) {
+        if (data != nullptr && observe_wanted()) {
             t_inside = true;
             const BufferKind kind = classify(resource);
-            if (kind == BufferKind::palette) {
+            if (kind == BufferKind::palette && rewrite_wanted()) {
                 examine_palette(resource, static_cast<const float*>(data));
             } else if (kind == BufferKind::view) {
                 examine_view(resource, static_cast<const float*>(data));
+            } else if (kind == BufferKind::object) {
+                // The cloth of a hidden cloak: its draw, the very next to bind this buffer, is skipped.
+                if (rewrite_wanted() && body::wanted() && body::hidden_cloth(static_cast<const float*>(data))) {
+                    g_skipCb11.store(resource, std::memory_order_release);
+                } else if (g_skipCb11.load(std::memory_order_relaxed) == resource) {
+                    g_skipCb11.store(nullptr, std::memory_order_release);
+                }
+            } else if (kind == BufferKind::world && rewrite_wanted() && body::wanted()) {
+                D3D11_BUFFER_DESC desc{};
+                static_cast<ID3D11Buffer*>(resource)->GetDesc(&desc);
+                body::examine(resource, const_cast<float*>(static_cast<const float*>(data)), desc.ByteWidth);
             }
             t_inside = false;
         }
@@ -1542,6 +1860,16 @@ enum CtxHook : std::size_t {
     kCtxHooks
 };
 
+DrawAction timed_draw(ID3D11DeviceContext* context, int kind, UINT count, UINT instances, UINT start, INT base) {
+    profile::Scope timer(profile::draw);
+    return on_draw(context, kind, count, instances, start, base);
+}
+
+void timed_finish(ID3D11DeviceContext* context, DrawAction& action) noexcept {
+    profile::Scope timer(profile::draw);
+    finish_draw(context, action);
+}
+
 /**
  * One set of context detours per vtable. Deferred contexts are a different class in d3d11.dll
  * with their own vtable, and Dishonored's engine recorded every gameplay draw on them -- zero
@@ -1556,70 +1884,80 @@ template <int K> struct ContextHooks final {
     }
 
     static void STDMETHODCALLTYPE DrawIndexed(ID3D11DeviceContext* c, UINT count, UINT start, INT base) {
-        DrawAction action = on_draw(c, 0, count, 1, start, base);
+        DrawAction action = timed_draw(c, 0, count, 1, start, base);
         if (!action.skip) {
             real<DrawIndexedFn>(hDrawIndexed)(c, count, start, base);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static void STDMETHODCALLTYPE Draw(ID3D11DeviceContext* c, UINT count, UINT start) {
-        DrawAction action = on_draw(c, 1, count, 1, start, 0);
+        DrawAction action = timed_draw(c, 1, count, 1, start, 0);
         if (!action.skip) {
             real<DrawFn>(hDraw)(c, count, start);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static void STDMETHODCALLTYPE DrawIndexedInstanced(ID3D11DeviceContext* c, UINT count, UINT instances, UINT start,
                                                        INT base, UINT startInstance) {
-        DrawAction action = on_draw(c, 2, count, instances, start, base);
+        DrawAction action = timed_draw(c, 2, count, instances, start, base);
         if (!action.skip) {
             real<DrawIndexedInstancedFn>(hDrawIndexedInstanced)(c, count, instances, start, base, startInstance);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static void STDMETHODCALLTYPE DrawInstanced(ID3D11DeviceContext* c, UINT count, UINT instances, UINT start,
                                                 UINT startInstance) {
-        DrawAction action = on_draw(c, 3, count, instances, start, 0);
+        DrawAction action = timed_draw(c, 3, count, instances, start, 0);
         if (!action.skip) {
             real<DrawInstancedFn>(hDrawInstanced)(c, count, instances, start, startInstance);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static void STDMETHODCALLTYPE DrawIndexedIndirect(ID3D11DeviceContext* c, ID3D11Buffer* args, UINT offset) {
-        DrawAction action = on_draw(c, 4, 0, 0, offset, 0);
+        DrawAction action = timed_draw(c, 4, 0, 0, offset, 0);
         if (!action.skip) {
             real<DrawIndirectFn>(hDrawIndexedIndirect)(c, args, offset);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static void STDMETHODCALLTYPE DrawIndirect(ID3D11DeviceContext* c, ID3D11Buffer* args, UINT offset) {
-        DrawAction action = on_draw(c, 5, 0, 0, offset, 0);
+        DrawAction action = timed_draw(c, 5, 0, 0, offset, 0);
         if (!action.skip) {
             real<DrawIndirectFn>(hDrawIndirect)(c, args, offset);
-            finish_draw(c, action);
+            timed_finish(c, action);
         }
     }
     static HRESULT STDMETHODCALLTYPE Map(ID3D11DeviceContext* c, ID3D11Resource* r, UINT sub, D3D11_MAP type,
                                          UINT flags, D3D11_MAPPED_SUBRESOURCE* out) {
         const HRESULT result = real<MapFn>(hMap)(c, r, sub, type, flags, out);
         if (SUCCEEDED(result) && type != D3D11_MAP_READ) {
+            profile::Scope timer(profile::map);
             on_map(r, sub, out);
         }
         return result;
     }
     static void STDMETHODCALLTYPE Unmap(ID3D11DeviceContext* c, ID3D11Resource* r, UINT sub) {
         // Read BEFORE the real Unmap: afterwards the pointer may not be ours to read.
-        on_unmap(r, sub);
+        {
+            profile::Scope timer(profile::unmap);
+            on_unmap(r, sub);
+        }
         real<UnmapFn>(hUnmap)(c, r, sub);
     }
     static void STDMETHODCALLTYPE Update(ID3D11DeviceContext* c, ID3D11Resource* r, UINT sub, const D3D11_BOX* box,
                                          const void* data, UINT rowPitch, UINT depthPitch) {
-        on_update(r, sub, box, data);
+        {
+            profile::Scope timer(profile::update);
+            on_update(r, sub, box, data);
+        }
         real<UpdateFn>(hUpdate)(c, r, sub, box, data, rowPitch, depthPitch);
     }
     static void STDMETHODCALLTYPE Update1(ID3D11DeviceContext1* c, ID3D11Resource* r, UINT sub, const D3D11_BOX* box,
                                           const void* data, UINT rowPitch, UINT depthPitch, UINT flags) {
-        on_update(r, sub, box, data);
+        {
+            profile::Scope timer(profile::update);
+            on_update(r, sub, box, data);
+        }
         real<Update1Fn>(hUpdate1)(c, r, sub, box, data, rowPitch, depthPitch, flags);
     }
     static void STDMETHODCALLTYPE Dispatch(ID3D11DeviceContext* c, UINT x, UINT y, UINT z) {
@@ -1727,6 +2065,10 @@ HRESULT STDMETHODCALLTYPE create_input_layout(ID3D11Device* device, const D3D11_
                 info.indices = static_cast<int>(offset);
                 info.indicesFormat = elements[i].Format;
             }
+        }
+        for (UINT i = 0; i < count; ++i) {
+            info.anyIndices = info.anyIndices
+                              || (elements[i].SemanticName != nullptr && _stricmp(elements[i].SemanticName, "BLENDINDICES") == 0);
         }
         for (UINT i = 0; i < count; ++i) {
             appendf(text, " %s%u:f%d:s%u:o%u%s", elements[i].SemanticName != nullptr ? elements[i].SemanticName : "?",
@@ -2087,6 +2429,7 @@ void finish_capture(ID3D11Device* device) {
 // ---------------------------------------------------------------------------------------------
 
 extern std::atomic_bool g_snapWanted;
+extern std::atomic_bool g_snapSceneWanted;
 void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept;
 
 void set_hide(const char* kindName, const char* value) {
@@ -2128,6 +2471,46 @@ void report_stats() {
             static_cast<unsigned long long>(g_hidden.exchange(0)),
             static_cast<unsigned long long>(g_shadersSeen.load()),
             static_cast<unsigned long long>(g_shadersNamed.load()), g_presents);
+    static unsigned lastPresents = 0;
+    const unsigned frames = g_presents > lastPresents ? g_presents - lastPresents : 1;
+    lastPresents = g_presents;
+    if (profile::g_on.load(std::memory_order_relaxed)) {
+        LARGE_INTEGER frequency{};
+        QueryPerformanceFrequency(&frequency);
+        const auto ms = [&](profile::Slot slot) {
+            return static_cast<double>(profile::g_ticks[slot].exchange(0)) * 1000.0 / static_cast<double>(frequency.QuadPart)
+                   / static_cast<double>(frames);
+        };
+        const auto calls = [&](profile::Slot slot) {
+            return static_cast<double>(profile::g_calls[slot].exchange(0)) / static_cast<double>(frames);
+        };
+        const double draw = ms(profile::draw), drawCalls = calls(profile::draw);
+        const double map = ms(profile::map), mapCalls = calls(profile::map);
+        const double unmap = ms(profile::unmap), unmapCalls = calls(profile::unmap);
+        const double update = ms(profile::update);
+        const double present = ms(profile::present);
+        const double camera = ms(profile::camera);
+        const double weapon = ms(profile::weapon), weaponCalls = calls(profile::weapon);
+        static_cast<void>(calls(profile::update));
+        static_cast<void>(calls(profile::present));
+        static_cast<void>(calls(profile::camera));
+        const double camMode = ms(profile::camMode), camBody = ms(profile::camBody), camLedger = ms(profile::camLedger),
+                     camBlock = ms(profile::camBlock), camRead = ms(profile::camRead), camWrite = ms(profile::camWrite);
+        static_cast<void>(calls(profile::camRead));
+        static_cast<void>(calls(profile::camWrite));
+        static_cast<void>(calls(profile::camMode));
+        static_cast<void>(calls(profile::camBody));
+        static_cast<void>(calls(profile::camLedger));
+        static_cast<void>(calls(profile::camBlock));
+        std::array<char, 400> line{};
+        std::snprintf(line.data(), line.size(),
+                      "ev=vr.profile ms_per_frame draw=%.3f(%.0f) map=%.3f(%.0f) unmap=%.3f(%.0f) update=%.3f "
+                      "present=%.3f camera=%.3f[mode=%.3f body=%.3f commit=%.3f tail=%.3f from_read=%.3f writes=%.3f] weapon=%.3f(%.1f) "
+                      "frames=%u",
+                      draw, drawCalls, map, mapCalls, unmap, unmapCalls, update, present, camera, camMode, camBody,
+                      camLedger, camBlock, camRead, camWrite, weapon, weaponCalls, frames);
+        report(line.data());
+    }
 }
 
 void poll_commands() {
@@ -2156,6 +2539,9 @@ void poll_commands() {
                 g_phase.store(static_cast<int>(Phase::armed), std::memory_order_release);
                 report("ev=vr.gpu capture armed=1");
             }
+        } else if (std::strcmp(verb, "profile") == 0 && n >= 2) {
+            profile::g_on.store(std::strcmp(a, "on") == 0, std::memory_order_relaxed);
+            reportf("ev=vr.gpu profile=%s", profile::g_on.load() ? "on" : "off");
         } else if (std::strcmp(verb, "hide") == 0 && n >= 2 && std::strcmp(a, "range") == 0) {
             unsigned from = 0;
             unsigned to = 0;
@@ -2199,7 +2585,11 @@ void poll_commands() {
             g_reticleHidden.store(std::strcmp(a, "show") != 0, std::memory_order_relaxed);
             reportf("ev=vr.gpu reticle=%s", a);
         } else if (std::strcmp(verb, "snap") == 0) {
-            g_snapWanted.store(true);
+            if (n >= 2 && std::strcmp(a, "scene") == 0) {
+                g_snapSceneWanted.store(true);
+            } else {
+                g_snapWanted.store(true);
+            }
         } else {
             reportf("ev=vr.gpu command result=fail verb=%s", verb);
         }
@@ -2251,6 +2641,10 @@ void present(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
         read_meshes(device);
         arms::present(device, g_immediate, swapChain);
         aim::present(device, g_immediate, swapChain);
+        dual::present(device, g_immediate, swapChain);
+        t_inside = true;
+        offhand::present(device);
+        t_inside = false;
     }
     if (g_presents % kPollPeriod == 0) {
         poll_commands();
@@ -2267,22 +2661,41 @@ void present(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
                 static_cast<unsigned long long>(g_viewSwaps.exchange(0)),
                 static_cast<unsigned long long>(g_worldViewsSeen.exchange(0)), g_worldP00.load(), g_worldP11.load(),
                 g_worldP00.load() > 0.0F ? g_worldP11.load() / g_worldP00.load() : 0.0F);
+        reportf("ev=vr.gpu palette_rejects short_run=%llu last_bones=%u stop_norms=%.3f,%.3f,%.3f stop_dot=%.3f "
+                "far_root=%llu root_dist=%.2f bad_root=%llu rigid_arm_skips=%llu",
+                static_cast<unsigned long long>(g_rejects.shortRun.exchange(0)), g_rejects.lastBones.load(),
+                g_rejects.stopNorm0.load(), g_rejects.stopNorm1.load(), g_rejects.stopNorm2.load(),
+                g_rejects.stopDot.load(), static_cast<unsigned long long>(g_rejects.farRoot.exchange(0)),
+                g_rejects.lastRootDistance.load(), static_cast<unsigned long long>(g_rejects.badRoot.exchange(0)),
+                static_cast<unsigned long long>(g_rigidArmSkips.load()));
     }
 }
 
+namespace {
+/**
+ * The cached view of the back buffer. A view holds a reference to the buffer, and DXGI refuses
+ * ResizeBuffers (DXGI_ERROR_INVALID_CALL) while any reference is outstanding -- so it is dropped
+ * right before every resize (release_back_buffer_view). Before the display module started resizing
+ * the swap chain with VR on this never mattered; after it, one overlay drawn once blocked every later
+ * resize: the engine retried every frame and the eye-shaped render could not be applied or undone.
+ */
+SRWLOCK g_bbViewLock = SRWLOCK_INIT;
+ID3D11Texture2D* g_bbTexture = nullptr;
+ID3D11RenderTargetView* g_bbView = nullptr;
+} // namespace
+
 /** The back buffer's render target view, cached against the texture it was made for. */
 ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
-    static ID3D11Texture2D* s_texture = nullptr;
-    static ID3D11RenderTargetView* s_view = nullptr;
     ID3D11Texture2D* texture = nullptr;
     if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&texture)))
         || texture == nullptr) {
         return nullptr;
     }
-    if (texture != s_texture) {
-        if (s_view != nullptr) {
-            s_view->Release();
-            s_view = nullptr;
+    AcquireSRWLockExclusive(&g_bbViewLock);
+    if (texture != g_bbTexture || g_bbView == nullptr) {
+        if (g_bbView != nullptr) {
+            g_bbView->Release();
+            g_bbView = nullptr;
         }
         D3D11_TEXTURE2D_DESC desc{};
         texture->GetDesc(&desc);
@@ -2291,13 +2704,59 @@ ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* s
                           : desc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS ? DXGI_FORMAT_B8G8R8A8_UNORM
                                                                          : desc.Format;
         viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-        if (FAILED(device->CreateRenderTargetView(texture, &viewDesc, &s_view))) {
-            s_view = nullptr;
+        if (FAILED(device->CreateRenderTargetView(texture, &viewDesc, &g_bbView))) {
+            g_bbView = nullptr;
         }
-        s_texture = texture;
+        g_bbTexture = texture;
     }
+    ID3D11RenderTargetView* const view = g_bbView;
+    ReleaseSRWLockExclusive(&g_bbViewLock);
     texture->Release();
-    return s_view;
+    return view;
+}
+
+void release_back_buffer_view() noexcept {
+    AcquireSRWLockExclusive(&g_bbViewLock);
+    if (g_bbView != nullptr) {
+        g_bbView->Release();
+        g_bbView = nullptr;
+    }
+    g_bbTexture = nullptr;
+    ReleaseSRWLockExclusive(&g_bbViewLock);
+}
+
+std::uint64_t world_views() noexcept {
+    return g_worldViewsTotal.load(std::memory_order_relaxed);
+}
+
+std::uint64_t viewmodel_views() noexcept {
+    return g_vmViewsTotal.load(std::memory_order_relaxed);
+}
+
+std::uint64_t scene_composites() noexcept {
+    return g_sceneSeen.load(std::memory_order_relaxed);
+}
+
+bool is_arm_scale(float scale) noexcept {
+    AcquireSRWLockShared(&g_armScaleLock);
+    bool known = false;
+    for (std::size_t i = 0; i < g_armScaleCount; ++i) {
+        known = known || std::fabs(g_armScales[i] - scale) < 1e-5F;
+    }
+    ReleaseSRWLockShared(&g_armScaleLock);
+    return known;
+}
+
+ID3D11Texture2D* scene_texture() noexcept {
+    AcquireSRWLockShared(&g_sceneLock);
+    // Seen since the last present: the composite runs before the present that shows it, and
+    // gpu::present (which counts presents) runs first in the present hook.
+    ID3D11Texture2D* texture = g_sceneTexture != nullptr && g_scenePresent + 1 >= g_presents ? g_sceneTexture : nullptr;
+    if (texture != nullptr) {
+        texture->AddRef();
+    }
+    ReleaseSRWLockShared(&g_sceneLock);
+    return texture;
 }
 
 bool world_projection(float& p00, float& p11) noexcept {
@@ -2332,18 +2791,13 @@ namespace {
  * is the one capture that answers "does the headset see it". 8-bit RGBA/BGRA back buffers only.
  */
 std::atomic_bool g_snapWanted{false};
+/** `snap scene`: the UI composite's input, the whole frame before the UI crops it, to SVR_Scene.bmp. */
+std::atomic_bool g_snapSceneWanted{false};
 
-void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
-    if (!g_snapWanted.exchange(false) || device == nullptr || swapChain == nullptr || g_immediate == nullptr) {
-        return;
-    }
-    ID3D11Texture2D* back = nullptr;
-    if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&back))) || back == nullptr) {
-        report("ev=vr.gpu snap result=fail reason=buffer");
-        return;
-    }
+/** Saves an 8-bit RGBA/BGRA texture as a 24-bit BMP in the game directory. */
+void save_texture(ID3D11Device* device, ID3D11Texture2D* texture, const wchar_t* name, const char* what) noexcept {
     D3D11_TEXTURE2D_DESC desc{};
-    back->GetDesc(&desc);
+    texture->GetDesc(&desc);
     const bool bgra = desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM || desc.Format == DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
                       || desc.Format == DXGI_FORMAT_B8G8R8A8_TYPELESS;
     const bool rgba = desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM || desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
@@ -2353,20 +2807,21 @@ void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
     staging.BindFlags = 0;
     staging.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
     staging.MiscFlags = 0;
+    staging.MipLevels = 1;
+    staging.ArraySize = 1;
     staging.SampleDesc = DXGI_SAMPLE_DESC{1, 0};
     ID3D11Texture2D* copy = nullptr;
     if ((!bgra && !rgba) || desc.SampleDesc.Count != 1 || FAILED(device->CreateTexture2D(&staging, nullptr, &copy))) {
-        reportf("ev=vr.gpu snap result=fail reason=format format=%d", static_cast<int>(desc.Format));
-        back->Release();
+        reportf("ev=vr.gpu snap what=%s result=fail reason=format format=%d", what, static_cast<int>(desc.Format));
         return;
     }
     t_inside = true;
-    g_immediate->CopyResource(copy, back);
+    g_immediate->CopySubresourceRegion(copy, 0, 0, 0, 0, texture, 0, nullptr);
     D3D11_MAPPED_SUBRESOURCE mapped{};
     const bool ok = SUCCEEDED(g_immediate->Map(copy, 0, D3D11_MAP_READ, 0, &mapped));
     std::array<wchar_t, MAX_PATH> path{};
     FILE* file = nullptr;
-    if (ok && game_path(L"SVR_BackBuffer.bmp", path) && _wfopen_s(&file, path.data(), L"wb") == 0 && file != nullptr) {
+    if (ok && game_path(name, path) && _wfopen_s(&file, path.data(), L"wb") == 0 && file != nullptr) {
         const UINT w = desc.Width;
         const UINT h = desc.Height;
         const UINT row = w * 3;
@@ -2401,14 +2856,42 @@ void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
             std::fwrite(line.data(), 1, line.size(), file);
         }
         std::fclose(file);
-        reportf("ev=vr.gpu snap result=ok size=%ux%u format=%d", w, h, static_cast<int>(desc.Format));
+        reportf("ev=vr.gpu snap what=%s result=ok size=%ux%u format=%d", what, w, h, static_cast<int>(desc.Format));
     }
     if (ok) {
         g_immediate->Unmap(copy, 0);
     }
     t_inside = false;
     copy->Release();
-    back->Release();
+}
+
+void write_snap(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept {
+    if (device == nullptr || swapChain == nullptr || g_immediate == nullptr) {
+        return;
+    }
+    if (g_snapWanted.exchange(false)) {
+        ID3D11Texture2D* back = nullptr;
+        if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&back))) || back == nullptr) {
+            report("ev=vr.gpu snap result=fail reason=buffer");
+        } else {
+            save_texture(device, back, L"SVR_BackBuffer.bmp", "back_buffer");
+            back->Release();
+        }
+    }
+    if (g_snapSceneWanted.exchange(false)) {
+        AcquireSRWLockShared(&g_sceneLock);
+        ID3D11Texture2D* scene = g_sceneTexture;
+        if (scene != nullptr) {
+            scene->AddRef();
+        }
+        ReleaseSRWLockShared(&g_sceneLock);
+        if (scene == nullptr) {
+            report("ev=vr.gpu snap what=scene result=fail reason=not_seen");
+        } else {
+            save_texture(device, scene, L"SVR_Scene.bmp", "scene");
+            scene->Release();
+        }
+    }
 }
 
 } // namespace

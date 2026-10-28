@@ -99,15 +99,6 @@ struct ArtifactPurchaseTransaction {
     queuez::EquipmentSwap update{};
 };
 
-/** Current-activity mutation and the exact QueueZ character after-image sent with its reply. */
-
-struct CurrentActivityTransaction {
-
-    state::PendingCurrentActivity pending{};
-
-    queuez::EquipmentSwap update{};
-};
-
 /** Character acquisition and its exact QueueZ after-image. */
 
 struct ItemAcquisitionTransaction {
@@ -166,6 +157,8 @@ struct SeasonPassRewardTransaction {
 struct ServiceOutcome {
 
     bool hasSubscription{};
+    /** The ws-206 reply already carries the family's first snapshot, so no push repeats it. */
+    bool subscriptionAnswered{};
 
     /** A Triumph claim changed the account flag bank and its image has to follow. */
 
@@ -208,8 +201,6 @@ struct ServiceOutcome {
                                      std::unique_ptr<ItemStateTransaction>,
 
                                      std::unique_ptr<ArtifactPurchaseTransaction>,
-
-                                     std::unique_ptr<CurrentActivityTransaction>,
 
                                      std::unique_ptr<ItemAcquisitionTransaction>,
 
@@ -450,7 +441,25 @@ void append_queuez_notification(Scratch& scratch,
 
                                 bool& armsRepush,
 
-                                bool& armsBannerRepush) noexcept;
+                                bool& armsBannerRepush,
+                                bool ownSnapshotAnswered = false) noexcept;
+
+/**
+ * Encodes the subscribed family's first snapshot as one svc-123 body for the ws-206 reply.
+ * A family with nothing to publish encodes as an empty full snapshot; the reply's blob may not be
+ * absent, because the client reads it with no null check.
+ * @param scratch Lock-owned transform buffers.
+ * @param before Queuez state visible to the current BAP peer.
+ * @param subscription Family the Client picked.
+ * @param body Caller-owned body storage.
+ * @param bodySize Receives the encoded body size.
+ * @return True when a body was encoded.
+ */
+[[nodiscard]] bool prepare_subscription_answer(Scratch& scratch,
+                                               const queuez::SessionState& before,
+                                               const middleware::queuez::Subscription& subscription,
+                                               std::span<std::byte> body,
+                                               std::size_t& bodySize) noexcept;
 
 /** Appends one next-version full Family-4 snapshot used to resynchronize another peer. */
 
@@ -650,24 +659,6 @@ append_select_character_notification(Scratch& scratch,
     std::span<std::byte> response,
 
     std::size_t& written) noexcept;
-
-/** Appends the Family-4 character upsert carrying the character's new current activity. */
-
-[[nodiscard]] bool
-
-append_current_activity_notification(Scratch& scratch,
-
-                                     const queuez::EquipmentSwap& swap,
-
-                                     const state::PendingCurrentActivity& mutation,
-
-                                     std::span<const std::byte, state::kAesKeySize> key,
-
-                                     std::span<const std::byte, state::kBapNonceSize> nonce,
-
-                                     std::span<std::byte> response,
-
-                                     std::size_t& written) noexcept;
 
 /** Appends the opcode-406 Family-4 character upsert carrying changed inventory-row flags. */
 
@@ -897,7 +888,7 @@ append_account_resync_appearance_notification(Scratch& scratch,
 
                                               queuez::SessionState& after) noexcept;
 
-/** Refreshes the selected character and account roster from committed State. */
+/** Refreshes the selected character and optionally its account roster from committed State. */
 
 [[nodiscard]] bool
 
@@ -913,7 +904,8 @@ append_account_resync_roster_notification(Scratch& scratch,
 
                                           std::size_t& written,
 
-                                          queuez::SessionState& after) noexcept;
+                                          queuez::SessionState& after,
+                                          bool includeRoster = true) noexcept;
 
 /** Appends the opcode-903 Family-4 item-instance upsert exposing one socket selection. */
 

@@ -180,7 +180,7 @@ namespace {
     return 1;
 }
 
-/** Lua index for the bounded lane collection: `count` and `at`, else nil. */
+/** Lua index for the bounded lane collection: `count` or a lane name, else nil. */
 [[nodiscard]] int bounded_lane_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kBoundedLaneCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);

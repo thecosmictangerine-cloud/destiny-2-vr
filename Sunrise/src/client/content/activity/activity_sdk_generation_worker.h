@@ -40,6 +40,8 @@ struct OfflineBuildRequest final {
     std::wstring_view packageDirectory{};
     std::wstring_view cacheArtifactDirectory{};
     std::wstring_view outputArtifactDirectory{};
+    /** Owned client executable; its reflection metadata compiles the decoder cache. */
+    std::wstring_view executablePath{};
 };
 
 /** Identity and counts returned with one complete isolated tree. */

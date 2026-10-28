@@ -28,7 +28,13 @@ Get-Process -Name destiny2 -ErrorAction SilentlyContinue | Stop-Process -Force
 
 $target = if ($Rebuild) { '/t:Rebuild' } else { '/t:Build' }
 
-& $msbuild $sln $target "/m:$MaxCpu" "/p:Configuration=$Configuration" /p:Platform=x64 `
+# The DLL's debug directory names its PDB by full path, which is this machine's folders; released
+# DLLs carry the file name only. The linker reads extra options from LINK and expands %_PDB% itself.
+$env:LINK = '/PDBALTPATH:%_PDB%'
+
+# /m only caps parallel PROJECTS; CL_MPCount caps the compilers /MP starts inside this one (16
+# otherwise, and Sunrise 0.5.1 no longer fits 16 in memory: C1060).
+& $msbuild $sln $target "/m:$MaxCpu" "/p:CL_MPCount=$MaxCpu" "/p:Configuration=$Configuration" /p:Platform=x64 `
     /p:PlatformToolset=v143 /p:PreferredToolArchitecture=x64 `
     /verbosity:minimal /nologo /fl "/flp:logfile=$log;verbosity=normal"
 

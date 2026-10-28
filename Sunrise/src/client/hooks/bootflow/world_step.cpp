@@ -5,6 +5,7 @@
 #include <string_view>
 
 #include "../../../core/logging/log.h"
+#include "../../activity/mission_launch.h"
 #include "bootflow_hook_lifecycle.h"
 #include "internal.h"
 #include "spawn/slice_set_sample.h"
@@ -53,8 +54,10 @@ std::atomic_uint64_t g_publishedSliceSetTick{0};
 
 /** Publishes the client's own boot-flow step. */
 void poll_world_step() noexcept {
-    g_publishedStep.store(read_step(), std::memory_order_relaxed);
+    const std::int32_t step = read_step();
+    g_publishedStep.store(step, std::memory_order_relaxed);
     g_publishedTick.store(GetTickCount64(), std::memory_order_release);
+    client::activity::mission_launch::poll(step);
 }
 
 /** Publishes the client's current local slice-set index. */
@@ -85,6 +88,15 @@ bool in_world() noexcept {
     }
     const std::uint64_t published = g_publishedTick.load(std::memory_order_acquire);
     return published != 0 && GetTickCount64() - published < kStepStaleMs;
+}
+
+/** Reads the last fresh boot-flow step. */
+std::int32_t current_step() noexcept {
+    const std::uint64_t published = g_publishedTick.load(std::memory_order_acquire);
+    if (published == 0 || GetTickCount64() - published >= kStepStaleMs) {
+        return kNoStep;
+    }
+    return g_publishedStep.load(std::memory_order_relaxed);
 }
 
 /** Finds the boot-flow step accessor. */

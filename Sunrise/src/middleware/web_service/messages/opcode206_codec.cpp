@@ -1,4 +1,5 @@
 #include "../../encoding/bit_reader.h"
+#include "../status_fields.h"
 #include "opcode206.h"
 
 namespace sunrise::middleware::web_service::messages::opcode206 {
@@ -30,6 +31,20 @@ bool parse_request(const Message& message, queuez::Subscription& subscription) n
     }
     subscription.familyType = static_cast<std::uint32_t>(storedFamily - kFamilyTypeBias);
     return true;
+}
+
+/** Encodes the 5-bit success status, then the snapshot as the first trailer blob. */
+bool encode_response(const Message& message,
+                     std::span<const std::byte> snapshot,
+                     std::span<std::byte> output,
+                     std::size_t& written) noexcept {
+    written = 0;
+    if (message.opcode != kOpcode || output.size() < kEnvelopeHeaderSize) {
+        return false;
+    }
+    encoding::bits::Writer writer = begin_response(message, output);
+    const bool encoded = status::write_fields(writer, ResponseShape::statusOnly, StatusResponse{});
+    return finish_response_with_blob(writer, encoded, snapshot, output, output, written);
 }
 
 } // namespace sunrise::middleware::web_service::messages::opcode206

@@ -8,10 +8,11 @@
 
 namespace sunrise::server::activity::mission {
 
-/** Type-4 object Sense root ordinals. */
+/** Type-4 object Sense root ordinals. Ordinal 2 is existence; the client clears it on death. */
 inline constexpr std::uint16_t kObjectGenerationOrdinal = 0;
-inline constexpr std::uint16_t kObjectAliveOrdinal = 1;
-inline constexpr std::uint16_t kObjectPresentOrdinal = 2;
+/** Ordinal 1 is the property the mode-2 interaction effect clears. The meaning is assumed. */
+inline constexpr std::uint16_t kObjectInteractionOpenOrdinal = 1;
+inline constexpr std::uint16_t kObjectExistsOrdinal = 2;
 /** Ownership reply: field 0 held, field 1 the owner key. */
 inline constexpr std::uint16_t kOwnerHeldOrdinal = 0;
 inline constexpr std::uint16_t kOwnerKeyOrdinal = 1;
@@ -25,7 +26,7 @@ struct ObjectInteractionLevel final {
     bool interacted{};
     bool interactionKnown{};
     bool present{};
-    bool alive{};
+    bool interactionOpen{};
     bool stateKnown{};
     bool ownerKnown{};
     bool hasOwner{};
@@ -66,9 +67,9 @@ struct ObjectInteractionLevel final {
         if (!value.present) {
             continue;
         }
-        if (value.schemaRow == root && value.fieldOrdinal == kObjectAliveOrdinal) {
-            level.alive = value.unsignedValue != 0;
-        } else if (value.schemaRow == root && value.fieldOrdinal == kObjectPresentOrdinal) {
+        if (value.schemaRow == root && value.fieldOrdinal == kObjectInteractionOpenOrdinal) {
+            level.interactionOpen = value.unsignedValue != 0;
+        } else if (value.schemaRow == root && value.fieldOrdinal == kObjectExistsOrdinal) {
             level.present = value.unsignedValue != 0;
             level.stateKnown = true;
         } else if (value.schemaRow == object::kOwnershipReply

@@ -43,6 +43,9 @@ void tick() noexcept;
  */
 void retake_reference() noexcept;
 
+/** @return How many times the weapon's camera getter has run: a first-person weapon being drawn. */
+[[nodiscard]] std::uint64_t weapon_frames() noexcept;
+
 /**
  * Split from the orientation because it is the decisive lever for the weapon's position: if the
  * engine draws the weapon at the block's position rather than at the pose it is handed, the head's
@@ -91,11 +94,20 @@ struct DrawnFrame final {
     std::array<float, 3> lanesIn{};
     /** Counts transform detours; equal serials mean the same frame. */
     std::uint64_t serial{};
+    /** The frame ledger's sequence of the camera frame it was placed in (xr::camera_sequence). */
+    std::uint64_t ledger{};
     bool valid{};
 };
 
 /** @return The last frame the engine placed the viewmodel with. Any thread. */
 [[nodiscard]] DrawnFrame drawn_frame() noexcept;
+
+/**
+ * @return The viewmodel placement of the camera frame with ledger sequence `ledger` -- the one the
+ *         GPU is drawing, for a consumer on the render thread -- or the latest when it has gone.
+ *         Placements are kept for the last few frames.
+ */
+[[nodiscard]] DrawnFrame drawn_frame_for(std::uint64_t ledger) noexcept;
 
 /**
  * The rotational half of self-seating: a rotation in the controller's own proper basis

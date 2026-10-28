@@ -19,6 +19,9 @@
 
 namespace sunrise::server::activity::mission::lua_vm::detail {
 
+int context_cohort(lua_State* state);
+void register_population_metatables(lua_State* state);
+
 // Every mission API entry point, grouped by the translation unit that defines it. The names,
 // handles, re-read helpers and surface matchers live in the headers included above.
 
@@ -68,6 +71,7 @@ namespace sunrise::server::activity::mission::lua_vm::detail {
  * @return The Lua result count.
  */
 [[nodiscard]] inline int queue_intent(lua_State* state, CallFrame& frame, Intent& intent) {
+    intent.attemptGeneration = impl_from_state(state)->attempt.generation;
     intent.requestKey = mint_intent_key(frame.candidate);
     if (intent.requestKey == state::activity::mission::kAbsentIntentKey) {
         return luaL_error(state, "mission request keys are exhausted");
@@ -95,6 +99,10 @@ void register_event_metatables(lua_State* state);
 void register_squad_metatables(lua_State* state);
 void register_scene_metatables(lua_State* state);
 void register_slot_metatables(lua_State* state);
+void register_actor_sequence_metatables(lua_State* state);
+[[nodiscard]] int slot_actor_sequences(lua_State* state);
+[[nodiscard]] int slot_play_actor_sequence(lua_State* state);
+[[nodiscard]] int slot_applied(lua_State* state);
 
 // SDK definition readers, defined in mission_script_lua_definition_api.cpp.
 
@@ -128,6 +136,8 @@ void register_slot_metatables(lua_State* state);
 [[nodiscard]] int squad_actor_command(lua_State* state);
 [[nodiscard]] int scene_index(lua_State* state);
 [[nodiscard]] int scene_activate(lua_State* state);
+[[nodiscard]] int scene_send_event(lua_State* state);
+[[nodiscard]] int scene_stop(lua_State* state);
 [[nodiscard]] int lifetime_index(lua_State* state);
 [[nodiscard]] int lifetime_set(lua_State* state);
 
@@ -172,10 +182,47 @@ void register_slot_metatables(lua_State* state);
                                   const SlotDefinition& slot,
                                   std::uint32_t schema,
                                   std::size_t bitCount,
-                                  std::span<const std::byte> body);
+                                  std::span<const std::byte> body,
+                                  IntentKind kind = IntentKind::applySlotAuth,
+                                  bool active = false);
+void push_atom_kinds(lua_State* state);
 
 /** Reads one integer field from a generated declaration table. */
 [[nodiscard]] lua_Integer directive_integer(lua_State* state, int table, const char* field);
+[[nodiscard]] int slot_assign_combat_objective(lua_State* state);
+[[nodiscard]] int event_task_cost(lua_State* state);
+[[nodiscard]] int event_task_group(lua_State* state);
+
+[[nodiscard]] int slot_set_music_section(lua_State* state);
+[[nodiscard]] int slot_set_public_event_state(lua_State* state);
+[[nodiscard]] int slot_play_sequence(lua_State* state);
+[[nodiscard]] int slot_set_cinematic_active(lua_State* state);
+[[nodiscard]] int slot_reset_objectives(lua_State* state);
+[[nodiscard]] int slot_advance_task(lua_State* state);
+[[nodiscard]] int slot_play_performance(lua_State* state);
+[[nodiscard]] int slot_play_dialogue_cue(lua_State* state);
+[[nodiscard]] int slot_play_actor_path(lua_State* state);
+[[nodiscard]] int slot_play_actor_action(lua_State* state);
+[[nodiscard]] int slot_retire_actor(lua_State* state);
+[[nodiscard]] int slot_bind_combatant_to_squad(lua_State* state);
+[[nodiscard]] int slot_set_darkness_zone(lua_State* state);
+[[nodiscard]] int slot_set_object_filter(lua_State* state);
+[[nodiscard]] int slot_generate_map(lua_State* state);
+[[nodiscard]] int slot_watch_damage(lua_State* state);
+[[nodiscard]] int slot_set_interactable_object(lua_State* state);
+[[nodiscard]] int slot_set_ghost_link(lua_State* state);
+[[nodiscard]] int slot_ghost_link(lua_State* state);
+[[nodiscard]] int slot_set_object_active(lua_State* state);
+[[nodiscard]] int slot_fire_trigger(lua_State* state);
+[[nodiscard]] int slot_disarm_trigger(lua_State* state);
+/** @return True for a positive counter accepted by every typed Auth body. */
+[[nodiscard]] bool valid_counter(lua_Integer value) noexcept;
+/** Reads an optional typed slot reference from the named argument table. */
+[[nodiscard]] bool optional_slot_reference(
+    lua_State* state,
+    const char* name,
+    std::uint32_t slotType,
+    middleware::bap::activity_message::scriptable_auth::Type2LaneClientRef& output);
 
 // The client-atom program, defined in mission_script_lua_slot_atoms.cpp.
 

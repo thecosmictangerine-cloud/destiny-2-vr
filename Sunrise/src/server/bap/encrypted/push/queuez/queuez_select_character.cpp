@@ -37,36 +37,6 @@ bool append_equipment_swap_notification(
            && queuez_frame::append_prepared(scratch, prepared, key, nonce, response, written);
 }
 
-/** Appends the character upsert carrying the character's new current activity. */
-bool append_current_activity_notification(Scratch& scratch,
-                                          const queuez::EquipmentSwap& swap,
-                                          const state::PendingCurrentActivity& mutation,
-                                          std::span<const std::byte, state::kAesKeySize> key,
-                                          std::span<const std::byte, state::kBapNonceSize> nonce,
-                                          std::span<std::byte> response,
-                                          std::size_t& written) noexcept {
-    snapshot::Prepared prepared{};
-    if (!snapshot::prepare_current_activity_character(scratch, swap, mutation, prepared)
-        || !queuez_frame::append_prepared(scratch, prepared, key, nonce, response, written)) {
-        return false;
-    }
-    std::array<char, core::log::kLineCapacity> line{};
-    const int count =
-        std::snprintf(line.data(),
-                      line.size(),
-                      "ev=current_activity stage=character_object result=ok family_version=%d "
-                      "character=0x%llX activity=%u",
-                      prepared.family.version,
-                      static_cast<unsigned long long>(swap.characterSoid),
-                      static_cast<unsigned>(mutation.activityIndex));
-    if (count > 0) {
-        core::log::write(core::log::Channel::server,
-                         core::log::Level::info,
-                         {line.data(), static_cast<std::size_t>(count)});
-    }
-    return true;
-}
-
 /** Appends one opcode-406 selected-character item-state upsert. */
 bool append_item_state_notification(
     Scratch& scratch,

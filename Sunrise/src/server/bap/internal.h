@@ -14,6 +14,7 @@
 #include "../../middleware/content/packages/tables/scenario_reader.h"
 #include "../../state/activity/bubble_authority/definition.h"
 #include "../../state/activity/definition.h"
+#include "../../state/activity/mission/definition.h"
 #include "../../state/activity_sdk/runtime.h"
 #include "../../state/build_data/scenarios/definition.h"
 #include "../../state/gameplay/external/squad_entity_retirement.h"
@@ -39,6 +40,10 @@ inline constexpr std::uint64_t kActivityKeepaliveIntervalMs = 2'000;
 [[nodiscard]] std::size_t
 activity_link_count_locked(const state::activity::SessionBinding& binding) noexcept;
 
+// Top-level groups the client can hold; the largest installed scenario has 78 in every state.
+inline constexpr std::size_t kScenarioWideGroupCapacity =
+    middleware::bap::activity_message::sensor_auth_update::kClientGroupCapacity;
+
 /** Fixed scratch storage owned by the lock, kept off the Client thread's stack. */
 struct Scratch {
     std::array<std::byte, client::network::kBapFrameCapacity> plaintext{};
@@ -50,10 +55,19 @@ struct Scratch {
     std::array<state::build_data::scenarios::RosterGroup,
                middleware::bap::activity_message::sensor_auth_update::kPublishedGroupCapacity>
         rosterGroups{};
+    /** One group held aside while the appended groups are put into first-seen order. */
+    state::build_data::scenarios::RosterGroup rosterGroupSpare{};
+    /** Groups of the objects present in every state of the bound scenario. */
+    std::array<state::build_data::scenarios::RosterGroup, kScenarioWideGroupCapacity>
+        rosterWideGroups{};
     /** Exact typed auth bodies the outbound snapshot span points into. */
     std::array<middleware::bap::activity_message::sensor_auth_update::AuthOverride,
                middleware::bap::activity_message::sensor_auth_update::kAuthOverrideCapacity>
         rosterAuthOverrides{};
+    /** Decoded device channels from the exact Auth rows written by the current roster. */
+    std::array<state::activity::mission::DevicePublication,
+               middleware::bap::activity_message::sensor_auth_update::kAuthOverrideCapacity>
+        rosterDevicePublications{};
     std::array<middleware::bap::activity_message::sensor_auth_update::SenseOverride,
                middleware::bap::activity_message::sensor_auth_update::kAuthOverrideCapacity>
         rosterSenseOverrides{};
@@ -97,6 +111,8 @@ struct RosterDecodeMap final {
 struct RosterGroupLease {
     std::uint32_t key{};
     std::uint32_t identityFold{};
+    /** Bubbles this key was ever registered under; a later push keeps it in every one of them. */
+    std::uint64_t bubbles{};
     std::uint8_t sequence{};
     bool used{};
 };
@@ -120,6 +136,13 @@ struct RosterPublication {
     bool priorRosterOwedForEpoch{};
     /** Exact decode identities carried by this staged complete roster snapshot. */
     RosterDecodeMap decodeMap{};
+    /** These proofs become report eligibility only after the frame reaches the caller. */
+    std::array<state::activity::mission::DevicePublication,
+               middleware::bap::activity_message::sensor_auth_update::kAuthOverrideCapacity>
+        devicePublications{};
+    state::activity::mission::DevicePublicationBoundary devicePublicationBoundary{};
+    state::activity::SessionBinding devicePublicationBinding{};
+    std::uint16_t devicePublicationCount{};
     /** Exact typed body carried by this staged roster, if any. */
     activity::host::PendingScriptableOverride scriptableOverride{};
     /** ActivityClient generation that staged this grant and its roster counters. */
@@ -153,6 +176,10 @@ struct RosterPublication {
     bool activatesSquadOverride{};
     /** Set when the staged squad body carries its own per-group revision. */
     bool hasSquadStateSequence{};
+    /** Set when this body is the leave delta answering activity msg 15. */
+    bool peerLeave{};
+    /** Set when this body carries the team wait bit, built before the client's arrival report. */
+    bool awaitClientSync{};
     /** Set while a roster body is staged and its outcome is undecided. */
     bool staged{};
 };
@@ -309,6 +336,9 @@ struct WorldRewardRequest {
     std::uint16_t itemDefinitionIndex{};
     WorldRewardKind kind{};
 };
+/** The changed character projections still owed after their source state commits. */
+enum class CharacterRefreshScope : std::uint8_t { none, records, recordsAndRoster };
+
 /** Mutable transport state owned by one BAP connection. */
 struct Session {
     std::uint64_t activityAdvertisementHostGeneration{};
@@ -348,8 +378,6 @@ struct Session {
      * binds its player by matching that value.
      */
     std::uint64_t activityCharacterSoid{};
-    /** Tick count after which the activity link owes its next roster update. */
-    std::uint64_t activityRosterDueTick{};
     /**
      * Binding generation whose membership body this link has already delivered.
      * The client sets its membership flag once and never clears it, and never acknowledges a body
@@ -369,22 +397,34 @@ struct Session {
      * at staging time.
      */
     bool activityJoinMembershipStaged{};
-    /**
-     * Tick count until which the client is loading, so the roster runs at its faster cadence.
-     * A join and a transition-token change are the only two things that open it.
-     */
-    std::uint64_t activityTransitionUntilTick{};
     /** The client's own patch epoch, scoped to the binding that received message 52. */
     BoundPatchEpoch activityPatchEpoch{};
     /** Replication epoch held until its encrypted frame reaches the transport caller. */
     ReplicationEpochPublication activityReplicationEpoch{};
     /** Per published group key: its registration identity and the revision the client holds. */
     std::array<RosterGroupLease, kRosterGroupLeaseCapacity> activityRosterGroupLeases{};
+    /** Bubbles in the order their sub-block first went out; the client keys them by position. */
+    std::array<std::uint8_t, state::build_data::scenarios::kBubbleCapacity>
+        activityRosterBubbleOrder{};
+    std::size_t activityRosterBubbleOrderCount{};
+    /** Per bubble, its keys in the order they first went out; a later key only appends. */
+    std::array<
+        std::array<std::uint32_t,
+                   middleware::bap::activity_message::sensor_auth_update::kBubbleKeyCapacity>,
+        state::build_data::scenarios::kBubbleCapacity>
+        activityRosterBubbleKeyOrder{};
+    std::array<std::size_t, state::build_data::scenarios::kBubbleCapacity>
+        activityRosterBubbleKeyOrderCount{};
     /**
      * A roster answer was refused for want of the client's patch epoch, and is still owed.
      * The epoch arriving is what makes that answer possible, so message 52 discharges it.
      */
     bool activityRosterOwedForEpoch{};
+    /**
+     * Binding generation whose leave delta reached the client, or zero.
+     * The client reported it is leaving, so no later roster may go out on that link.
+     */
+    std::uint64_t activityLeftGeneration{};
     /**
      * Region-rebuild epoch, folded into every group's identity. It advances once per region
      * transition so every group's revision byte moves and the client re-registers the groups for
@@ -399,6 +439,8 @@ struct Session {
     std::uint8_t activityRosterState{};
     /** Latest Activity Host revision staged into this connection's transport output. */
     std::uint64_t activityHostStateRevision{};
+    /** The delivered roster carries the team wait bit; the arrival report is answered while set. */
+    bool activityRosterAwaitClientSync{};
     /** One bounded authority-mask readback owned by this exact ActivityClient generation. */
     authority_query::Owner activityAuthorityQuery{};
     /** One bounded authority-mask reset owned by this exact ActivityClient generation. */
@@ -457,8 +499,8 @@ struct Session {
      * content-extraction pump, so the inline refresh can carry empty ones; this one re-derives.
      */
     std::uint64_t abilityRefreshDueTick{};
-    /** True while one ability-icon refresh is still owed to this peer. */
-    bool abilityRefreshArmed{};
+    /** A roster change remains owed when later socket changes also refresh the character. */
+    CharacterRefreshScope characterRefreshScope{};
     /**
      * True while the launch cinematic hold has parked the account player-record for this peer.
      * Set when the family-0 park push is armed on a loading launch, cleared when arrival arms the

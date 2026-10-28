@@ -6,6 +6,7 @@
 #include <span>
 #include <variant>
 
+#include "../build_data/items/quest_initialization.h"
 #include "../build_data/records/definition.h"
 #include "state.h"
 
@@ -135,7 +136,20 @@ struct PendingItemAcquisition {
     bool profileChanged{};
     /** Skips Collections revalidation for direct rewards. */
     bool directGrant{};
+    build_data::items::QuestInitialization questInitialization{};
+    std::int32_t previousQuestValue{};
     bool prepared{};
+
+    /**
+     * Account-scoped quest writes need an account update even when no materials were charged.
+     * @return True for a profile inventory change or an unset account-scoped quest value.
+     */
+    [[nodiscard]] bool updates_account() const noexcept {
+        return profileChanged
+               || (questInitialization.scope
+                       == build_data::items::QuestInitialization::Scope::account
+                   && previousQuestValue == build_data::items::kUnsetQuestValue);
+    }
 };
 
 /** One profile row an exchange changed, named the way the account's change ring names it. */
@@ -377,16 +391,6 @@ struct ArtifactResetResult {
     std::size_t instanceCount{};
 };
 
-/** Prepared current-activity change for the selected character, private until it publishes. */
-struct PendingCurrentActivity {
-    CharacterState beforeCharacter{};
-    CharacterState afterCharacter{};
-    std::uint64_t characterSoid{};
-    std::size_t characterIndex{};
-    std::uint16_t activityIndex{};
-    bool prepared{};
-};
-
 /** Result of validating one sparse settings writeback against authoritative State. */
 enum class SettingsUpdateDisposition : std::uint8_t {
     rejected,
@@ -465,10 +469,9 @@ void publish_sign_in_time(std::uint64_t seconds) noexcept;
  * The Client names its pick only in the select-character request, so this is where a player's
  * choice enters State.
  * @param characterSoid Picked character key, which must name an authored character.
- * @param changed Receives whether the selection moved to a different character.
  * @return False when no authored character carries that key.
  */
-[[nodiscard]] bool set_selected_character(std::uint64_t characterSoid, bool& changed) noexcept;
+[[nodiscard]] bool set_selected_character(std::uint64_t characterSoid) noexcept;
 
 /**
  * Stores the selected character's equipped title row. The caller proves the record is a claimed
@@ -564,16 +567,21 @@ set_selected_title(std::uint16_t recordIndex, std::uint64_t& characterSoid, bool
 [[nodiscard]] bool
 reserve_selected_character_inventory_serial(std::int32_t& mutationSerial) noexcept;
 
-/** Builds the exact full-account after-image while a prepared item pull remains current. */
+/**
+ * Preview inventory and quest values together without changing the save.
+ * @param mutation Prepared acquisition checked against current saved state.
+ * @param after Receives the candidate account; use only on success.
+ * @param afterUnlocks Receives matching account and selected-character unlocks on success.
+ * @return False when the acquisition is stale or its saved unlocks cannot be read.
+ */
 [[nodiscard]] bool preview_item_acquisition(const PendingItemAcquisition& mutation,
-                                            AccountState& after) noexcept;
+                                            AccountState& after,
+                                            unlocks::Table& afterUnlocks) noexcept;
 
 /**
- * Commits a prepared inventory insertion only while its selected character, existing loadout,
- * and next inventory serial still match the prepare-time view.
- *
- * @param mutation Prepared mutation, always cleared before this function returns.
- * @return True when the insertion commits atomically and leaves the whole account valid.
+ * Inventory and first-step state share one transaction; failure rolls both back.
+ * @param mutation Prepared grant consumed on either success or failure.
+ * @return True when both writes commit against the unchanged prepared state.
  */
 [[nodiscard]] bool commit_item_acquisition(PendingItemAcquisition& mutation) noexcept;
 
@@ -692,18 +700,6 @@ commit_profile_item_acquisition(PendingProfileItemAcquisition& mutation) noexcep
 
 /** Commits one prepared item-state change behind an exact full-character staleness guard. */
 [[nodiscard]] bool commit_item_state(PendingItemState& mutation) noexcept;
-
-/**
- * Prepares the selected character's current activity, family-4 `+45896`, without changing State.
- * @param activityIndex Activity the character is launching into.
- * @param mutation Gets the checked after-image.
- * @return True when a character is selected and the value changes.
- */
-[[nodiscard]] bool prepare_current_activity(std::uint16_t activityIndex,
-                                            PendingCurrentActivity& mutation) noexcept;
-
-/** Commits one prepared current-activity change behind an exact character staleness guard. */
-[[nodiscard]] bool commit_current_activity(PendingCurrentActivity& mutation) noexcept;
 
 /**
  * Merges and validates a sparse WS-701 settings update without publishing it.

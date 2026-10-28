@@ -55,7 +55,7 @@ struct HostSessionRow {
  * Claims or finds one host row bound to an exact source activity generation and region.
  * An unknown region never claims a row. A conflicting referenced row is never replaced.
  * @param groupSessionId Group session carried by the matching join descriptor.
- * @param source Exact source activity whose destination the target must copy.
+ * @param source Exact source activity. A public region's target runs its free-roam activity.
  * @param regionIndex Concrete advertised region.
  * @param output Cleared, then receives the pending or ready row generation.
  * @return Current state of the requested row.

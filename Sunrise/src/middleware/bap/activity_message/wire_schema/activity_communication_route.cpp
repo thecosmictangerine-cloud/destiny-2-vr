@@ -214,9 +214,8 @@ template <typename Enum, std::size_t Count>
     return true;
 }
 
-/** Typed Lua surfaces the mission ABI owns across every route: 7 on msg 5, 8 on msg 6, 1 each on
- * msg 19 and msg 22. */
-constexpr std::size_t kTypedLuaSurfaceCount = 17;
+/** The mission ABI declares eight actions and eleven typed event surfaces. */
+constexpr std::size_t kTypedLuaSurfaceCount = 19;
 
 /** @return True when every row is ordered and its bounded fields agree. */
 consteval bool routes_are_valid() noexcept {
@@ -245,11 +244,11 @@ template <auto Member, typename Value> consteval std::size_t count_routes(Value 
     return count;
 }
 
-/** @return True when the typed ingress deny set remains exactly 6, 19, and 22. */
+/** Typed producers own their messages and cannot also enter generic Lua input. */
 consteval bool typed_ingress_ids_are_valid() noexcept {
     for (const ActivityCommunicationRoute& route : kRoutes) {
-        const bool expected =
-            route.messageId == 6U || route.messageId == 19U || route.messageId == 22U;
+        const bool expected = route.messageId == 6U || route.messageId == 19U
+                              || route.messageId == 20U || route.messageId == 22U;
         if (message_lua_input_denied(route) != expected) {
             return false;
         }
@@ -265,10 +264,10 @@ static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::accept
               == 1U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::nativeMetadataOnly)
               == 5U);
-static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::nativeParsed) == 22U);
+static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::nativeParsed) == 21U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::typedOnly) == 2U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressClass>(IC::typedPostCommitOnly)
-              == 1U);
+              == 2U);
 static_assert(count_routes<&ActivityCommunicationRoute::egressClass>(EC::notServerOutputDirection)
               == 38U);
 static_assert(count_routes<&ActivityCommunicationRoute::egressClass>(EC::clientHandlesNoServerRoute)
@@ -280,8 +279,8 @@ static_assert(count_routes<&ActivityCommunicationRoute::egressClass>(EC::routedT
               == 1U);
 static_assert(count_routes<&ActivityCommunicationRoute::luaExposure>(LE::sdkMetadataOnly) == 28U);
 static_assert(count_routes<&ActivityCommunicationRoute::luaExposure>(LE::messageMetadataOnly)
-              == 27U);
-static_assert(count_routes<&ActivityCommunicationRoute::luaExposure>(LE::typedEvent) == 3U);
+              == 26U);
+static_assert(count_routes<&ActivityCommunicationRoute::luaExposure>(LE::typedEvent) == 4U);
 static_assert(count_routes<&ActivityCommunicationRoute::luaExposure>(LE::typedAction) == 1U);
 static_assert(count_routes<&ActivityCommunicationRoute::stateOwner>(SO::none) == 36U);
 static_assert(count_routes<&ActivityCommunicationRoute::stateOwner>(SO::activityAuthorityConnection)
@@ -302,21 +301,21 @@ static_assert(count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::non
 static_assert(count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::joinedRecordOnly)
               == 1U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::protocolHostInput)
-              == 27U);
+              == 26U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::typedHostInput) == 2U);
 static_assert(
-    count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::postCommitTypedHostInput) == 1U);
+    count_routes<&ActivityCommunicationRoute::ingressDelivery>(ID::postCommitTypedHostInput) == 2U);
 static_assert(count_routes<&ActivityCommunicationRoute::egressDelivery>(ED::none) == 49U);
 static_assert(count_routes<&ActivityCommunicationRoute::egressDelivery>(ED::protocolNotification)
               == 9U);
 static_assert(count_routes<&ActivityCommunicationRoute::egressDelivery>(ED::typedAuthStaging)
               == 1U);
-static_assert(count_routes<&ActivityCommunicationRoute::lateJoinHandoff>(LP::notDeclared) == 36U);
+static_assert(count_routes<&ActivityCommunicationRoute::lateJoinHandoff>(LP::notDeclared) == 35U);
 static_assert(count_routes<&ActivityCommunicationRoute::lateJoinHandoff>(LP::protocolLifecycleOwned)
               == 8U);
 static_assert(count_routes<&ActivityCommunicationRoute::lateJoinHandoff>(
                   LP::missionStatePublicationUnresolved)
-              == 4U);
+              == 5U);
 static_assert(count_routes<&ActivityCommunicationRoute::lateJoinHandoff>(LP::noServerRoute) == 11U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressStatus>(RS::notApplicable) == 28U);
 static_assert(count_routes<&ActivityCommunicationRoute::ingressStatus>(RS::resolved) == 31U);

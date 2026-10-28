@@ -16,6 +16,7 @@ namespace sunrise::middleware::bap::activity_message::darkness_zone {
 
 namespace fields = auth_fields;
 
+// Type 35 uses this schema and fixed body size.
 inline constexpr std::uint8_t kSlotType = 35;
 inline constexpr std::uint32_t kComponentClass = 0x808099BDU;
 inline constexpr std::uint32_t kSchema = 0x808099BFU;

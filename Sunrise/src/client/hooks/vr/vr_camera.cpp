@@ -29,11 +29,23 @@
 #include "../teleport/runtime.h"
 #include "vr_ads.h"
 #include "vr_arms.h"
+#include "vr_body.h"
+#include "vr_debug.h"
 #include "vr_destination.h"
+#include "vr_screen.h"
+#include "vr_settings.h"
+#include "vr_state.h"
+#include "vr_display.h"
+#include "vr_dual.h"
+#include "vr_frames.h"
+#include "vr_profile.h"
 #include "vr_gamepad.h"
 #include "vr_gpu.h"
+#include "vr_mode.h"
+#include "vr_prehook.h"
 #include "vr_probe.h"
 #include "vr_watch.h"
+#include "vr_watchdog.h"
 #include "vr_weapon.h"
 #include "xr_runtime.h"
 
@@ -65,6 +77,7 @@ constexpr int kHeightKey = VK_F11;
 constexpr int kResetKey = VK_F8;
 constexpr int kRecentreKey = VK_F7;
 constexpr int kEyeKey = VK_F6;
+constexpr int kStereoKey = VK_F5;
 
 /** One press of the yaw key, in degrees. Four presses make a full turn. */
 constexpr float kYawStep = 45.0F;
@@ -167,7 +180,7 @@ std::atomic<float> g_height{0.0F};
 std::atomic<float> g_fovDegrees{0.0F};
 
 /** Held state of each probe key on the previous frame, so a switch flips only on the press. */
-std::array<bool, 6> g_keyDown{};
+std::array<bool, 7> g_keyDown{};
 
 /** The camera thread owns both of these; they are published for the report only. */
 Pose g_lastRead{};
@@ -235,9 +248,8 @@ template <typename T> [[nodiscard]] bool write_at(std::byte* address, const T& v
     if (address == nullptr) {
         return false;
     }
-    SIZE_T written = 0;
-    return WriteProcessMemory(GetCurrentProcess(), address, &value, sizeof value, &written) != FALSE
-           && written == sizeof value;
+    // Not WriteProcessMemory: it re-protects the page on every call, 2 ms each here (vr_prehook.cpp write).
+    return prehook::write(reinterpret_cast<std::uintptr_t>(address), &value, sizeof value);
 }
 
 /** @return True when a probe key went down this frame, and latches its held state. */
@@ -346,9 +358,22 @@ void report_pose(const Pose& before, const Pose& after) noexcept {
     }
 }
 
-void drive_body(float bodyYaw, float headRoomYaw, bool tracking) noexcept {
+void drive_body(float bodyYaw, float headRoomYaw, bool tracking, bool cockpit, float cockpitAnchor) noexcept {
     if (!tracking) {
         g_haveAnchor.store(false, std::memory_order_relaxed);
+        g_havePreviousBodyYaw = false;
+        g_lastServoCounts = 0;
+        g_servoNoResponse = 0;
+        g_bodyYawError.store(0.0F, std::memory_order_relaxed);
+        return;
+    }
+    // A cockpit (vr_mode.cpp): the room rides the vehicle's heading and nothing here injects -- a mouse
+    // count would steer the vehicle. The engine's camera yaw is the steering's (vr_mode.cpp steer), so
+    // it is forgotten here: on foot again, the servo starts afresh instead of reading the ride as an
+    // external turn.
+    if (cockpit) {
+        g_roomAnchor.store(cockpitAnchor, std::memory_order_relaxed);
+        g_haveAnchor.store(true, std::memory_order_relaxed);
         g_havePreviousBodyYaw = false;
         g_lastServoCounts = 0;
         g_servoNoResponse = 0;
@@ -479,6 +504,10 @@ float body_yaw_error() noexcept {
     return g_bodyYawError.load(std::memory_order_relaxed);
 }
 
+float counts_per_radian() noexcept {
+    return g_countsPerRadian;
+}
+
 /** @return True while the probe is overwriting the camera pose. */
 bool enabled() noexcept {
     return g_enabled.load(std::memory_order_relaxed);
@@ -535,6 +564,7 @@ void poll_keys() noexcept {
     watch::tick();
     weapon::tick();
     probe::tick();
+    dual::tick();
     destination::tick();
     // An open interface owns the keyboard, and a key pressed at another window is not ours.
     if (!client::input::game_focused() || core::ui::runtime::snapshot().visible) {
@@ -571,6 +601,8 @@ void poll_keys() noexcept {
         xr::recentre();
         // The weapon rests where the controller is, so re-seating the player has to re-seat that too.
         weapon::retake_reference();
+        // And a screen, when one is up, comes in front.
+        screen::request_recentre();
         report("ev=vr.probe recentre requested");
     }
     if (pressed(5, kEyeKey)) {
@@ -587,6 +619,11 @@ void poll_keys() noexcept {
                              {line.data(), static_cast<std::size_t>(written)});
         }
     }
+    if (pressed(6, kStereoKey)) {
+        // Mono (one image for both eyes, at infinity) or alternating-eye stereo (docs/DISPLAY.md).
+        xr::set_stereo(!xr::stereo());
+        report(xr::stereo() ? "ev=vr.probe stereo=alternate" : "ev=vr.probe stereo=mono");
+    }
     if (changed) {
         report_state();
     }
@@ -597,10 +634,105 @@ bool head_tracking() noexcept {
     return g_headTracking.load(std::memory_order_relaxed);
 }
 
+namespace {
+
+/**
+ * Gives the game's window the desktop's focus back when the headset session takes focus. Starting a
+ * runtime pulls the focus to its own window (16 Oct: the player had to click the game, and until
+ * then nothing reached it -- injected input lands on the window in front). Only for a few seconds
+ * after the session becomes focused, so a window the player brings forward on purpose later is
+ * never taken from them.
+ *
+ * NEVER on the render thread (first headset session, 2026-10-18: F9 back on froze the game for good the
+ * moment the session took focus with the game's window behind the runtime's). The window belongs to the
+ * game's window thread, and ShowWindow / BringWindowToTop on another thread's window are synchronous
+ * SendMessages: the render thread waited on a window thread that waited on it. The mock never showed it,
+ * because the harness keeps the game in front. So the calls run on a worker of their own, one at a time
+ * (a stuck one blocks only itself and no other is started), and are the asynchronous kinds.
+ */
+std::atomic_bool g_focusWorkerBusy{false};
+std::atomic<HWND> g_focusWindow{nullptr};
+std::atomic<std::uint32_t> g_focusTries{0};
+
+DWORD WINAPI focus_worker(void*) noexcept {
+    const HWND window = g_focusWindow.load(std::memory_order_acquire);
+    // Windows only lets the process the foreground thread belongs to hand the foreground over;
+    // sharing that thread's input state for the call is the established way to be that process.
+    const HWND foreground = GetForegroundWindow();
+    const DWORD theirs = foreground != nullptr ? GetWindowThreadProcessId(foreground, nullptr) : 0;
+    const DWORD ours = GetCurrentThreadId();
+    const bool attached = theirs != 0 && theirs != ours && AttachThreadInput(ours, theirs, TRUE) != FALSE;
+    ShowWindowAsync(window, SW_RESTORE);
+    SetWindowPos(window, HWND_TOP, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE);
+    const BOOL done = SetForegroundWindow(window);
+    if (attached) {
+        AttachThreadInput(ours, theirs, FALSE);
+    }
+    std::array<char, 128> line{};
+    std::snprintf(line.data(), line.size(), "ev=vr.camera focus=restore result=%d try=%u thread=worker", done ? 1 : 0,
+                  g_focusTries.load(std::memory_order_relaxed));
+    report(line.data());
+    g_focusWorkerBusy.store(false, std::memory_order_release);
+    return 0;
+}
+
+void keep_game_in_front() noexcept {
+    static bool wasFocused = false;
+    static ULONGLONG until = 0;
+    static ULONGLONG lastTry = 0;
+    const ULONGLONG now = GetTickCount64();
+    const bool focused = xr::session_focused();
+    if (focused && !wasFocused) {
+        until = now + 5000;
+        g_focusTries.store(0, std::memory_order_relaxed);
+    }
+    wasFocused = focused;
+    if (!focused || now >= until || client::input::game_focused() || now - lastTry < 400) {
+        return;
+    }
+    lastTry = now;
+    const auto window = static_cast<HWND>(display::window());
+    if (window == nullptr || g_focusWorkerBusy.exchange(true, std::memory_order_acq_rel)) {
+        return;
+    }
+    g_focusWindow.store(window, std::memory_order_release);
+    g_focusTries.fetch_add(1, std::memory_order_relaxed);
+    const HANDLE thread = CreateThread(nullptr, 0, &focus_worker, nullptr, 0, nullptr);
+    if (thread == nullptr) {
+        g_focusWorkerBusy.store(false, std::memory_order_release);
+        return;
+    }
+    CloseHandle(thread);
+}
+
+} // namespace
+
 /** Drives the OpenXR frame from the present hook. */
 void present_frame(void* device, void* swapChain) noexcept {
+    profile::Scope timer(profile::present);
+    // VR comes up with the game: the first present switches it on unless SVR_Settings.txt says
+    // `start off` (the older test scripts, which press F9 themselves). F9 stays the switch.
+    static const bool started = [] {
+        // SVR_START=off in the environment is the test harness's (Enable-MockXr): it reaches only a
+        // game the harness launched, never the player's -- a settings file left behind would.
+        std::array<char, 8> env{};
+        const DWORD envLength = GetEnvironmentVariableA("SVR_START", env.data(), static_cast<DWORD>(env.size()));
+        const bool harnessOff = envLength > 0 && envLength < env.size() && std::strcmp(env.data(), "off") == 0;
+        const bool on = !harnessOff && settings::flag("start", true);
+        g_enabled.store(on, std::memory_order_relaxed);
+        report(on ? "ev=vr.camera start=on" : harnessOff ? "ev=vr.camera start=off reason=harness" : "ev=vr.camera start=off reason=settings");
+        return on;
+    }();
+    static_cast<void>(started);
+    watchdog::present();
+    xr::drain_loader_log();
+    state::tick();
+    mode::present_tick();
+    body::present();
     // Before the switch: the GPU module has to watch shaders being created whether or not VR is on.
     gpu::present(static_cast<ID3D11Device*>(device), static_cast<IDXGISwapChain*>(swapChain));
+    // Also before it: switching off has to put the desktop's render shape back.
+    display::present(static_cast<ID3D11Device*>(device), static_cast<IDXGISwapChain*>(swapChain));
     if (!g_enabled.load(std::memory_order_relaxed)) {
         gamepad::release_all();
         // Switching off HANDS THE HEADSET BACK, by tearing the OpenXR session down. F9 then brings
@@ -619,14 +751,13 @@ void present_frame(void* device, void* swapChain) noexcept {
         // belong to it, and no frame is open -- the previous enabled iteration ended its own.
         // shutdown() clears `g_attempted` and asks for a recentre, so the next F9 comes up fresh
         // and re-seats the origin, which is what a player toggling out and back in wants anyway.
-        if (xr::active()) {
-            xr::shutdown();
+        if (xr::shutdown()) {
             core::log::write(core::log::Channel::client, core::log::Level::warn,
                              "ev=vr.camera toggle=off xr=shutdown reason=hand_headset_back");
         }
         return;
     }
-    if (!xr::initialize(static_cast<ID3D11Device*>(device))) {
+    if (debug::has("xr skip") || !xr::initialize(static_cast<ID3D11Device*>(device))) {
         gamepad::release_all();
         return;
     }
@@ -634,12 +765,17 @@ void present_frame(void* device, void* swapChain) noexcept {
     // the servo would rotate the world every time it corrected.
     xr::begin_frame(g_roomAnchor.load(std::memory_order_relaxed));
     xr::end_frame(static_cast<IDXGISwapChain*>(swapChain));
+    keep_game_in_front();
     // The two-handed hold decides what the left grip means before the grip becomes a key, and the
     // physical ADS whether right mouse is held.
-    arms::update_hold();
-    ads::present();
-    // The controllers drive the keyboard and mouse only while the session produces input.
-    gamepad::pump(xr::active());
+    const bool immersive = state::view() == state::View::immersive;
+    if (immersive) {
+        arms::update_hold();
+        ads::present();
+    }
+    // The controllers drive the keyboard and mouse only while the session produces input, and as a
+    // gamepad only in the world (on the screen they are a pointer: vr_screen.cpp).
+    gamepad::pump(xr::active() && immersive);
     if ((++g_presentCount % kReportPeriod) == 0) {
         report_body();
         const gamepad::Stats stats = gamepad::stats();
@@ -670,9 +806,34 @@ void present_frame(void* device, void* swapChain) noexcept {
 
 /** Lays the deltas over the camera pose of one player. */
 void apply_camera(std::uint32_t playerIndex) noexcept {
+    profile::Scope timer(profile::camera);
     ++g_frame;
     const bool due = (g_frame % kReportPeriod) == 0;
+    // The render view's eye is this frame's or nothing: every way out below that does not set it (VR off,
+    // a screen, a failed read) clears it on the way out, so the render view is the engine's own again.
+    // Cleared at the exit rather than up front: the render side reads it from other threads, and a clear
+    // followed by a set would leave a window for one chase-camera frame.
+    struct RenderEyeGuard final {
+        bool set{};
+        ~RenderEyeGuard() {
+            if (!set) {
+                mode::set_render_eye(false, nullptr);
+            }
+        }
+    } renderEyeGuard;
     if (!g_enabled.load(std::memory_order_relaxed)) {
+        return;
+    }
+    // On the screen (orbit, a load, a menu) the game renders as the flat game it is: its own camera,
+    // its own FOV, no servo injecting mouse counts into a Director's pointer.
+    if (state::view() == state::View::screen) {
+        // ...but the FOV the engine renders the world with is read every frame: it is how the GPU
+        // module recognises the world camera while nothing of ours is written (vr_state.cpp).
+        float engineFov = 0.0F;
+        std::byte* const flat = teleport::camera_block(playerIndex);
+        if (flat != nullptr && read_at(flat + kCameraHorizontalFov, engineFov) && std::isfinite(engineFov)) {
+            state::note_engine_fov(engineFov);
+        }
         return;
     }
     std::byte* const block = teleport::camera_block(playerIndex);
@@ -697,6 +858,7 @@ void apply_camera(std::uint32_t playerIndex) noexcept {
         return;
     }
     Pose pose{};
+    profile::Scope readTimer(profile::camRead);
     if (!read_at(block + kCameraPositionX, pose.position)
         || !read_at(block + kCameraForwardX, pose.forward)
         || !read_at(block + kCameraUpX, pose.up)
@@ -713,17 +875,42 @@ void apply_camera(std::uint32_t playerIndex) noexcept {
         }
         return;
     }
+    // This frame's sample, latched in the frame ledger: the eye the frame is drawn from is chosen
+    // here (alternating, in stereo), and the gun and the arms read the very same sample.
+    xr::HeadPose head{};
+    xr::HandPose leftHand{};
+    xr::HandPose rightHand{};
+    (void)xr::camera_frame(head, leftHand, rightHand);
+    // The play mode (vr_mode.cpp): with a sword, in the Tower or on a sparrow the engine's camera is a
+    // chase camera; the eye goes to the Guardian's head (the body's feet plus the eye height) or to the
+    // vehicle's seat, and on a vehicle the sample is turned to its heading.
+    mode::Eye eye{};
+    {
+        profile::Scope sub(profile::camMode);
+        eye = mode::camera_tick(pose.position.data(), pose.forward.data(), head, leftHand, rightHand);
+    }
     // The character's own aim, for the tracer to recognise in the arguments of whatever fires a shot.
     probe::set_reference(pose.position, pose.forward);
     // The engine's FOV as IT made it, before ours goes over it: its narrowing is the ADS progress,
-    // which the weapon (placed after this, in the same frame) compensates the ADS animation by.
-    ads::note_engine_fov(pose.horizontalFov);
+    // which the weapon (placed after this, in the same frame) compensates the ADS animation by. Only in
+    // first person: a chase camera's FOV is wider, and held steady it was taken for a changed FOV setting,
+    // so back in first person the true hip FOV read as ADS for good and no weapon was ever recorded for the
+    // left hand again (2026-10-18, after the sword).
+    if (eye.mode == mode::Mode::first) {
+        ads::note_engine_fov(pose.horizontalFov);
+    }
     const float bodyYaw = std::atan2(pose.forward[1], pose.forward[0]);
     g_bodyYaw.store(bodyYaw, std::memory_order_relaxed);
+    // The chase camera's own position, kept for the block in third person (see below).
+    const Vector chasePosition = pose.position;
+    if (eye.replace) {
+        // From here on the "engine's pose" is the eye's base: everything that places things relative
+        // to it (the hands in the world) is then relative to the head, not to the chase camera.
+        pose.position = {eye.base.x, eye.base.y, eye.base.z};
+    }
 
     Pose next = pose;
     float aspectToWrite = 0.0F;
-    const xr::HeadPose head = xr::head_pose();
     const bool tracking = head.valid && xr::active();
     g_headTracking.store(tracking, std::memory_order_relaxed);
     if (tracking) {
@@ -750,7 +937,10 @@ void apply_camera(std::uint32_t playerIndex) noexcept {
 
     // The character chases the head. Deliberately after the pose above is composed and before it
     // is written, so the frame the servo reacts to is the frame the player is looking at.
-    drive_body(bodyYaw, tracking ? head.roomYaw : 0.0F, tracking);
+    {
+        profile::Scope sub(profile::camBody);
+        drive_body(bodyYaw, tracking ? head.roomYaw : 0.0F, tracking, eye.cockpit, eye.anchor);
+    }
 
     // The manual deltas stay live on top, as trim while tracking and as the whole story without it.
     const float yaw = g_yawDegrees.load(std::memory_order_relaxed) * kDegreesToRadians;
@@ -781,16 +971,45 @@ void apply_camera(std::uint32_t playerIndex) noexcept {
     // block's position rather than at the pose the getter hands it, the head's translation has to
     // be kept out of the block, and this is the switch that does it.
     const bool position = weapon::block_position_enabled();
-    const bool stored = write_at(block + kCameraPositionX, position ? next.position : pose.position)
-                        && write_at(block + kCameraForwardX, orientation ? next.forward : pose.forward)
-                        && write_at(block + kCameraUpX, orientation ? next.up : pose.up)
-                        && write_at(block + kCameraHorizontalFov, next.horizontalFov)
-                        && (aspectToWrite <= 0.0F || write_at(block + kCameraAspect, aspectToWrite));
+    // In third person the block keeps the chase camera's position: the engine culls the Guardian with
+    // it and stops drawing them once the camera is at their head (measured, docs/SWORD-SPARROW.md). The
+    // render view alone is handed the eye (vr_weapon.cpp, the getter's caller B363FA).
+    mode::set_render_eye(eye.replace, next.position.data());
+    renderEyeGuard.set = true;
+    const Vector blockPosition = eye.replace ? chasePosition : (position ? next.position : pose.position);
+    bool stored = false;
+    {
+        profile::Scope writeTimer(profile::camWrite);
+        stored = write_at(block + kCameraPositionX, blockPosition)
+                 && write_at(block + kCameraForwardX, orientation ? next.forward : pose.forward)
+                 && write_at(block + kCameraUpX, orientation ? next.up : pose.up)
+                 && write_at(block + kCameraHorizontalFov, next.horizontalFov)
+                 && (aspectToWrite <= 0.0F || write_at(block + kCameraAspect, aspectToWrite));
+    }
+    profile::Scope tailTimer(profile::camBlock);
     if (!stored) {
         if (due) {
             report("ev=vr.probe pose result=fail reason=write");
         }
         return;
+    }
+    // What the GPU will be handed, so it can name this record when it draws the frame: the composed
+    // pose, whether it reaches the render view through the block (the default) or through the
+    // getter's detour (vr_weapon's `render` rule hands it head_pose(), which is `next`).
+    {
+        profile::Scope sub(profile::camLedger);
+        xr::commit_camera(next.position, next.forward);
+    }
+    // In third person the render view is always handed next.position (set_render_eye above), whatever
+    // the block's position rule: the record must name the camera the frame is really rendered from.
+    {
+        profile::Scope sub(profile::camMode);
+        mode::commit(position || eye.replace ? next.position.data() : pose.position.data(), head, leftHand, rightHand);
+    }
+    if (frames::tracing()) {
+        const float written[6] = {next.position[0], next.position[1], next.position[2],
+                                  next.forward[0], next.forward[1], next.forward[2]};
+        frames::note(frames::Kind::camera, tracking ? head.frame : 0, written, head.eye);
     }
     // The layer must declare the frustum the engine really renders with, so the FOV is read back
     // every frame: if the engine clamps the value, the readback carries the clamped one.

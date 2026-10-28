@@ -1,14 +1,23 @@
 #include "activity_sdk_dialogue_group_index.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <limits>
+
+#include "../../../state/activity_sdk/format.h"
 
 namespace sunrise::client::content::activity::sdk_generation::dialogue_group_index {
 namespace {
 
 // One dialogue group row is 16 bytes in the blob.
 constexpr std::size_t kGroupStride = 16U;
+// The bank stores a counted definition array at +8 with an eight-byte row stride.
+constexpr std::size_t kDefinitionsField = 8U;
+constexpr std::size_t kDefinitionStride = 8U;
+constexpr std::size_t kArrayDataOffset = 16U;
+// An empty authored name uses the FNV-1 basis.
+constexpr std::uint32_t kAbsentDefinitionHash = 0x811C9DC5U;
 
 template <typename Value>
 [[nodiscard]] bool
@@ -41,6 +50,51 @@ add_relative(std::size_t member, std::int64_t relative, std::size_t& target) noe
 }
 
 } // namespace
+
+/**
+ * Reads cue windows in bank order.
+ * @param bytes Authored dialogue bank.
+ * @param output Receives every row; cleared on failure.
+ * @return False for an invalid window or array.
+ */
+bool definitions(std::span<const std::byte> bytes, std::vector<Definition>& output) noexcept {
+    namespace format = state::activity_sdk::format;
+    output.clear();
+    std::uint64_t count = 0;
+    std::int64_t relative = 0;
+    std::size_t header = 0;
+    std::uint64_t repeated = 0;
+    std::uint32_t rowClass = 0;
+    if (!read_value(bytes, kDefinitionsField, count) || count > format::kDialogueMaximumCueCount
+        || !read_value(bytes, kDefinitionsField + sizeof count, relative)
+        || !add_relative(kDefinitionsField + sizeof count, relative, header)
+        || !read_value(bytes, header, repeated) || repeated != count
+        || !read_value(bytes, header + sizeof repeated, rowClass)
+        || rowClass != format::kDialogueDefinitionArrayClass || header > bytes.size()
+        || kArrayDataOffset > bytes.size() - header
+        || count > (bytes.size() - header - kArrayDataOffset) / kDefinitionStride) {
+        return false;
+    }
+    try {
+        output.reserve(static_cast<std::size_t>(count));
+        for (std::size_t ordinal = 0; ordinal < count; ++ordinal) {
+            const std::size_t offset = header + kArrayDataOffset + ordinal * kDefinitionStride;
+            Definition row{};
+            if (!read_value(bytes, offset, row.hash)
+                || !read_value(bytes, offset + sizeof row.hash, row.authoredWindowSeconds)
+                || row.hash == 0 || row.hash == kAbsentDefinitionHash
+                || !std::isfinite(row.authoredWindowSeconds) || row.authoredWindowSeconds < 0.0F) {
+                output.clear();
+                return false;
+            }
+            output.push_back(row);
+        }
+        return true;
+    } catch (...) {
+        output.clear();
+        return false;
+    }
+}
 
 /** Builds the sorted group index over one dialogue blob. @return False when it is malformed. */
 bool build(std::span<const std::byte> bytes,

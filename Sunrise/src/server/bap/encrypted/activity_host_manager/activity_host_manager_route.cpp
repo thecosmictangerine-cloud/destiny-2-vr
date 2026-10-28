@@ -134,11 +134,6 @@ prepare_allocation(const request_selection::ActivityManagerSelectionResult& pars
         destination.descriptorNameBit = static_cast<std::uint16_t>(source.packageNameBitOffset);
         destination.hasDescriptorName = source.hasPackageName;
     }
-    // The authored override is applied here, once, so every message built from this selection sees
-    // the same arrival instead of each push working it out again.
-    state::activity::defaults::ActivityDefaults defaults{};
-    state::activity::defaults::snapshot(defaults);
-    state::activity::defaults::apply_arrival_override(defaults, destination);
     // Forced lands last and renames the captured descriptor in place.
     if (state::activity::forced::apply(destination)) {
         report_forced(destination);

@@ -5,6 +5,7 @@
 #include "../../middleware/bap/activity_message/darkness_zone_auth.h"
 #include "../../middleware/bap/activity_message/ghost_link_auth.h"
 #include "../../middleware/bap/activity_message/interactable_object_auth.h"
+#include "../../middleware/bap/activity_message/map_generator_auth.h"
 #include "../../middleware/bap/activity_message/mission_effect_auth.h"
 #include "../../middleware/bap/activity_message/music_section_auth.h"
 #include "../../middleware/bap/activity_message/scene_events_auth.h"
@@ -475,6 +476,9 @@ prepare_slot(const sdk::BoundView& view, std::uint32_t slotRow, PreparedDevice& 
                  message::ghost_link::kAuthSchema)
         || typed(
             format::kSquadSlotType, format::kSquadComponentClass, message::squad_objective::kSchema)
+        || typed(message::map_generator_auth::kSlotType,
+                 message::map_generator_auth::kComponentClass,
+                 message::map_generator_auth::kSchema)
         || typed(auth::kType2SlotType, auth::kType2ComponentClass, auth::kType2Schema);
     const bool occupancy = slotType == format::kOccupancySlotType
                            && authSchema == format::kOccupancyAuthSchema

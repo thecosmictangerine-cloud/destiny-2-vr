@@ -11,8 +11,12 @@ namespace sunrise::middleware::web_service {
 
 /** The 6-byte Web Service header holds a big-endian opcode and transaction id. */
 inline constexpr std::size_t kEnvelopeHeaderSize = sizeof(std::uint16_t) + sizeof(std::uint32_t);
-/** Every response ends with two cleared optional envelope fields. */
+/** Every response ends with two optional byte blobs, each behind one presence bit. */
 inline constexpr std::uint8_t kAbsentTrailerWidth = 2;
+inline constexpr std::uint8_t kTrailerPresenceWidth = 1;
+/** A present blob carries a 16-bit byte length, then its bytes, not byte aligned. */
+inline constexpr std::uint8_t kTrailerLengthWidth = 16;
+inline constexpr std::size_t kTrailerBlobCapacity = 0xFFFF;
 /**
  * Status value of a reply that publishes no Family-4 revision.
  * The Client's version wait skips its object-store compare on this value and completes at once.
@@ -98,5 +102,22 @@ struct StatusResponse {
                                    std::span<const std::byte> staging,
                                    std::span<std::byte> output,
                                    std::size_t& written) noexcept;
+
+/**
+ * Closes the payload with the first blob present and the second absent, then publishes it.
+ * @param writer Payload writer returned by begin_response.
+ * @param encoded False when an earlier payload field did not fit.
+ * @param blob Bytes of the first trailer blob, at most kTrailerBlobCapacity.
+ * @param staging Storage begin_response wrote the header into.
+ * @param output Caller-owned svc-11 body storage.
+ * @param written Receives encoded response body bytes, or zero when the response is refused.
+ * @return True when the payload closed and the whole response fit the output.
+ */
+[[nodiscard]] bool finish_response_with_blob(encoding::bits::Writer& writer,
+                                             bool encoded,
+                                             std::span<const std::byte> blob,
+                                             std::span<const std::byte> staging,
+                                             std::span<std::byte> output,
+                                             std::size_t& written) noexcept;
 
 } // namespace sunrise::middleware::web_service

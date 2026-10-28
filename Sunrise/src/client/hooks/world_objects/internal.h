@@ -74,25 +74,14 @@ using PurgeEntities = void(__fastcall*)(void*,
 using ResolvePair = std::uintptr_t(__fastcall*)(HandlePair*, std::uint32_t) noexcept;
 using ValidatePair = std::int32_t*(__fastcall*)(const HandlePair*, std::int32_t*) noexcept;
 
-/** Native diagnostic entry points retain their original Windows x64 return registers. */
-using Observer = std::uintptr_t(__fastcall*)(void*, void*, const std::uint8_t*);
-using Rebind = std::uintptr_t(__fastcall*)();
-using IteratorValue = std::uintptr_t(__fastcall*)(void*, std::uint32_t*);
-using SourceRef = std::uint8_t(__fastcall*)(std::uint32_t, void*);
-using ResolveSource = std::uint8_t(__fastcall*)(const void*, void*);
-using Predicate = std::uintptr_t(__fastcall*)(std::uint32_t);
-using BindActor = void(__fastcall*)(void*, std::uint32_t);
-using Teardown = std::uintptr_t(__fastcall*)(void*);
-using ActorOwner = std::uint32_t*(__fastcall*)(std::uint32_t*, std::uint32_t);
-using SliceManager = void*(__fastcall*)();
-using CurrentBubble = std::uint32_t*(__fastcall*)(void*, std::uint32_t*);
-
 /** Guards every table, identity count, report budget and detour handle below. */
 extern SRWLOCK g_lock;
 extern std::atomic_uint32_t g_activeCalls;
 extern std::atomic_bool g_accepting;
 /** Main module base, so a caller address is reported as an RVA that matches the image. */
 extern std::uintptr_t g_moduleBase;
+/** Return address of the instantiate call being retained; written and read under g_lock. */
+extern std::uintptr_t g_instantiateCaller;
 extern std::size_t g_liveCount;
 extern std::size_t g_identityReportBudget;
 extern std::size_t g_dynamicReportBudget;
@@ -121,23 +110,6 @@ extern const std::uint32_t* g_glueStrideStorage;
 /** Native entity identity of the create call this thread is inside. */
 extern thread_local std::uint32_t t_entityGlue;
 extern thread_local std::uint32_t t_entityNetwork;
-
-extern std::atomic<Observer> g_observerOriginal;
-extern std::atomic<Rebind> g_rebindOriginal;
-extern std::atomic<IteratorValue> g_iteratorOriginal;
-extern std::atomic<SourceRef> g_sourceOriginal;
-extern std::atomic<ResolveSource> g_resolveSourceOriginal;
-extern std::atomic<Predicate> g_predicateOriginal;
-extern std::atomic<BindActor> g_bindOriginal;
-extern std::atomic<Teardown> g_teardownOriginal;
-extern ActorOwner g_actorOwner;
-extern const std::uintptr_t* g_actorBaseStorage;
-extern const std::uint32_t* g_actorStrideStorage;
-extern SliceManager g_sliceManager;
-extern CurrentBubble g_currentBubble;
-/** Rebind callers are checked against their resolved function-relative return offsets. */
-extern std::uintptr_t g_rebindAddress, g_observerAddress;
-extern std::atomic_uint32_t g_rebindPasses, g_rebindRows, g_observerReports;
 
 /** Reads one scalar at an address in this process, with no pointer round trip. */
 template <typename Value>
@@ -189,27 +161,6 @@ void erase(std::uint32_t handle) noexcept;
 /** @return Signatures the entity create, purge and policy hooks need, in resolve order. */
 [[nodiscard]] std::span<const patterns::Pattern> entity_patterns() noexcept;
 
-/** @return Signatures the squad rebind and observer trace needs, in resolve order. */
-[[nodiscard]] std::span<const patterns::Pattern> trace_patterns() noexcept;
-
-/**
- * Decodes the actor iterator from the rebind body's own call, and checks the other four calls
- * still reach the targets the image pass resolved.
- * @param rebind Resolved rebind body.
- * @param source Resolved source lookup.
- * @param resolveSource Resolved source resolver.
- * @param predicate Resolved predicate dispatch.
- * @param bind Resolved actor bind.
- * @param iterator Receives the iterator; null when any call site moved.
- * @return True when every call site holds a near call to its expected target.
- */
-[[nodiscard]] bool bind_rebind_calls(std::byte* rebind,
-                                     std::byte* source,
-                                     std::byte* resolveSource,
-                                     std::byte* predicate,
-                                     std::byte* bind,
-                                     std::byte*& iterator) noexcept;
-
 /** Calls native construction first, then retains the successfully initialized identity. */
 __declspec(noinline) std::uint32_t* __fastcall instantiate(std::uint32_t* output,
                                                            const void* entry,
@@ -245,32 +196,5 @@ __declspec(noinline) void __fastcall purge_entities(void* view,
                                                     std::uint32_t* work1,
                                                     std::uint32_t* work2,
                                                     std::uint8_t epoch);
-
-/** Preserves the observer's original call and records the bubble used by its native gate. */
-__declspec(noinline) std::uintptr_t __fastcall trace_observer(void* observer,
-                                                              void* activity,
-                                                              const std::uint8_t* bubble);
-
-/** Nested calls restore their caller's diagnostic scope without changing native execution. */
-__declspec(noinline) std::uintptr_t __fastcall trace_rebind();
-
-/** Captures only the rebind function's direct actor iterator call. */
-__declspec(noinline) std::uintptr_t __fastcall trace_iterator(void* iterator,
-                                                              std::uint32_t* output);
-
-/** Associates the actual source lookup with the current iterator output. */
-__declspec(noinline) std::uint8_t __fastcall trace_source(std::uint32_t owner, void* output);
-
-/** Records only the source resolver called directly by the current rebind pass. */
-__declspec(noinline) std::uint8_t __fastcall trace_resolve(const void* source, void* output);
-
-/** Records the native exclusion predicate without invoking it a second time. */
-__declspec(noinline) std::uintptr_t __fastcall trace_predicate(std::uint32_t owner);
-
-/** Records collection counts and the actor's binding around the actual native insertion call. */
-__declspec(noinline) void __fastcall trace_bind(void* squad, std::uint32_t actor);
-
-/** Captures generation-valid member owners before native teardown and checks them afterward. */
-__declspec(noinline) std::uintptr_t __fastcall trace_teardown(void* squad);
 
 } // namespace sunrise::client::hooks::world_objects

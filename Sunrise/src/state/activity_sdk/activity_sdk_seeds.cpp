@@ -1,4 +1,7 @@
 #include <algorithm>
+#include <new>
+#include <utility>
+#include <vector>
 
 #include "internal.h"
 #include "runtime.h"
@@ -129,6 +132,81 @@ bool mission_seed_group_is_scenario_wide(const BoundView& view,
         return false;
     }
     scenarioWide = true;
+    return true;
+}
+
+/** Lists the groups of every object that occurs in every enabled state, in object order. */
+bool scenario_wide_groups(const BoundView& view,
+                          std::span<const MissionSeedOmission> omissions,
+                          std::span<state::build_data::scenarios::RosterGroup> output,
+                          std::size_t& count) noexcept {
+    count = 0;
+    const format::Scenario* const scenario =
+        view.catalog != nullptr ? bound_scenario(view) : nullptr;
+    if (scenario == nullptr) {
+        return false;
+    }
+    const Catalog& catalog = *view.catalog;
+    const auto allStates = catalog.states();
+    const auto states = scenario_states(catalog, *scenario);
+    const auto objects = catalog.objects();
+    std::size_t enabledStates = 0;
+    try {
+        // One pair per enabled state an object occurs in; sorted, each object's run is its states.
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> pairs{};
+        for (const format::Occurrence& occurrence : scenario_occurrences(catalog, *scenario)) {
+            if (occurrence.stateIndex >= allStates.size()
+                || occurrence.objectIndex >= objects.size()) {
+                return false;
+            }
+            const format::State& state = allStates[occurrence.stateIndex];
+            if ((state.flags & format::kStateFlagMask) == format::kStateFlagMask) {
+                pairs.emplace_back(occurrence.objectIndex, occurrence.stateIndex);
+            }
+        }
+        std::uint32_t firstBubble = format::kAbsentIndex;
+        bool severalBubbles = false;
+        for (const format::State& state : states) {
+            if ((state.flags & format::kStateFlagMask) != format::kStateFlagMask) {
+                continue;
+            }
+            ++enabledStates;
+            firstBubble = firstBubble == format::kAbsentIndex ? state.bubbleIndex : firstBubble;
+            severalBubbles = severalBubbles || state.bubbleIndex != firstBubble;
+        }
+        if (enabledStates == 0) {
+            return false;
+        }
+        // With one bubble there is no crossing, so a bubble group is never rebuilt.
+        if (!severalBubbles) {
+            return true;
+        }
+        std::sort(pairs.begin(), pairs.end());
+        pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+        for (std::size_t first = 0; first < pairs.size();) {
+            std::size_t next = first;
+            while (next < pairs.size() && pairs[next].first == pairs[first].first) {
+                ++next;
+            }
+            const format::Object& object = objects[pairs[first].first];
+            const bool omitted = std::any_of(
+                omissions.begin(), omissions.end(), [&object](const MissionSeedOmission& row) {
+                    return row.objectTag == object.objectTag && row.registryKey == object.objectKey;
+                });
+            state::build_data::scenarios::RosterGroup group{};
+            if (next - first == enabledStates && !omitted
+                && materialize_roster_group(catalog, object, group)) {
+                if (count >= output.size()) {
+                    return false;
+                }
+                output[count++] = group;
+            }
+            first = next;
+        }
+    } catch (const std::bad_alloc&) {
+        count = 0;
+        return false;
+    }
     return true;
 }
 
@@ -297,7 +375,10 @@ materialize_initial_mission_seed(const BoundView& view,
     return MissionSeedStatus::ready;
 }
 
-/** Builds one all-or-nothing set of exact type-43 resource inputs in object-slot order. */
+/**
+ * Builds one all-or-nothing set of type-43 seeds in object-slot order.
+ * A slot with no resource row gets `kAbsentIndex`; an ambiguous or malformed row refuses.
+ */
 AuthoredSceneSeedStatus materialize_authored_scene_seeds(const Catalog& catalog,
                                                          const format::Object& object,
                                                          std::span<AuthoredSceneSeed> outputSeeds,
@@ -329,7 +410,9 @@ AuthoredSceneSeedStatus materialize_authored_scene_seeds(const Catalog& catalog,
 
         const auto resources = slot_authored_scene_resources(catalog, slot);
         if (resources.empty()) {
-            return AuthoredSceneSeedStatus::missingResource;
+            // The client reads the scene class from its own descriptor; the seed does not need it.
+            ++required;
+            continue;
         }
         if (resources.size() != 1) {
             return AuthoredSceneSeedStatus::ambiguousResource;
@@ -352,14 +435,14 @@ AuthoredSceneSeedStatus materialize_authored_scene_seeds(const Catalog& catalog,
             || slot.componentClass == format::kAbsentIndex) {
             continue;
         }
-        const format::AuthoredSceneResource& resource =
-            slot_authored_scene_resources(catalog, slot).front();
+        const auto resources = slot_authored_scene_resources(catalog, slot);
         outputSeeds[written++] = {object.objectTag,
                                   object.objectKey,
                                   slot.slotIndex,
                                   slot.slotType,
                                   slot.authSchema,
-                                  resource.resourceTag};
+                                  resources.empty() ? format::kAbsentIndex
+                                                    : resources.front().resourceTag};
     }
     outputCount = written;
     return AuthoredSceneSeedStatus::ready;

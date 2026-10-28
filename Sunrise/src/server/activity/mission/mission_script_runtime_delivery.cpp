@@ -2,8 +2,11 @@
 #include <limits>
 #include <string_view>
 
+#include "../../../middleware/bap/activity_message/squad_objective_state.h"
 #include "../../bap/runtime.h"
 #include "../../gameplay/squad_entity_retirement.h"
+#include "../activity_sdk_device_runtime.h"
+#include "../activity_sdk_scene_spawn.h"
 #include "mission_script_runtime_internal.h"
 
 // The delivery state machine: the four stages and the timeout reconcilers. A
@@ -11,6 +14,22 @@
 // fan-out, the instance table and the service loop stay elsewhere.
 
 namespace sunrise::server::activity::mission {
+
+/** Immutable package parents must match the rows captured by the Lua decision. */
+bool scene_spawn_sources_match(const sdk::BoundView& view, const lua_vm::Intent& intent) noexcept {
+    std::array<std::uint32_t, mission_state::kIntentBurstCapacity> sources{};
+    std::size_t count = 0;
+    if (intent.kind != lua_vm::IntentKind::activateAuthoredScene || !intent.active
+        || intent.burstRowCount > intent.burstRows.size()
+        || activity_sdk_mission::scene_spawn_sources(
+               view, intent.firstRow, intent.secondRow, sources, count)
+               != activity_sdk_mission::SceneStatus::ready
+        || count != intent.burstRowCount) {
+        return false;
+    }
+    const auto parents = std::span(sources).first(count);
+    return std::equal(parents.begin(), parents.end(), intent.burstRows.begin());
+}
 
 /** @return now plus delay, saturated at the maximum instead of wrapping. */
 [[nodiscard]] std::uint64_t deadline_after(std::uint64_t now, std::uint64_t delay) noexcept {
@@ -30,8 +49,119 @@ constexpr std::uint64_t kIntentLifetimeMs = 60'000;
 /** Retired head events compact only past this count, so small queues never reallocate. */
 constexpr std::size_t kScriptEventCompactionThreshold = 64;
 
+/** Scene counts begin at final transport and never imply named-child birth or clearance. */
+[[nodiscard]] bool
+scene_population_sources(RuntimeInstance& instance,
+                         const lua_vm::Intent& intent,
+                         std::span<mission_state::SquadPopulation> output) noexcept {
+    namespace objective = middleware::bap::activity_message::squad_objective;
+    host::PendingScriptableOverride staged{};
+    if (output.size() != intent.burstRowCount || !scene_spawn_sources_match(instance.view, intent)
+        || !host::staged_scriptable_override(
+            instance.view.binding, instance.expectedScriptableRevision, staged)
+        || staged.kind != host::ScriptableOverrideKind::authoredScene
+        || !staged.missionInputBoundaryKnown) {
+        return false;
+    }
+    const auto& slot = instance.view.catalog->slots()[intent.secondRow];
+    const auto& object = instance.view.catalog->objects()[slot.objectIndex];
+    if (staged.target.objectTag != object.objectTag || staged.target.registryKey != object.objectKey
+        || staged.target.slotIndex != slot.slotIndex || staged.target.slotType != slot.slotType
+        || staged.target.authSchema != slot.authSchema) {
+        return false;
+    }
+    for (std::size_t index = 0; index < output.size(); ++index) {
+        const auto& squad = instance.view.catalog->squads()[intent.burstRows[index]];
+        const auto& sourceSlot = instance.view.catalog->slots()[squad.slotIndex];
+        const auto& sourceObject = instance.view.catalog->objects()[sourceSlot.objectIndex];
+        host::ScriptableTarget sourceTarget{};
+        sourceTarget.objectTag = sourceObject.objectTag;
+        sourceTarget.registryKey = sourceObject.objectKey;
+        sourceTarget.slotIndex = static_cast<std::uint16_t>(sourceSlot.slotIndex);
+        sourceTarget.slotType = static_cast<std::uint8_t>(sourceSlot.slotType);
+        sourceTarget.authSchema = sourceSlot.authSchema;
+        host::PendingScriptableOverride source{};
+        objective::State sourceState{};
+        if (host::actor_program_source_status(instance.view.binding, sourceTarget, &source)
+                != host::ActorProgramSourceStatus::ready
+            || !objective::read_state(
+                std::span(source.body).first(source.byteCount), source.bitCount, sourceState)
+            || sourceState.spawnGeneration == 0) {
+            return false;
+        }
+        auto& population = output[index];
+        population.attemptGeneration = intent.attemptGeneration;
+        population.inputSequenceAtStage = staged.missionInputSequenceAtStage;
+        population.clientMessageSequenceAtStage = staged.clientMessageSequenceAtStage;
+        population.squadRow = intent.burstRows[index];
+        population.objectTag = source.target.objectTag;
+        population.registryKey = source.target.registryKey;
+        population.slotIndex = source.target.slotIndex;
+        population.spawnGeneration = sourceState.spawnGeneration;
+    }
+    return true;
+}
+
 /** Acknowledges only the exact durable head and Host output revision. */
-[[nodiscard]] bool acknowledge_delivery_state(RuntimeInstance& instance) noexcept {
+[[nodiscard]] bool acknowledge_delivery_state(RuntimeInstance& instance,
+                                              const lua_vm::Intent& intent) noexcept {
+    mission_state::DeviceRequestReport device{};
+    const mission_state::DeviceRequestReport* deviceJoin = nullptr;
+    mission_state::SquadPopulation population{};
+    const mission_state::SquadPopulation* populationJoin = nullptr;
+    std::array<mission_state::SquadPopulation, mission_state::kIntentBurstCapacity> sceneSources{};
+    std::span<const mission_state::SquadPopulation> sceneJoin{};
+    if (intent.kind == lua_vm::IntentKind::activateAuthoredScene && intent.active) {
+        if (intent.burstRowCount > sceneSources.size()
+            || !scene_population_sources(
+                instance, intent, std::span(sceneSources).first(intent.burstRowCount))) {
+            fault_instance(instance, "staged scene has no exact native population sources");
+            return false;
+        }
+        sceneJoin = std::span(sceneSources).first(intent.burstRowCount);
+    }
+    if (intent.kind == lua_vm::IntentKind::placeSquad) {
+        host::PendingScriptableOverride staged{};
+        if (!host::staged_scriptable_override(
+                instance.view.binding, instance.expectedScriptableRevision, staged)
+            || !staged.missionInputBoundaryKnown
+            || staged.kind != host::ScriptableOverrideKind::squad) {
+            fault_instance(instance, "staged squad has no accepted-input boundary");
+            return false;
+        }
+        population.attemptGeneration = intent.attemptGeneration;
+        population.inputSequenceAtStage = staged.missionInputSequenceAtStage;
+        population.clientMessageSequenceAtStage = staged.clientMessageSequenceAtStage;
+        population.squadRow = intent.firstRow;
+        population.objectTag = staged.target.objectTag;
+        population.registryKey = staged.target.registryKey;
+        population.slotIndex = staged.target.slotIndex;
+        population.spawnGeneration = static_cast<std::uint32_t>(staged.generation);
+        populationJoin = &population;
+    }
+    if (intent.kind == lua_vm::IntentKind::setDeviceChannel) {
+        host::PendingScriptableOverride staged{};
+        if (!host::staged_scriptable_override(
+                instance.view.binding, instance.expectedScriptableRevision, staged)
+            || !staged.missionInputBoundaryKnown
+            || staged.kind != host::ScriptableOverrideKind::type23) {
+            fault_instance(instance, "staged device request has no accepted-input boundary");
+            return false;
+        }
+        device.requestKey = intent.requestKey;
+        device.attemptGeneration = intent.attemptGeneration;
+        device.sourceGeneration = staged.expectedActivityClientGeneration;
+        device.inputSequenceAtStage = staged.missionInputSequenceAtStage;
+        device.clientMessageSequenceAtStage = staged.clientMessageSequenceAtStage;
+        device.objectTag = staged.target.objectTag;
+        device.registryKey = staged.target.registryKey;
+        device.slotRow = intent.firstRow;
+        device.slotIndex = staged.target.slotIndex;
+        device.channel = static_cast<std::uint8_t>(staged.channel);
+        device.sequence = staged.sequence;
+        device.value = staged.channelValue;
+        deviceJoin = &device;
+    }
     mission_state::Snapshot snapshot{};
     const mission_state::Status status =
         mission_state::acknowledge_intent_output(instance.view.binding,
@@ -39,7 +169,10 @@ constexpr std::size_t kScriptEventCompactionThreshold = 64;
                                                  instance.missionStateRevision,
                                                  instance.durableIntentSequence,
                                                  instance.expectedScriptableRevision,
-                                                 snapshot);
+                                                 snapshot,
+                                                 deviceJoin,
+                                                 populationJoin,
+                                                 sceneJoin);
     if (status != mission_state::Status::ready) {
         // This attachment lost its compare. Leave authoritative State unchanged so an exact
         // reattach can reconcile the retained Host transport revision without rerunning Lua.
@@ -66,6 +199,12 @@ void queue_effect_result(RuntimeInstance& instance,
     }
     host::Event event{};
     event.binding = instance.view.binding;
+    event.attemptGeneration = intent.attemptGeneration;
+    if (outcome == host::EffectOutcome::transportStaged
+        && intent.kind == lua_vm::IntentKind::restartCheckpoint
+        && intent.checkpointReleaseRequest == 0) {
+        event.attemptGeneration = instance.attempt.generation;
+    }
     event.sequence = intent.requestKey;
     event.sourceGeneration = instance.view.activityClientGeneration;
     event.missionSequence = instance.lastMissionSequence;
@@ -79,7 +218,9 @@ void queue_effect_result(RuntimeInstance& instance,
 } // namespace
 
 /** Releases an exact unstaged Host revision while retaining the durable intent. */
-[[nodiscard]] bool release_delivery_state(RuntimeInstance& instance) noexcept {
+[[nodiscard]] bool
+release_delivery_state(RuntimeInstance& instance,
+                       const mission_state::SquadPopulation* preparedParent) noexcept {
     if (instance.expectedScriptableRevision == 0) {
         return true;
     }
@@ -90,7 +231,8 @@ void queue_effect_result(RuntimeInstance& instance,
                                              instance.missionStateRevision,
                                              instance.durableIntentSequence,
                                              instance.expectedScriptableRevision,
-                                             snapshot);
+                                             snapshot,
+                                             preparedParent);
     if (status != mission_state::Status::ready) {
         lua_vm::fault(instance.vm, "durable mission intent release compare was refused");
         instance.programStatus = ProgramStatus::programError;
@@ -204,7 +346,60 @@ void complete_delivery(RuntimeInstance& instance) noexcept {
         clear_delivery(instance);
         return;
     }
-    if (!acknowledge_delivery_state(instance)) {
+    if (intent.kind == lua_vm::IntentKind::runActorProgram && intent.active) {
+        host::PendingScriptableOverride staged{};
+        if (!host::staged_scriptable_override(
+                instance.view.binding, instance.expectedScriptableRevision, staged)) {
+            fault_delivery(instance, "actor_program_stage", "transported actor program is absent");
+            return;
+        }
+        if (staged.kind == host::ScriptableOverrideKind::squad) {
+            mission_state::SquadPopulation parent{};
+            parent.attemptGeneration = intent.attemptGeneration;
+            if (activity_sdk_devices::actor_program_parent_squad(
+                    instance.view, intent.firstRow, staged.target, parent.squadRow)
+                    != activity_sdk_devices::Status::ready
+                || !release_delivery_state(instance, &parent)) {
+                fault_delivery(instance, "actor_program_parent", "transported parent is not owned");
+                return;
+            }
+            instance.deliveryDeadline = 0;
+            instance.nextIntentAttempt = 0;
+            instance.lastIntentStatus = (std::numeric_limits<std::uint16_t>::max)();
+            instance.deliveryStage = DeliveryStage::idle;
+            return;
+        }
+    }
+    if (intent.kind == lua_vm::IntentKind::activateAuthoredScene && intent.active) {
+        host::PendingScriptableOverride staged{};
+        if (!host::staged_scriptable_override(
+                instance.view.binding, instance.expectedScriptableRevision, staged)) {
+            fault_delivery(instance, "scene_preparation", "transported scene output is absent");
+            return;
+        }
+        if (staged.kind != host::ScriptableOverrideKind::authoredScene) {
+            std::uint32_t squadRow = sdk::format::kAbsentIndex;
+            if (!scene_spawn_sources_match(instance.view, intent)
+                || activity_sdk_mission::validate_scene_preparation_output(
+                       instance.view, intent.firstRow, intent.secondRow, staged, squadRow)
+                       != activity_sdk_mission::SceneStatus::ready
+                || std::find(intent.burstRows.begin(),
+                             intent.burstRows.begin() + intent.burstRowCount,
+                             squadRow)
+                       == intent.burstRows.begin() + intent.burstRowCount
+                || !release_delivery_state(instance)) {
+                fault_delivery(
+                    instance, "scene_preparation", "transported scene source is not owned");
+                return;
+            }
+            instance.deliveryDeadline = 0;
+            instance.nextIntentAttempt = 0;
+            instance.lastIntentStatus = (std::numeric_limits<std::uint16_t>::max)();
+            instance.deliveryStage = DeliveryStage::idle;
+            return;
+        }
+    }
+    if (!acknowledge_delivery_state(instance, intent)) {
         clear_pending_events(instance.view.binding);
         clear_delivery(instance);
         return;
@@ -221,6 +416,12 @@ void complete_delivery(RuntimeInstance& instance) noexcept {
     case lua_vm::IntentKind::bindCombatantToSquad:
         result = "combatant_binding_staged";
         break;
+    case lua_vm::IntentKind::stopAuthoredScene:
+        result = "scene_stop_staged";
+        break;
+    case lua_vm::IntentKind::signalAuthoredScene:
+        result = "scene_event_staged";
+        break;
     case lua_vm::IntentKind::activateAuthoredScene:
         result = "scene_staged";
         break;
@@ -231,13 +432,24 @@ void complete_delivery(RuntimeInstance& instance) noexcept {
         result = "device_staged";
         break;
     case lua_vm::IntentKind::applySlotAuth:
+    case lua_vm::IntentKind::setInteractableObject:
+    case lua_vm::IntentKind::setGhostLink:
+    case lua_vm::IntentKind::watchDamage:
+    case lua_vm::IntentKind::runActorProgram:
+    case lua_vm::IntentKind::assignCombatObjective:
         result = "slot_auth_staged";
+        break;
+    case lua_vm::IntentKind::retireActor:
+        result = "actor_retirement_staged";
         break;
     case lua_vm::IntentKind::setLifetime:
         result = "lifetime_staged";
         break;
     case lua_vm::IntentKind::restartCheckpoint:
         result = "checkpoint_staged";
+        break;
+    case lua_vm::IntentKind::holdSpawn:
+        result = "spawn_hold_staged";
         break;
     case lua_vm::IntentKind::fireTrigger:
         result = "trigger_staged";
@@ -250,6 +462,9 @@ void complete_delivery(RuntimeInstance& instance) noexcept {
         break;
     case lua_vm::IntentKind::playPerformance:
         result = "performance_staged";
+        break;
+    case lua_vm::IntentKind::playActorSequence:
+        result = "actor_sequence_staged";
         break;
     case lua_vm::IntentKind::resetObjectives:
         result = "objective_reset_staged";

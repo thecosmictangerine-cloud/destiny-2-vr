@@ -113,10 +113,22 @@ resolve_arrival_bubble(const state::activity::defaults::DefaultDestination& defa
 std::uint16_t arrival_slice_set(const state::activity::defaults::DefaultDestination& defaults,
                                 const state::activity::destination::DestinationSelection& selection,
                                 std::string_view name,
-                                const scenarios::Definition& layout) noexcept {
+                                const scenarios::Definition& layout,
+                                std::int32_t declaredRegion) noexcept {
     // A forced slice set is the whole point of forcing one, so nothing derived may replace it.
     if (selection.hasSliceSetOverride) {
         return selection.sliceSetOverride;
+    }
+    // A launched activity's client names no bubble, so the host's own program says where the
+    // mission opens. The packages carry no arrival; a landing zone the client named still wins.
+    const bool clientNamed =
+        selection.hasArrivalBubbleOverride
+        || (selection.hasArrivalBubbleHash
+            && bubble_for_hash(layout, selection.arrivalBubbleHash) != kNoBubble);
+    if (!clientNamed && declaredRegion >= 0
+        && bubble_is_live(
+            layout, static_cast<std::size_t>(declaredRegion) / tables::kSliceSetIndexFactor)) {
+        return static_cast<std::uint16_t>(declaredRegion);
     }
     std::size_t bubble = resolve_arrival_bubble(defaults, selection, name, layout);
     // A bubble with no slice-set state has no usable index, so the destination's own first live

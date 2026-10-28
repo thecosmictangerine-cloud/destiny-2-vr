@@ -1,7 +1,7 @@
 #include "../../external_server/route.h"
 #include "../content_config/runtime.h"
 #include "../coordinator/network_call_coordinator.h"
-#include "../investment/investment_derived_rebuild.h"
+#include "../investment/investment_patches.h"
 #include "../platform.h"
 #include "../runtime.h"
 #include "network_hook_entries.h"
@@ -33,7 +33,7 @@ bool install_game() noexcept {
         ReleaseSRWLockExclusive(&g_lock);
         return false;
     }
-    if (baseInstalled && content_config::is_installed() && investment::is_installed()) {
+    if (baseInstalled && content_config::is_installed()) {
         ReleaseSRWLockExclusive(&g_lock);
         return true;
     }
@@ -41,29 +41,23 @@ bool install_game() noexcept {
         ReleaseSRWLockExclusive(&g_lock);
         return false;
     }
-    if (investment::has_ownership() && !investment::is_installed()) {
-        ReleaseSRWLockExclusive(&g_lock);
-        return false;
-    }
 
     const lifecycle::GameSpecs specs = lifecycle::game_specs();
     const bool installedBase =
         baseInstalled || lifecycle::install_group(specs, lifecycle::kGameSlots);
-    const bool installedContent = installedBase && content_config::install();
-    const bool installed = installedContent && investment::install();
+    const bool installed = installedBase && content_config::install();
     if (installed) {
         // External-server mode only. Unpins TLS and points request URLs at that server.
         (void)external_server::install();
     }
     if (!installed && installedBase) {
         disable_group(lifecycle::kGameSlots);
-        const bool investmentRemoved = investment::uninstall();
         const bool contentRemoved = !content_config::has_ownership() || content_config::uninstall();
         bool forcedRollbackFailure{};
 #if defined(SUNRISE_BAP_HOOK_TEST)
         forcedRollbackFailure = testing::consume_game_rollback_failure();
 #endif
-        if (investmentRemoved && contentRemoved && !forcedRollbackFailure) {
+        if (contentRemoved && !forcedRollbackFailure) {
             const auto protectedEntries = lifecycle::game_protected_entries();
             (void)lifecycle::uninstall_group(lifecycle::kGameSlots, protectedEntries);
         }
@@ -115,7 +109,9 @@ bool uninstall() noexcept {
     ReleaseSRWLockExclusive(&g_lock);
 
     external_server::uninstall();
-    if (!investment::uninstall() || !content_config::uninstall() || !wait_for_base_idle()) {
+    investment::restore_lore_visibility();
+    investment::restore_socket_menu_routing();
+    if (!content_config::uninstall() || !wait_for_base_idle()) {
         return false;
     }
 
@@ -135,7 +131,7 @@ bool is_game_installed() noexcept {
     AcquireSRWLockShared(&g_lock);
     const bool installed = lifecycle::all_installed(lifecycle::kGameSlots)
                            && lifecycle::all_accepting(lifecycle::kGameSlots)
-                           && content_config::is_installed() && investment::is_installed();
+                           && content_config::is_installed();
     ReleaseSRWLockShared(&g_lock);
     return installed;
 }
@@ -144,8 +140,7 @@ bool is_game_installed() noexcept {
 bool has_game_ownership() noexcept {
     AcquireSRWLockShared(&g_lock);
     const bool owned = lifecycle::any_installed(lifecycle::kGameSlots)
-                       || content_config::has_ownership() || investment::has_ownership()
-                       || coordinator::active_calls() != 0;
+                       || content_config::has_ownership() || coordinator::active_calls() != 0;
     ReleaseSRWLockShared(&g_lock);
     return owned;
 }
@@ -166,7 +161,7 @@ bool is_installed() noexcept {
                            && lifecycle::all_accepting(lifecycle::kGameSlots)
                            && lifecycle::all_installed(lifecycle::kPlatformSlots)
                            && lifecycle::all_accepting(lifecycle::kPlatformSlots)
-                           && content_config::is_installed() && investment::is_installed();
+                           && content_config::is_installed();
     ReleaseSRWLockShared(&g_lock);
     return installed;
 }

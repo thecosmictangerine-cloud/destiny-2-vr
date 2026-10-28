@@ -89,9 +89,15 @@ using ActorCommandPolicy = ActorCommandPolicyStatus (*)(
 /** Installs the gameplay-owned policy callback before mission service starts. */
 void install_actor_command_policy(const void* context, ActorCommandPolicy policy) noexcept;
 
+/** Publishes accepted gameplay damage only to the mission's matching source generation. */
+void report_squad_provoked(const state::activity::SessionBinding& binding,
+                           std::uint64_t sourceGeneration,
+                           std::uint32_t registryKey,
+                           std::uint16_t slotIndex) noexcept;
+
 /** Starts the optional, off-by-default server mission-script manager. */
 void initialize() noexcept;
-/** Writes the readable authored controller filename for one 1-based SDK activity row. */
+/** Writes the authored controller path, `<name>/<name>.lua`, for one 1-based SDK activity row. */
 [[nodiscard]] bool controller_file_name(std::uint32_t oneBasedActivityRow,
                                         std::span<char> output) noexcept;
 /** Runs one bounded event/reducer/output slice after Activity Host ingress. */

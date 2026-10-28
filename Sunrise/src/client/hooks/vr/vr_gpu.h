@@ -9,6 +9,7 @@ struct ID3D11Device;
 struct ID3D11DeviceContext;
 struct IDXGISwapChain;
 struct ID3D11RenderTargetView;
+struct ID3D11Texture2D;
 
 namespace sunrise::client::hooks::vr::gpu {
 
@@ -46,6 +47,36 @@ struct ViewCamera final {
  * @return The view, owned here, or null.
  */
 [[nodiscard]] ID3D11RenderTargetView* back_buffer_view(ID3D11Device* device, IDXGISwapChain* swapChain) noexcept;
+
+/**
+ * Drops the cached view, and with it the reference it holds on the back buffer. Called right before
+ * ResizeBuffers, which DXGI refuses while any reference to the buffers is outstanding.
+ */
+void release_back_buffer_view() noexcept;
+
+/**
+ * The whole frame as the UI composited it this frame: the input of the UI's scene composite, before
+ * the UI crops it to its canvas (never narrower than 16:10). An eye-shaped render is complete in it,
+ * while the back buffer holds it cropped to a band with the HUD on top (docs/DISPLAY.md).
+ * @return The texture with a reference the caller releases, or null when the composite did not run
+ *         since the last present (menus, loads) or has not been seen at all.
+ */
+[[nodiscard]] ID3D11Texture2D* scene_texture() noexcept;
+
+/**
+ * Whether `scale` is the vertex dequantisation scale (palette header row 4) of one of the arm meshes the
+ * first-person viewmodel draws: the gloves' and gauntlets' own. In third person the same meshes are
+ * skinned by world palettes carrying the same header, so this names an arm piece whatever buffer the
+ * engine's pool put it in this frame (vr_body.cpp). Any thread.
+ */
+[[nodiscard]] bool is_arm_scale(float scale) noexcept;
+
+/** @return How many times the UI's scene composite (the world drawn into the canvas) has run. */
+[[nodiscard]] std::uint64_t scene_composites() noexcept;
+
+/** @return World and viewmodel view constants examined so far (only while the rewrite runs: immersive). */
+[[nodiscard]] std::uint64_t world_views() noexcept;
+[[nodiscard]] std::uint64_t viewmodel_views() noexcept;
 
 /** @return The immediate context the game draws on, without a reference, or null. */
 [[nodiscard]] ID3D11DeviceContext* immediate_context() noexcept;

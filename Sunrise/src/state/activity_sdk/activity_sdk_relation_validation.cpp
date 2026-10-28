@@ -1,12 +1,25 @@
 #include <array>
+#include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <tuple>
 
+#include "actor_sequences.h"
 #include "internal.h"
 #include "validation_internal.h"
 
 namespace sunrise::state::activity_sdk::validation {
 namespace {
+
+// An empty authored name uses the FNV-1 basis.
+constexpr std::uint32_t kAbsentDefinitionHash = 0x811C9DC5U;
+// Ability owners and targets use these exact package slot classes and schemas.
+constexpr std::uint32_t kAbilitySlotType = 2U;
+constexpr std::uint32_t kAbilityComponentClass = 0x8080834EU;
+constexpr std::uint32_t kAbilitySenseSchema = 0x80807DA2U;
+constexpr std::uint32_t kAbilityAuthSchema = 0x80807DA1U;
+constexpr std::uint32_t kAbilityTargetSlotType = 58U;
+constexpr std::uint32_t kAbilityTargetComponentClass = 0x80807D9BU;
 
 /** @return True when every task target names slots and objectives the catalog holds. */
 [[nodiscard]] bool task_targets(const Catalog& catalog) noexcept {
@@ -41,13 +54,77 @@ namespace {
     return true;
 }
 
-/** @return True when every authored text row points inside its own string section. */
+/** @return True when authored controls belong to their exact slots. */
 [[nodiscard]] bool authored_text(const Catalog& catalog) noexcept {
     const auto slots = catalog.slots();
+    const format::ActorAbility* priorAbility = nullptr;
+    for (const format::ActorAbility& row : catalog.actor_abilities()) {
+        if (row.slotIndex >= slots.size() || slots[row.slotIndex].slotType != kAbilitySlotType
+            || slots[row.slotIndex].componentClass != kAbilityComponentClass
+            || slots[row.slotIndex].senseSchema != kAbilitySenseSchema
+            || slots[row.slotIndex].authSchema != kAbilityAuthSchema
+            || (slots[row.slotIndex].flags & format::kSlotSchemaJoinExact) == 0
+            || row.actorClassIndex >= catalog.actor_classes().size() || row.definitionTag == 0
+            || row.groupHash == 0 || row.groupHash == kAbsentDefinitionHash || row.requestHash == 0
+            || row.requestHash == kAbsentDefinitionHash
+            || (priorAbility != nullptr
+                && std::tie(row.slotIndex, row.groupHash, row.requestHash)
+                       <= std::tie(priorAbility->slotIndex,
+                                   priorAbility->groupHash,
+                                   priorAbility->requestHash))) {
+            return false;
+        }
+        priorAbility = &row;
+    }
+    const format::ActorAbilityTarget* priorTarget = nullptr;
+    for (const format::ActorAbilityTarget& row : catalog.actor_ability_targets()) {
+        if (row.slotIndex >= slots.size() || slots[row.slotIndex].slotType != kAbilityTargetSlotType
+            || slots[row.slotIndex].componentClass != kAbilityTargetComponentClass
+            || slots[row.slotIndex].senseSchema != format::kAbsentIndex
+            || slots[row.slotIndex].authSchema != format::kAbsentIndex
+            || (slots[row.slotIndex].flags & format::kSlotSchemaJoinExact) == 0
+            || row.resourceTag == 0 || row.resourceTag == format::kAbsentIndex
+            || (priorTarget != nullptr && row.slotIndex <= priorTarget->slotIndex)) {
+            return false;
+        }
+        priorTarget = &row;
+    }
+    const format::CombatObjectiveGroup* priorGroup = nullptr;
+    for (const format::CombatObjectiveGroup& row : catalog.combat_objective_groups()) {
+        if (row.slotIndex >= slots.size()
+            || slots[row.slotIndex].slotType != format::kObjectiveSlotType
+            || slots[row.slotIndex].componentClass != format::kObjectiveComponentClass
+            || slots[row.slotIndex].senseSchema != format::kObjectiveSenseSchema
+            || slots[row.slotIndex].authSchema != format::kObjectiveAuthSchema
+            || (priorGroup != nullptr && row.slotIndex < priorGroup->slotIndex)
+            || row.groupIndex
+                   != (priorGroup != nullptr && row.slotIndex == priorGroup->slotIndex
+                           ? priorGroup->groupIndex + 1U
+                           : 0U)) {
+            return false;
+        }
+        priorGroup = &row;
+    }
+    const format::DialogueCue* previous = nullptr;
+    for (const format::DialogueCue& row : catalog.dialogue_cues()) {
+        if (row.slotIndex >= slots.size() || row.cueIndex >= slots[row.slotIndex].reserved
+            || slots[row.slotIndex].slotType != format::kDialogueSlotType
+            || (slots[row.slotIndex].flags & format::kSlotDialogueCuesExact) == 0
+            || row.definitionHash == 0 || row.definitionHash == kAbsentDefinitionHash
+            || !std::isfinite(row.authoredWindowSeconds) || row.authoredWindowSeconds < 0.0F
+            || (previous != nullptr
+                && (row.slotIndex < previous->slotIndex
+                    || (row.slotIndex == previous->slotIndex
+                        && row.cueIndex <= previous->cueIndex)))) {
+            return false;
+        }
+        previous = &row;
+    }
     for (const format::DialogueCueText& row : catalog.dialogue_cue_texts()) {
         if (row.slotIndex >= slots.size() || row.cueIndex >= slots[row.slotIndex].reserved
             || slots[row.slotIndex].slotType != format::kDialogueSlotType || row.definitionHash == 0
-            || row.definitionHash == 0x811C9DC5U || row.containerTag == 0 || row.stringHash == 0) {
+            || row.definitionHash == kAbsentDefinitionHash || row.containerTag == 0
+            || row.stringHash == 0) {
             return false;
         }
     }
@@ -491,6 +568,10 @@ void remember_state_name(const Catalog& catalog, std::size_t refused) noexcept {
 
 /** Runs every cross-section relation check in order, remembering the first that refuses. */
 bool relations(const Catalog& catalog) {
+    if (!valid_actor_sequences(catalog)) {
+        remember("actor_sequences");
+        return false;
+    }
     std::size_t refused = 0;
     if (!actor_state_names(catalog, refused)) {
         remember_state_name(catalog, refused);

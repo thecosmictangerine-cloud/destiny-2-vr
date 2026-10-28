@@ -412,14 +412,15 @@ bool append_account_resync_appearance_notification(
     return true;
 }
 
-/** Refreshes the selected character and its account roster from committed State. */
+/** Refreshes the selected character and includes its roster only when roster fields changed. */
 bool append_account_resync_roster_notification(Scratch& scratch,
                                                const queuez::SessionState& before,
                                                std::span<const std::byte, state::kAesKeySize> key,
                                                std::array<std::byte, state::kBapNonceSize>& nonce,
                                                std::span<std::byte> response,
                                                std::size_t& written,
-                                               queuez::SessionState& after) noexcept {
+                                               queuez::SessionState& after,
+                                               bool includeRoster) noexcept {
     after = before;
     ensure_account_canonical();
     if (!before.family3Active) {
@@ -437,7 +438,7 @@ bool append_account_resync_roster_notification(Scratch& scratch,
     queuez::RosterAppearanceRefresh refresh{};
     snapshot::Prepared prepared{};
     if (selected == 0 || characterIndex >= account.characterCount
-        || !queuez::stage_roster_appearance_refresh(before, selected, true, refresh)
+        || !queuez::stage_roster_appearance_refresh(before, selected, includeRoster, refresh)
         || !snapshot::prepare_roster_appearance_refresh(
             scratch, refresh, account.characters[characterIndex], characterIndex, prepared)
         || !queuez_frame::append_prepared_frame(scratch, prepared, key, nonce, response, written)) {

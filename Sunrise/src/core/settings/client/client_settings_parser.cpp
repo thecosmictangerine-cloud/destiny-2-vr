@@ -13,9 +13,6 @@ bool Parser::client_settings(client::Settings& output) noexcept {
     bool hasCustomBootflowTextures = false;
     bool hasSocketMenuRouting = false;
     bool hasRevealLoreBooks = false;
-    bool hasRegionPrivate = false;
-    bool hasSkipOrbitCinematicWait = false;
-    bool hasPinReplicatedRecord = false;
     if (consume('}')) {
         return true;
     }
@@ -49,21 +46,6 @@ bool Parser::client_settings(client::Settings& output) noexcept {
                 return false;
             }
             hasRevealLoreBooks = true;
-        } else if (key == "region_private") {
-            if (hasRegionPrivate || !boolean(candidate.regionPrivate)) {
-                return false;
-            }
-            hasRegionPrivate = true;
-        } else if (key == "skip_orbit_cinematic_wait") {
-            if (hasSkipOrbitCinematicWait || !boolean(candidate.skipOrbitCinematicWait)) {
-                return false;
-            }
-            hasSkipOrbitCinematicWait = true;
-        } else if (key == "pin_replicated_record") {
-            if (hasPinReplicatedRecord || !boolean(candidate.pinReplicatedRecord)) {
-                return false;
-            }
-            hasPinReplicatedRecord = true;
         } else if (!skip_value(0)) {
             return false;
         }

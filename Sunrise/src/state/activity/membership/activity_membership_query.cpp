@@ -30,7 +30,7 @@ bool acknowledged(std::uint64_t sessionId) noexcept {
 /** Arms or clears the host-named teleport region for one joined session. */
 bool arm_host_teleport(std::uint64_t sessionId,
                        std::int32_t sliceSetIndex,
-                       std::uint32_t sliceSetHash) noexcept {
+                       std::uint32_t spawnSetHash) noexcept {
     if (sessionId == kAbsentSessionId) {
         return false;
     }
@@ -46,13 +46,13 @@ bool arm_host_teleport(std::uint64_t sessionId,
             membership.hostTeleport = {};
         } else if (!membership.hasHostTeleport
                    || membership.hostTeleport.sliceSetIndex != sliceSetIndex
-                   || membership.hostTeleport.sliceSetHash != sliceSetHash) {
+                   || membership.hostTeleport.spawnSetHash != spawnSetHash) {
             // Step 0 latches the token, it does not compare it, so the increment is bookkeeping
             // for the client's own arm. The state is what gates the step, and zero is idle.
             const std::uint8_t token =
                 static_cast<std::uint8_t>(membership.hostTeleport.token + 1U);
             membership.hostTeleport.sliceSetIndex = sliceSetIndex;
-            membership.hostTeleport.sliceSetHash = sliceSetHash;
+            membership.hostTeleport.spawnSetHash = spawnSetHash;
             membership.hostTeleport.token = token;
             membership.hostTeleport.state = kHostTeleportArmedState;
             membership.hasHostTeleport = true;
@@ -132,6 +132,23 @@ bool hard_wipe_needs_publish(std::uint64_t sessionId) noexcept {
     return pending;
 }
 
+/** @return True while the client has not yet mirrored an armed wipe's start block. */
+bool hard_wipe_start_unseen(std::uint64_t sessionId) noexcept {
+    bool unseen = false;
+    AcquireSRWLockShared(&runtime::storage::g_stateLock);
+    const ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        const MembershipState& member = state.sessions[target].membership;
+        const HardWipeState& wipe = member.hardWipe;
+        unseen = wipe.active && wipe.host.state != kHardWipeReleaseState
+                 && (member.spawn.opaqueByte != wipe.host.opaqueByte
+                     || member.spawn.state < kHardWipeStartState);
+    }
+    ReleaseSRWLockShared(&runtime::storage::g_stateLock);
+    return unseen;
+}
+
 /** Releases the armed wipe named by its request key. */
 bool release_hard_wipe(const SessionBinding& binding, std::uint64_t requestKey) noexcept {
     bool accepted = false;
@@ -164,6 +181,86 @@ std::uint32_t checkpoint_spawn_hash(std::uint64_t sessionId, std::int32_t region
     }
     ReleaseSRWLockShared(&runtime::storage::g_stateLock);
     return result;
+}
+
+/** Holds or releases the spawn the mission program owns. */
+void set_program_spawn_hold(std::uint64_t sessionId, bool held) noexcept {
+    AcquireSRWLockExclusive(&runtime::storage::g_stateLock);
+    ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        state.sessions[target].membership.programSpawnHold = held;
+    }
+    ReleaseSRWLockExclusive(&runtime::storage::g_stateLock);
+}
+
+/** @return True while the mission program holds this session's spawn. */
+bool program_spawn_hold(std::uint64_t sessionId) noexcept {
+    bool held = false;
+    AcquireSRWLockShared(&runtime::storage::g_stateLock);
+    const ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        held = state.sessions[target].membership.programSpawnHold;
+    }
+    ReleaseSRWLockShared(&runtime::storage::g_stateLock);
+    return held;
+}
+
+/** Records the declared initial-state region on the joined session that owns the program. */
+void note_declared_initial_region(std::uint64_t sessionId, std::int32_t region) noexcept {
+    AcquireSRWLockExclusive(&runtime::storage::g_stateLock);
+    ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        state.sessions[target].membership.declaredInitialRegion = region;
+    }
+    ReleaseSRWLockExclusive(&runtime::storage::g_stateLock);
+}
+
+/** Records the spawn set the attached program declared on the joined session that owns it. */
+void note_declared_spawn_set(std::uint64_t sessionId, std::uint32_t spawnSetHash) noexcept {
+    AcquireSRWLockExclusive(&runtime::storage::g_stateLock);
+    ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        state.sessions[target].membership.declaredSpawnSetHash = spawnSetHash;
+    }
+    ReleaseSRWLockExclusive(&runtime::storage::g_stateLock);
+}
+
+/** @return The declared spawn set, or zero while no program declared one. */
+std::uint32_t declared_spawn_set(std::uint64_t sessionId) noexcept {
+    std::uint32_t spawnSetHash = 0;
+    AcquireSRWLockShared(&runtime::storage::g_stateLock);
+    const ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        spawnSetHash = state.sessions[target].membership.declaredSpawnSetHash;
+    }
+    ReleaseSRWLockShared(&runtime::storage::g_stateLock);
+    return spawnSetHash;
+}
+
+/** @return The declared initial-state region, or -1 while no program declared one. */
+std::int32_t declared_initial_region(std::uint64_t sessionId) noexcept {
+    std::int32_t region = kAbsentRegionIndex;
+    AcquireSRWLockShared(&runtime::storage::g_stateLock);
+    const ActivityState& state = runtime::storage::g_state.activity;
+    const auto target = activity::transactions::find_session(state, sessionId);
+    if (target != kInvalidSessionSlot) {
+        region = state.sessions[target].membership.declaredInitialRegion;
+    }
+    ReleaseSRWLockShared(&runtime::storage::g_stateLock);
+    return region;
+}
+
+/** @return The current activity State revision. */
+std::uint64_t state_revision() noexcept {
+    AcquireSRWLockShared(&runtime::storage::g_stateLock);
+    const std::uint64_t revision = runtime::storage::g_state.activity.stateRevision;
+    ReleaseSRWLockShared(&runtime::storage::g_stateLock);
+    return revision;
 }
 
 /** Reports whether a host-named teleport is still waiting for the client to move. */
@@ -239,7 +336,7 @@ ClientPlacement reported_placement(std::uint64_t sessionId) noexcept {
         placement.currentRegion = membership.currentRegion.index;
         placement.bubble = membership.bubble;
         placement.bubbleRevision = membership.bubbleRevision;
-        placement.entered = membership.entered;
+        placement.clientInWorld = membership.clientInWorld;
     }
     ReleaseSRWLockShared(&runtime::storage::g_stateLock);
     return placement;
@@ -251,7 +348,9 @@ void note_client_writeback(bool inWorld) noexcept {
     ActivityState& state = runtime::storage::g_state.activity;
     for (SessionRecord& record : state.sessions) {
         if (record.occupied && record.joined) {
-            record.membership.entered = inWorld && record.membership.currentRegion.index >= 0;
+            // Store the report alone. Folding in the region held at this instant drops an arrival
+            // that lands before the region leg, and only the next write-back can restore it.
+            record.membership.clientInWorld = inWorld;
         }
     }
     ReleaseSRWLockExclusive(&runtime::storage::g_stateLock);

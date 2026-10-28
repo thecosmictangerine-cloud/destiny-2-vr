@@ -587,6 +587,8 @@ enum class ActivityBindingMemberResult : std::uint8_t {
         push_scene_collection(state);
     } else if (key == "slots") {
         push_slot_collection(state);
+    } else if (key == "atom_kinds") {
+        push_atom_kinds(state);
     } else if (key == "activity_messages") {
         push_message_collection(state);
     } else if (key == "bap_services") {

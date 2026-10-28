@@ -9,7 +9,6 @@
 #include "../../../client/content/activity/scriptable_catalog_worker.h"
 #include "../../../client/content/investment/worker.h"
 #include "../../../client/hooks/feature_flags/feature_flags.h"
-#include "../../../client/hooks/membership_probe/membership_probe.h"
 #include "../../../client/hooks/net_tick_probe/net_tick_probe.h"
 #include "../../../core/logging/log.h"
 #include "../../../core/ui/busy/busy.h"
@@ -19,11 +18,6 @@
 
 namespace sunrise::steam::runtime::callbacks {
 namespace {
-
-/** How often the pump proves it is still running. */
-constexpr std::uint64_t kPumpReportIntervalMs = 2'000;
-/** Tick after which the server owes its next proof of life. Only the server thread touches it. */
-std::uint64_t g_pumpReportDueTick = 0;
 
 /** The server's own tick, matching the frame cadence the pump used to give it. */
 constexpr std::uint64_t kServerTickMs = 10;
@@ -36,20 +30,8 @@ std::atomic_bool g_serverThreadStarted{false};
 DWORD WINAPI server_thread(LPVOID) noexcept {
     for (;;) {
         Sleep(static_cast<DWORD>(kServerTickMs));
-        const std::uint64_t now = GetTickCount64();
-        const bool reports = now >= g_pumpReportDueTick;
-        if (reports) {
-            g_pumpReportDueTick = now + kPumpReportIntervalMs;
-            core::log::write(core::log::Channel::server,
-                             core::log::Level::debug,
-                             "ev=core stage=pump result=enter");
-        }
-        server::service(now);
-        if (reports) {
-            core::log::write(core::log::Channel::server,
-                             core::log::Level::debug,
-                             "ev=core stage=pump result=ok");
-        }
+        // The service's two-second timing report is also the thread's proof of life.
+        server::service(GetTickCount64());
     }
 }
 
@@ -209,8 +191,6 @@ void run_slice() noexcept {
         client::content::investment::worker::service(now);
         client::content::activity::sdk_generation::service();
         client::content::activity::scriptables::service();
-        // Read-only, and out of line: the container bind lands a tick after its message.
-        client::hooks::membership_probe::service(now);
     }
 }
 

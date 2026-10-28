@@ -22,7 +22,9 @@
 #include "../../input/window_focus.h"
 #include "../../movement/movement_settings_store.h"
 #include "../../patterns/image_scan.h"
+#include "../../player/player_position.h"
 #include "../fly/fly.h"
+#include "../teleport/runtime.h"
 #include "runtime.h"
 
 namespace sunrise::client::hooks::noclip {
@@ -36,24 +38,12 @@ constexpr std::string_view kHavokStepText =
 constexpr auto kHavokStep =
     patterns::signature<patterns::signature_length(kHavokStepText)>(kHavokStepText);
 
-/** Constructs hkpCharacterMotion and loads its vtable through the leading RIP-relative LEA. */
-constexpr std::string_view kCharacterMotionVtableText = "48 8D 05 ? ? ? ? C6 43 ? ? 48 89 03 EB";
-constexpr auto kCharacterMotionVtable =
-    patterns::signature<patterns::signature_length(kCharacterMotionVtableText)>(
-        kCharacterMotionVtableText);
-
-/** RIP-relative displacement and instruction-end offsets in the vtable LEA. */
-constexpr std::size_t kVtableDisplacement = 3;
-constexpr std::size_t kVtableInstructionLength = 7;
-
 /** hkpSimulation::m_world. */
 constexpr std::size_t kSimulationWorld = 0x18;
 /** hkpWorld simulation-island arrays. */
 constexpr std::array<std::size_t, 2> kWorldIslandArrays{0x40, 0x50};
 /** hkpSimulationIsland::m_entities. */
 constexpr std::size_t kIslandEntities = 0x60;
-/** hkpRigidBody's embedded hkpMotion object. */
-constexpr std::size_t kBodyMotion = 0x150;
 /** World position and linear velocity in the embedded motion. */
 constexpr std::size_t kBodyPosition = 0x1C0;
 constexpr std::size_t kBodyVelocity = 0x230;
@@ -91,9 +81,26 @@ static_assert(sizeof(HavokArray) == kHavokArrayBytes);
 
 std::atomic_bool g_installed{false};
 std::atomic_bool g_toggleDown{false};
-/** Module-owned vtable target; unlike Havok objects, its address is stable until DLL teardown. */
-std::uintptr_t g_characterMotionVtable{};
 hooking::detour::Handle g_stepHandle{};
+
+/** Wall time between two fly measurement lines. */
+constexpr ULONGLONG kMeasureWindowMs = 1000;
+
+/** Fly movement summed over one window. Written by the step hook only. */
+struct FlyMeasure {
+    ULONGLONG windowStart{};
+    std::uint32_t steps{};
+    std::uint32_t found{};
+    float simulated{};
+    float asked{};
+    float moved{};
+    float leftOver{};
+    std::int32_t islandMax{};
+    bool noclip{};
+};
+FlyMeasure g_measure{};
+/** Entity count of the island that held the player on the last lookup. */
+std::int32_t g_playerIslandSize{};
 
 /** Views one field while its owning Havok object is live inside the simulation hook. */
 template <typename T> [[nodiscard]] T& field(std::byte* object, std::size_t offset) noexcept {
@@ -140,32 +147,101 @@ capped_speed(const std::array<float, kVectorLanes>& velocity, float limit) noexc
            && (array.size == 0 || array.entries != nullptr);
 }
 
-/** @return The character rigid body in one island, or null when the island has none. */
-[[nodiscard]] std::byte* character_body_in(std::byte* island) noexcept {
+/** @return True when one island holds the body. */
+[[nodiscard]] bool island_holds(std::byte* island, const std::byte* body) noexcept {
     if (island == nullptr) {
-        return nullptr;
+        return false;
     }
     const HavokArray& entities = field<HavokArray>(island, kIslandEntities);
     if (!valid_array(entities, kMaximumEntityCount)) {
-        return nullptr;
+        return false;
     }
     for (std::int32_t index = 0; index < entities.size; ++index) {
-        std::byte* const body = entities.entries[index];
-        if (body != nullptr
-            && field<std::uintptr_t>(body, kBodyMotion) == g_characterMotionVtable) {
-            return body;
+        if (entities.entries[index] == body) {
+            g_playerIslandSize = entities.size;
+            return true;
         }
     }
-    return nullptr;
+    return false;
 }
 
-/** @return The current character rigid body, resolved fresh from active and inactive islands. */
-[[nodiscard]] std::byte* character_body(std::byte* simulation) noexcept {
+/** @return The length of a vector's three lanes. */
+[[nodiscard]] float length_of(const std::array<float, kVectorLanes>& vector) noexcept {
+    return std::sqrt(vector[kHorizontalX] * vector[kHorizontalX]
+                     + vector[kHorizontalY] * vector[kHorizontalY]
+                     + vector[kVertical] * vector[kVertical]);
+}
+
+/**
+ * Adds one step to the fly measurement and logs the window once it is full.
+ * @param found True when this step held the player's body.
+ * @param noclip True when noclip also runs on this step.
+ * @param deltaTime Step length in seconds.
+ * @param asked Speed fly wrote before the step.
+ * @param moved Distance the body moved in the step.
+ * @param leftOver Speed left in the body after the step, before the cap.
+ */
+void measure_fly(
+    bool found, bool noclip, float deltaTime, float asked, float moved, float leftOver) noexcept {
+    const ULONGLONG now = GetTickCount64();
+    if (g_measure.windowStart == 0) {
+        g_measure.windowStart = now;
+    }
+    ++g_measure.steps;
+    g_measure.noclip = g_measure.noclip || noclip;
+    if (found) {
+        ++g_measure.found;
+        g_measure.simulated += deltaTime;
+        g_measure.asked += asked * deltaTime;
+        g_measure.moved += moved;
+        g_measure.leftOver += leftOver * deltaTime;
+        g_measure.islandMax = (std::max)(g_measure.islandMax, g_playerIslandSize);
+    }
+    const ULONGLONG wall = now - g_measure.windowStart;
+    if (wall < kMeasureWindowMs) {
+        return;
+    }
+    // Speeds are averaged over simulated time, so asked, moved and left compare directly.
+    const float time = g_measure.simulated > 0.0F ? g_measure.simulated : 1.0F;
+    std::array<char, 256> line{};
+    const int written =
+        std::snprintf(line.data(),
+                      line.size(),
+                      "ev=fly stage=measure steps=%u found=%u wall_ms=%llu "
+                      "sim_ms=%.0f asked=%.2f moved=%.2f left=%.2f island=%d noclip=%d",
+                      g_measure.steps,
+                      g_measure.found,
+                      static_cast<unsigned long long>(wall),
+                      static_cast<double>(g_measure.simulated * 1000.0F),
+                      static_cast<double>(g_measure.asked / time),
+                      static_cast<double>(g_measure.moved / time),
+                      static_cast<double>(g_measure.leftOver / time),
+                      g_measure.islandMax,
+                      g_measure.noclip ? 1 : 0);
+    if (written > 0) {
+        core::log::write(core::log::Channel::client,
+                         core::log::Level::debug,
+                         {line.data(), static_cast<std::size_t>(written)});
+    }
+    g_measure = FlyMeasure{};
+    g_measure.windowStart = now;
+}
+
+/**
+ * Finds the local player's rigid body in this simulation. Enemies share the character motion
+ * type, so only the body of the player's own physics component is taken.
+ * @param simulation Simulation being stepped.
+ * @return The player's body, or null when this simulation does not hold it.
+ */
+[[nodiscard]] std::byte* player_body(std::byte* simulation) noexcept {
     if (simulation == nullptr) {
         return nullptr;
     }
+    // The cached component may be stale. The pointer is only used once an island holds it.
+    std::byte* const target =
+        static_cast<std::byte*>(teleport::body(client::player::position::component()));
     std::byte* const world = field<std::byte*>(simulation, kSimulationWorld);
-    if (world == nullptr) {
+    if (target == nullptr || world == nullptr) {
         return nullptr;
     }
     for (const std::size_t offset : kWorldIslandArrays) {
@@ -174,9 +250,8 @@ capped_speed(const std::array<float, kVectorLanes>& velocity, float limit) noexc
             continue;
         }
         for (std::int32_t index = 0; index < islands.size; ++index) {
-            std::byte* const island = islands.entries[index];
-            if (std::byte* const body = character_body_in(island); body != nullptr) {
-                return body;
+            if (island_holds(islands.entries[index], target)) {
+                return target;
             }
         }
     }
@@ -232,7 +307,7 @@ std::int32_t __fastcall havok_step(std::byte* simulation, float deltaTime) noexc
     std::array<float, kVectorLanes> nativePosition{};
     const bool enabledBeforeStep = poll_toggle();
     const bool flying = fly::enabled();
-    std::byte* const before = (enabledBeforeStep || flying) ? character_body(simulation) : nullptr;
+    std::byte* const before = (enabledBeforeStep || flying) ? player_body(simulation) : nullptr;
     // Fly writes first, so the velocity read below is the one it asked for.
     if (flying) {
         fly::before_step(before);
@@ -255,11 +330,29 @@ std::int32_t __fastcall havok_step(std::byte* simulation, float deltaTime) noexc
     const std::int32_t result = next != nullptr ? next(simulation, deltaTime) : 0;
 
     // The body is resolved once here for both features.
-    std::byte* const body = (enabledBeforeStep || flying) ? character_body(simulation) : nullptr;
+    std::byte* const body = (enabledBeforeStep || flying) ? player_body(simulation) : nullptr;
     // A character created or replaced during this step has no matching before-state.
     const bool sameBody = hasBody && body == before;
     // Re-read after the step, so a toggle from the interface thread lands before a position write.
     const bool noclipping = enabledBeforeStep && enabled();
+    if (flying) {
+        // Taken before any write below, so it shows what the step alone did to the body.
+        std::array<float, kVectorLanes> moved{};
+        std::array<float, kVectorLanes> leftOver{};
+        if (sameBody) {
+            moved = field<std::array<float, kVectorLanes>>(body, kBodyPosition);
+            for (std::size_t lane = 0; lane < kVectorLanes; ++lane) {
+                moved[lane] -= nativePosition[lane];
+            }
+            leftOver = field<std::array<float, kVectorLanes>>(body, kBodyVelocity);
+        }
+        measure_fly(sameBody,
+                    noclipping,
+                    deltaTime,
+                    length_of(nativeVelocity),
+                    length_of(moved),
+                    length_of(leftOver));
+    }
     // With both on this hook drives all three lanes. Fly holds the height, so carrying the
     // vertical one is safe.
     const bool verticalToo = noclipping && flying;
@@ -335,17 +428,8 @@ bool install() noexcept {
         report_install_failure("havok_step");
         return false;
     }
-    std::byte* const vtableLoad =
-        patterns::scan_main_image_unique(kCharacterMotionVtable, "noclip_character_motion");
-    if (vtableLoad == nullptr) {
-        report_install_failure("character_motion");
-        return false;
-    }
-    g_characterMotionVtable = reinterpret_cast<std::uintptr_t>(patterns::resolve_relative(
-        vtableLoad + kVtableDisplacement, vtableLoad + kVtableInstructionLength));
     if (!hooking::detour::install(hooking::detour::Spec{step, reinterpret_cast<void*>(&havok_step)},
                                   g_stepHandle)) {
-        g_characterMotionVtable = 0;
         report_install_failure("attach");
         return false;
     }
@@ -362,7 +446,6 @@ void uninstall() noexcept {
     }
     (void)hooking::detour::uninstall(g_stepHandle);
     g_stepHandle = {};
-    g_characterMotionVtable = 0;
     // The switch is a stored setting, so detaching clears only the key state.
     g_toggleDown.store(false, std::memory_order_release);
 }

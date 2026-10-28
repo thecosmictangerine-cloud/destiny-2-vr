@@ -183,7 +183,8 @@ void report_roster_push(Session& session,
                       placement.currentRegion,
                       placement.bubble,
                       state::activity::membership::instantiated_region(placement),
-                      placement.entered ? 1 : 0,
+                      // Entry is both reports together: the write-back, and a held region.
+                      placement.clientInWorld && placement.currentRegion >= 0 ? 1 : 0,
                       session.activityMissionSeed.scriptSelected ? 1 : 0,
                       static_cast<unsigned long long>(bodyHash),
                       static_cast<unsigned>(forced));

@@ -38,6 +38,8 @@ inline constexpr std::int8_t kHostTeleportArmedState = 1;
  * reads 3. Step 0 refuses to re-latch on 3, so holding it there is inert once the spawn has run.
  */
 inline constexpr std::int8_t kHostTeleportSpawnState = 3;
+/** The client resets its teleport byte to zero when the spawn call finishes. */
+inline constexpr std::int8_t kClientTeleportResetState = 0;
 /** The mirrored 10-bit slice-set field reaches logical 1022. */
 inline constexpr std::int32_t kMaximumSliceSetIndex = 1022;
 /** Bubble -1 means no refresh bubble is chosen. */
@@ -118,7 +120,8 @@ struct TeleportState final {
     std::int8_t state{};
     std::uint8_t token{};
     std::int32_t sliceSetIndex{kAbsentSliceSetIndex};
-    std::uint32_t sliceSetHash{};
+    /** Spawn set the move leaves as the client's spawn-point filter, not a slice-set name. */
+    std::uint32_t spawnSetHash{};
 };
 
 /** -1 means the client reported no region. */
@@ -195,8 +198,14 @@ struct MembershipState final {
     std::int32_t bubble{kMinimumRefreshBubble};
     /** Membership revision that refresh said the client had applied. */
     std::uint32_t bubbleRevision{kAbsentRevision};
-    /** The character write-back (ws 702) reports the in-world state while a region is held. */
-    bool entered{};
+    /** The client's last character write-back (ws 702) reported the in-world state. */
+    bool clientInWorld{};
+    /** Region the attached mission program declared as its initial state; -1 when none. */
+    std::int32_t declaredInitialRegion{kAbsentRegionIndex};
+    /** Spawn set the attached mission program declared with that state; zero when none. */
+    std::uint32_t declaredSpawnSetHash{};
+    /** The mission program holds the spawn: the player has no body until it releases. */
+    bool programSpawnHold{};
     std::uint32_t revision{};
     /** Stable within one session; a world replacement changes it to clear the client table. */
     std::uint32_t epoch{kStableEpoch};
@@ -209,6 +218,8 @@ struct MembershipState final {
 
 /** Safe numeric after-image produced by one committed message-22 State transaction. */
 struct CommittedClientState final {
+    /** Held region before this exact accepted report. */
+    std::int32_t previousRegion{kAbsentRegionIndex};
     /** The pending leg: the region the client is loading or precaching. */
     RegionState region{};
     /** The current leg: the region of the slice set the client holds. */
@@ -230,6 +241,9 @@ struct CommittedClientState final {
     bool hasCurrentRegion{};
     bool hasSpawn{};
     bool hasTeleport{};
+    /** Set on the host's own arrival answer: the roster that clears the spawn hold reached the
+     * client. */
+    bool entered{};
     bool changed{};
     bool committed{};
 };

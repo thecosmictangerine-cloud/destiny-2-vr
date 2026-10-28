@@ -51,10 +51,17 @@ struct PackageContext final {
                                         PackageContext& packageContext,
                                         authored_scene::Snapshot& output);
 
+/** Extracts the groups each exact combat objective can assign to a squad. */
+[[nodiscard]] bool attach_combat_objective_groups(const topology_inventory::Snapshot& topology,
+                                                  const squads::Facts& facts,
+                                                  PackageContext& packageContext,
+                                                  authored_scene::Snapshot& output);
+
 /** Resolves the native type-53 authored list and attaches its exact bound to the SDK slot row. */
 [[nodiscard]] bool attach_dialogue_cue_counts(const topology_inventory::Snapshot& topology,
                                               const squads::Facts& facts,
                                               PackageContext& packageContext,
-                                              topology_enrichment::Snapshot& enrichment);
+                                              topology_enrichment::Snapshot& enrichment,
+                                              authored_scene::Snapshot& authored);
 
 } // namespace sunrise::client::content::activity::sdk_generation::native_pack_pipeline

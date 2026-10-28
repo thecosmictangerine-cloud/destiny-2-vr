@@ -130,9 +130,14 @@ void stamp_mission_sequence(Event& event) noexcept {
         return;
     }
     std::uint64_t sequence = 0;
-    if (state::activity::mission::issue_input_sequence(event.binding, sequence)) {
+    std::uint64_t attemptGeneration = 0;
+    if (state::activity::mission::issue_input_sequence(
+            event.binding, sequence, &attemptGeneration)) {
         instance->missionSequence = sequence;
         event.missionSequence = sequence;
+        if (event.attemptGeneration == 0) {
+            event.attemptGeneration = attemptGeneration;
+        }
     }
 }
 
@@ -235,7 +240,9 @@ bool mission_input_sense_snapshot(std::uint64_t sequence,
         }
         for (std::size_t index = 0; copied && index < packet.objectCount; ++index) {
             const sense::DecodedObject& object = packet.objects[index];
-            if (object.status != sense::ObjectStatus::decoded || !object.hasGeneration) continue;
+            if (object.status != sense::ObjectStatus::decoded || !object.hasGeneration) {
+                continue;
+            }
             if (object.firstValue > packet.valueCount
                 || object.valueCount > packet.valueCount - object.firstValue) {
                 copied = false;

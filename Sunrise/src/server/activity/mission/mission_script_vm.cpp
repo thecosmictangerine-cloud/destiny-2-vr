@@ -4,6 +4,7 @@
 #include <limits>
 #include <new>
 
+#include "mission_script_lua_resolve.h"
 #include "mission_script_vm_internal.h"
 
 namespace sunrise::server::activity::mission::lua_vm {
@@ -75,6 +76,7 @@ void instruction_hook(lua_State* state, lua_Debug*) {
 /** Captures the optional generated mission-state declaration without retaining its Lua table. */
 [[nodiscard]] bool capture_initial_state(lua_State* state, int program, Impl& impl) noexcept {
     impl.initialStateRegion = -1;
+    impl.initialStateSpawnSet = 0;
     impl.hasInitialState = false;
     lua_pushliteral(state, "initial_state");
     lua_rawget(state, program);
@@ -101,6 +103,54 @@ void instruction_hook(lua_State* state, lua_Debug*) {
     }
     impl.initialStateRegion = static_cast<std::int32_t>(region);
     impl.hasInitialState = true;
+    lua_pop(state, 1);
+    // The arrival and every host move carry this spawn set as the client's spawn-point filter.
+    lua_pushliteral(state, "spawn_set_hash");
+    lua_rawget(state, -2);
+    if (!lua_isnil(state, -1)) {
+        if (!lua_isinteger(state, -1)) {
+            lua_pop(state, 2);
+            return false;
+        }
+        const lua_Integer spawnSet = lua_tointeger(state, -1);
+        if (spawnSet <= 0
+            || static_cast<std::uint64_t>(spawnSet)
+                   > static_cast<std::uint64_t>((std::numeric_limits<std::uint32_t>::max)())) {
+            lua_pop(state, 2);
+            return false;
+        }
+        impl.initialStateSpawnSet = static_cast<std::uint32_t>(spawnSet);
+    }
+    lua_pop(state, 1);
+    // The optional omit list names generated slots whose objects stay out of every seed.
+    impl.initialStateOmissionCount = 0;
+    lua_pushliteral(state, "omit");
+    lua_rawget(state, -2);
+    const bool hasOmit = !lua_isnil(state, -1);
+    if (hasOmit) {
+        if (!lua_istable(state, -1)) {
+            lua_pop(state, 2);
+            return false;
+        }
+        const lua_Integer count = static_cast<lua_Integer>(lua_rawlen(state, -1));
+        if (count < 0 || static_cast<std::size_t>(count) > impl.initialStateOmissions.size()) {
+            lua_pop(state, 2);
+            return false;
+        }
+        for (lua_Integer entry = 1; entry <= count; ++entry) {
+            lua_rawgeti(state, -1, entry);
+            SlotDefinition definition{};
+            const bool resolved = detail::resolve_slot(state, lua_gettop(state), definition);
+            lua_pop(state, 1);
+            if (!resolved) {
+                lua_pop(state, 2);
+                return false;
+            }
+            impl.initialStateOmissions[static_cast<std::size_t>(entry - 1)] = {
+                definition.objectTag, definition.registryKey};
+        }
+        impl.initialStateOmissionCount = static_cast<std::uint8_t>(count);
+    }
     lua_pop(state, 2);
     return true;
 }
@@ -145,11 +195,17 @@ inline constexpr std::array<const char*, host::kEventKindCount> kEventHandlerNam
     "on_event_fireteam_state",
     "on_event_object_state",
     "on_event_damage_state",
+    "on_event_squad_provoked",
+    "on_event_device_state",
+    "on_event_region_changed",
 }};
 
 static_assert([] {
-    for (const auto* name : kEventHandlerNames)
-        if (name == nullptr) return false;
+    for (const auto* name : kEventHandlerNames) {
+        if (name == nullptr) {
+            return false;
+        }
+    }
     return true;
 }());
 
@@ -587,6 +643,52 @@ bool restore_state(Vm& vm, std::uint32_t phase, std::uint64_t revision) noexcept
                          {});
 }
 
+/** Publishes the durable native attempt before any script callback reads it. */
+void publish_attempt(Vm& vm, state::activity::mission::AttemptState attempt) noexcept {
+    Impl& impl = VmAccess::get(vm);
+    if (impl.attempt.generation != attempt.generation) {
+        impl.timers = {};
+        impl.timerCount = 0;
+    }
+    impl.attempt = attempt;
+}
+
+/** Copies native device request facts into the current VM attachment. */
+bool publish_device_requests(
+    Vm& vm,
+    std::span<const state::activity::mission::DeviceRequestReport> requests,
+    std::uint64_t currentActivityClientGeneration) noexcept {
+    Impl& impl = VmAccess::get(vm);
+    impl.deviceRequestGeneration = currentActivityClientGeneration;
+    try {
+        impl.deviceRequests.assign(requests.begin(), requests.end());
+    } catch (const std::bad_alloc&) {
+        return false;
+    }
+    return true;
+}
+
+/** Copies the retained Ghost-link levels; rows past the capacity are dropped. */
+void publish_ghost_levels(Vm& vm, std::span<const GhostLinkRow> levels) noexcept {
+    Impl& impl = VmAccess::get(vm);
+    impl.ghostLevels = {};
+    impl.ghostLevelCount =
+        static_cast<std::uint8_t>((std::min)(levels.size(), impl.ghostLevels.size()));
+    std::copy_n(levels.begin(), impl.ghostLevelCount, impl.ghostLevels.begin());
+}
+
+/** Copies durable population facts without exposing the native store to Lua. */
+bool publish_populations(
+    Vm& vm, std::span<const state::activity::mission::SquadPopulation> populations) noexcept {
+    Impl& impl = VmAccess::get(vm);
+    try {
+        impl.squadPopulations.assign(populations.begin(), populations.end());
+    } catch (const std::bad_alloc&) {
+        return false;
+    }
+    return true;
+}
+
 /** Runs start and reserves one revision for the durable started transition. */
 CallStatus start(Vm& vm, std::uint64_t now) noexcept {
     Impl& impl = VmAccess::get(vm);
@@ -639,6 +741,36 @@ bool initial_state_region(const Vm& vm, std::int32_t& output) noexcept {
         return false;
     }
     output = impl.initialStateRegion;
+    return true;
+}
+
+bool initial_state_spawn_set(const Vm& vm, std::uint32_t& output) noexcept {
+    const Impl& impl = VmAccess::get(vm);
+    output = 0;
+    if (!impl.active || impl.faulted || !impl.hasInitialState || impl.initialStateSpawnSet == 0) {
+        return false;
+    }
+    output = impl.initialStateSpawnSet;
+    return true;
+}
+
+/**
+ * Copies the objects program.initial_state.omit keeps out of every seed.
+ * @param output Caller storage; the count is refused when the list does not fit.
+ * @param count Receives the copied count, zero when the program declares no list.
+ * @return False when the program is not active or the list does not fit.
+ */
+bool initial_state_omissions(const Vm& vm,
+                             std::span<state::activity::mission::MissionSeedOmission> output,
+                             std::size_t& count) noexcept {
+    const Impl& impl = VmAccess::get(vm);
+    count = 0;
+    if (!impl.active || impl.faulted || !impl.hasInitialState
+        || impl.initialStateOmissionCount > output.size()) {
+        return false;
+    }
+    std::copy_n(impl.initialStateOmissions.begin(), impl.initialStateOmissionCount, output.begin());
+    count = impl.initialStateOmissionCount;
     return true;
 }
 

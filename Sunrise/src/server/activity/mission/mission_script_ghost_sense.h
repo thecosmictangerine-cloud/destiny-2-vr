@@ -1,12 +1,16 @@
 #pragma once
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 
 #include "../../../middleware/bap/activity_message/sense_update.h"
 
 namespace sunrise::server::activity::mission {
+
+/** Ghost links one mission watches at once. */
+inline constexpr std::size_t kGhostLinkCapacity = 8;
 
 /** Type-65 Sense root ordinals: active, elapsed over required duration, accepted generation. */
 inline constexpr std::uint16_t kGhostActiveOrdinal = 0;
@@ -25,6 +29,14 @@ struct GhostLevel final {
     std::uint8_t seen{};
     bool active{};
     bool operator==(const GhostLevel&) const = default;
+};
+
+/** One retained Ghost-link level with the slot it was reported for. */
+struct GhostLinkRow final {
+    GhostLevel level{};
+    std::uint32_t registryKey{};
+    std::uint32_t objectTag{};
+    std::uint16_t slotIndex{};
 };
 
 /**

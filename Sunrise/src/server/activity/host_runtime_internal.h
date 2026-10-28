@@ -25,6 +25,19 @@ struct IncidentRequest final {
 
 /** One queued typed ClientRef request; its counter is assigned by the reducer. */
 struct ScriptableRequest final {
+    ScriptableTarget programSource{};
+    /** A type-31 request arms the trigger, or disarms it once it has reported. */
+    bool triggerEnabled{true};
+    std::uint16_t objectiveIndex{};
+    std::uint32_t expectedObjectiveRevision{};
+    bool objectiveReconsider{};
+    bool objectivePreserveReservation{true};
+    bool objectiveReserved{};
+    bool objectiveRefreshAwareness{};
+    middleware::bap::activity_message::sensor_auth_update::AuthoredSceneDependencies
+        sceneDependencies{};
+    std::uint32_t sceneEventKey{};
+    std::uint32_t sequenceHash{};
     state::gameplay::squad_entity_retirement::Eligibility squadRetirement{};
     state::activity::SessionBinding binding{};
     ScriptableTarget target{};
@@ -40,7 +53,10 @@ struct ScriptableRequest final {
     std::uint16_t authBitCount{};
     std::uint16_t authByteCount{};
     std::uint16_t dialogueCue{};
+    middleware::bap::activity_message::scriptable_auth::Type2LaneClientRef dialogueFilter{};
     std::optional<std::uint32_t> nameHash{};
+    std::optional<middleware::bap::activity_message::squad_auth::Destination> squadDestination{};
+    std::optional<middleware::bap::activity_message::squad_auth::SpawnRule> squadSpawnRule{};
     std::uint64_t expectedActivityClientGeneration{};
     /** Exact reserved revision, or zero for an ordinary operator request. */
     std::uint64_t expectedRevision{};
@@ -71,7 +87,11 @@ struct ClientMessageMissionInput final {
     std::uint32_t peerHeardMask{};
     std::uint32_t consumedBits{};
     ClientMessageStatus status{ClientMessageStatus::unclassified};
+    std::uint64_t attemptGeneration{};
 };
+
+/** The Host lock must be held while reading the framing intake head. */
+[[nodiscard]] std::uint64_t latest_client_message_sequence() noexcept;
 
 /** Input kind retained in the one ordered reducer queue. */
 enum class PendingKind : std::uint8_t {
@@ -100,6 +120,21 @@ struct PendingInput final {
     PendingKind kind{PendingKind::sense};
 };
 
+/** Host-owned type-65 scan model: what the host armed and what the client reported back. */
+struct GhostLinkScan final {
+    /** Last generation transported in the Auth `.0` field for this slot. */
+    std::uint32_t generation{};
+    /** Client's last per-object counter, which a Sense override has to echo. */
+    std::uint32_t counter{};
+    float fraction{};
+    /** Arm bit of the transported body. */
+    bool armed{};
+    bool active{};
+    bool counterKnown{};
+    /** The bar reached its end at the current generation. */
+    bool finished{};
+};
+
 /** Committed monotonic guards for one full ClientRef identity. */
 struct ScriptableGuard final {
     ScriptableTarget target{};
@@ -115,6 +150,10 @@ struct ScriptableGuard final {
     middleware::bap::activity_message::scriptable_auth::Type53SequenceGuard type53{};
     middleware::bap::activity_message::scriptable_auth::Type42GenerationGuard type42{};
     std::uint32_t authoredSceneGeneration{};
+    std::uint32_t type2AtomGeneration{};
+    std::uint32_t type2SpawnGeneration{};
+    std::uint32_t damageRevision{};
+    GhostLinkScan ghostLink{};
     bool occupied{};
 };
 
@@ -168,6 +207,8 @@ struct Instance final {
 inline void clear_instance(Instance& instance) noexcept {
     instance.view = {};
     instance.senseObservations = {};
+    std::vector<SquadSenseRecord>{}.swap(instance.squadSense);
+    instance.squadSenseSourceGeneration = 0;
     instance.sceneSenseTrace = {};
     instance.scriptableGuards.fill({});
     std::vector<PendingScriptableOverride>{}.swap(instance.scriptableAuthEstate);
@@ -300,6 +341,31 @@ valid_state_local_group(const ScriptableTarget& target,
 /** @return True when the bit count and the body agree to within one trailing byte. */
 [[nodiscard]] bool valid_auth_storage(std::span<const std::byte> body,
                                       std::size_t bitCount) noexcept;
+
+/**
+ * Encodes one dialogue pulse on top of the body last transported for its slot.
+ * @param guard Committed fire sequences for the slot.
+ * @param pending Receives the body, its bit count, the cue and the sequence.
+ * @param written Receives the byte count; zero on failure.
+ * @return False when the cue cannot fire again.
+ */
+[[nodiscard]] bool encode_dialogue_pulse(
+    const Instance& instance,
+    const ScriptableRequest& request,
+    const middleware::bap::activity_message::scriptable_auth::Type53SequenceGuard& guard,
+    PendingScriptableOverride& pending,
+    std::size_t& written) noexcept;
+
+/**
+ * Encodes one type-31 arm or disarm.
+ * @param pending Receives the body, its bit count and the generation.
+ * @param written Receives the byte count; zero on failure.
+ */
+[[nodiscard]] bool encode_trigger_pulse(
+    const ScriptableRequest& request,
+    const middleware::bap::activity_message::scriptable_auth::Type31GenerationGuard& guard,
+    PendingScriptableOverride& pending,
+    std::size_t& written) noexcept;
 
 /** Finds one committed full-slot guard while the runtime lock is held. */
 [[nodiscard]] ScriptableGuard* find_guard(Instance& instance,

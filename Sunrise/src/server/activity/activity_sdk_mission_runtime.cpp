@@ -2,6 +2,7 @@
 
 #include <array>
 #include <limits>
+#include <optional>
 #include <span>
 
 #include "../../middleware/bap/activity_message/sensor_auth_update.h"
@@ -14,6 +15,7 @@
 namespace sunrise::server::activity::activity_sdk_mission {
 namespace {
 
+namespace auth = middleware::bap::activity_message::scriptable_auth;
 namespace layouts = state::build_data::scenarios;
 namespace message = middleware::bap::activity_message::sensor_auth_update;
 namespace sdk = state::activity_sdk;
@@ -129,7 +131,9 @@ SceneStatus activate_authored_scene(const sdk::BoundView& view,
             prepared.target,
             prepared.rosterGroup,
             prepared.effectiveRegion,
-            prepared.activityClientGeneration)) {
+            prepared.activityClientGeneration,
+            nullptr,
+            prepared.sceneDependencies)) {
         return SceneStatus::queued;
     }
     return SceneStatus::refused;
@@ -217,6 +221,7 @@ SceneStatus set_directive(const sdk::BoundView& view,
 /**
  * Queues one authored dialogue cue against a reservation a script already holds.
  * @param reservation Output slot the caller reserved for this revision.
+ * @param filterSlotRow Type-60 volume the line waits for, or none to play at once.
  * @return `queued` once the cue is staged, or the refusal that stopped it.
  */
 [[nodiscard]] SceneStatus
@@ -224,13 +229,33 @@ play_dialogue_cue_reserved(const sdk::BoundView& view,
                            std::uint32_t occurrenceRow,
                            std::uint32_t slotRow,
                            std::uint16_t cueIndex,
-                           const host::ScriptableOutputReservation& reservation) noexcept {
+                           const host::ScriptableOutputReservation& reservation,
+                           std::optional<std::uint32_t> filterSlotRow) noexcept {
     PreparedScene prepared{};
     std::uint16_t authoredCueCount = 0;
     const SceneStatus status =
         prepare_dialogue(view, occurrenceRow, slotRow, cueIndex, prepared, authoredCueCount);
     if (status != SceneStatus::ready) {
         return status;
+    }
+    auth::Type2LaneClientRef filter{};
+    if (filterSlotRow.has_value()) {
+        const auto slots = view.catalog->slots();
+        const auto objects = view.catalog->objects();
+        if (*filterSlotRow >= slots.size()) {
+            return SceneStatus::invalidSlot;
+        }
+        const sdk::format::Slot& volume = slots[*filterSlotRow];
+        if (volume.slotType != static_cast<std::uint32_t>(auth::kType53FilterSlotType)
+            || volume.objectIndex >= objects.size()
+            || volume.slotIndex
+                   > static_cast<std::uint32_t>((std::numeric_limits<std::int16_t>::max)())
+            || objects[volume.objectIndex].objectKey == 0) {
+            return SceneStatus::invalidSlot;
+        }
+        filter = {objects[volume.objectIndex].objectKey,
+                  auth::kType53FilterSlotType,
+                  static_cast<std::int16_t>(volume.slotIndex)};
     }
     return server::bap::request_activity_state_local_dialogue_override(
                view.binding,
@@ -240,7 +265,8 @@ play_dialogue_cue_reserved(const sdk::BoundView& view,
                authoredCueCount,
                prepared.effectiveRegion,
                prepared.activityClientGeneration,
-               &reservation)
+               &reservation,
+               filter)
                ? SceneStatus::queued
                : SceneStatus::refused;
 }
@@ -512,7 +538,9 @@ set_cinematic_active_reserved(const sdk::BoundView& view,
     }
     server::bap::ActivityLinkView link{};
     const SceneStatus live = scene_binding_status(view, link);
-    if (live != SceneStatus::ready) return live;
+    if (live != SceneStatus::ready) {
+        return live;
+    }
     const auto selected = behavior_scope::select(occurrences,
                                                  view.catalog->states(),
                                                  view.catalog->bubbles(),
@@ -520,7 +548,9 @@ set_cinematic_active_reserved(const sdk::BoundView& view,
                                                  slots[slotRow].objectIndex,
                                                  snapshot.plan.stateRow,
                                                  link.effectiveRegion);
-    if (selected.ambiguous) return SceneStatus::ambiguousTarget;
+    if (selected.ambiguous) {
+        return SceneStatus::ambiguousTarget;
+    }
     occurrenceRow = selected.row;
     return occurrenceRow == sdk::format::kAbsentIndex ? SceneStatus::targetUnavailable
                                                       : SceneStatus::ready;
@@ -694,26 +724,29 @@ SceneStatus dialogue_cue_slot_availability(const sdk::BoundView& view,
 /**
  * Resolves the slot's current occurrence, then queues its authored dialogue cue.
  * @param reservation Output slot the caller reserved for this revision.
+ * @param filterSlotRow Type-60 volume the line waits for, or none to play at once.
  * @return `queued` once the cue is staged, or the refusal that stopped it.
  */
-SceneStatus
-play_dialogue_cue_slot_reserved(const sdk::BoundView& view,
-                                std::uint32_t slotRow,
-                                std::uint16_t cueIndex,
-                                const host::ScriptableOutputReservation& reservation) noexcept {
+SceneStatus play_dialogue_cue_slot_reserved(const sdk::BoundView& view,
+                                            std::uint32_t slotRow,
+                                            std::uint16_t cueIndex,
+                                            const host::ScriptableOutputReservation& reservation,
+                                            std::optional<std::uint32_t> filterSlotRow) noexcept {
     std::uint32_t occurrenceRow = 0;
     const SceneStatus found = current_behavior_occurrence(view, slotRow, occurrenceRow);
     return found == SceneStatus::ready
-               ? play_dialogue_cue_reserved(view, occurrenceRow, slotRow, cueIndex, reservation)
+               ? play_dialogue_cue_reserved(
+                     view, occurrenceRow, slotRow, cueIndex, reservation, filterSlotRow)
                : found;
 }
 
 /** Queues one preflighted authored scene only through an exact unarmed Host revision. */
-SceneStatus
-activate_authored_scene_reserved(const sdk::BoundView& view,
-                                 std::uint32_t occurrenceRow,
-                                 std::uint32_t slotRow,
-                                 const host::ScriptableOutputReservation& reservation) noexcept {
+SceneStatus activate_authored_scene_reserved(const sdk::BoundView& view,
+                                             std::uint32_t occurrenceRow,
+                                             std::uint32_t slotRow,
+                                             const host::ScriptableOutputReservation& reservation,
+                                             std::uint32_t eventKey,
+                                             bool stop) noexcept {
     PreparedScene prepared{};
     const SceneStatus status = prepare_scene(view, occurrenceRow, slotRow, prepared);
     if (status != SceneStatus::ready) {
@@ -725,7 +758,10 @@ activate_authored_scene_reserved(const sdk::BoundView& view,
             prepared.rosterGroup,
             prepared.effectiveRegion,
             prepared.activityClientGeneration,
-            &reservation)) {
+            &reservation,
+            prepared.sceneDependencies,
+            eventKey,
+            stop)) {
         return SceneStatus::queued;
     }
     return SceneStatus::refused;

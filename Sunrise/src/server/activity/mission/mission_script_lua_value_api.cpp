@@ -16,7 +16,7 @@ constexpr std::uint8_t kSquadModeReinforce = 0;
 constexpr std::uint8_t kSquadModeReplace = 2;
 constexpr std::uint8_t kSquadModeReserve = 3;
 
-/** Lua index for a unit scalar: its value and the bounds it was clamped to. */
+/** Lua index for a unit scalar: its value and the device lane bounds. */
 [[nodiscard]] int unit_scalar_index(lua_State* state) {
     const auto* const handle =
         static_cast<const UnitScalarHandle*>(luaL_checkudata(state, 1, kUnitScalarMetatable));
@@ -59,7 +59,7 @@ constexpr std::uint8_t kSquadModeReserve = 3;
     return 1;
 }
 
-/** Lua index for the squad mode collection: `count` and `at`, else nil. */
+/** Lua index for the squad mode collection: `count` or a mode name, else nil. */
 [[nodiscard]] int squad_mode_collection_index(lua_State* state) {
     static_cast<void>(luaL_checkudata(state, 1, kSquadModeCollectionMetatable));
     const std::string_view key = lua_string_view(state, 2);

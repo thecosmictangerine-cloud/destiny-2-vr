@@ -119,7 +119,8 @@ void append_queuez_notification(Scratch& scratch,
                                 std::size_t& written,
                                 queuez::SessionState& after,
                                 bool& armsRepush,
-                                bool& armsBannerRepush) noexcept {
+                                bool& armsBannerRepush,
+                                bool ownSnapshotAnswered) noexcept {
     after = before;
     armsRepush = false;
     armsBannerRepush = false;
@@ -206,16 +207,17 @@ void append_queuez_notification(Scratch& scratch,
         after = stagedAfter;
         return;
     }
-    if (!queuez_frame::append_prepared_frame(scratch, prepared, key, nonce, response, written)) {
+    // The reply that answered this subscribe already carries the snapshot, so only the ladder
+    // moves here and the companions still follow.
+    if (ownSnapshotAnswered) {
+        queuez_frame::clear_object_storage(
+            scratch, prepared.rawClearSize, prepared.compressedClearSize);
+    } else if (!queuez_frame::append_prepared_frame(
+                   scratch, prepared, key, nonce, response, written)) {
         queuez_report::subscription_failure("frame");
         return;
     }
     after = stagedAfter;
-    // The client sends its subscribe just before it writes the record state, so this first copy
-    // arrives while the record still reads its previous state and is refused. Family zero has
-    // nothing else behind it, so the delayed copy is the one that lands.
-    armsBannerRepush = subscription.familyType == queuez::kBannerFamilyType;
-
     if (subscription.familyType == queuez::kRosterFamilyType && !stagedAfter.family4Active) {
         queuez::SessionState companionAfter{};
         if (append_family4_companion(scratch,
@@ -241,9 +243,58 @@ void append_queuez_notification(Scratch& scratch,
                                        written,
                                        bannerDelivered)) {
             after = bannerDelivered;
-            armsBannerRepush = true;
         }
     }
+}
+
+/** Builds the subscribed family's first snapshot and encodes it as one svc-123 body. */
+bool prepare_subscription_answer(Scratch& scratch,
+                                 const queuez::SessionState& before,
+                                 const middleware::queuez::Subscription& subscription,
+                                 std::span<std::byte> body,
+                                 std::size_t& bodySize) noexcept {
+    bodySize = 0;
+    ensure_account_canonical();
+    snapshot::Prepared prepared{};
+    bool built = false;
+    if (subscription.familyType == queuez::kBannerFamilyType) {
+        const state::AccountState account = state::account_snapshot();
+        const std::uint64_t selected = state::account::banner_character_soid(account);
+        if (selected != 0) {
+            bool publish = true;
+            bool incremental = false;
+            queuez::SessionState staged = before;
+            if (!queuez::stage_family0_subscription(
+                    before, selected, publish, incremental, staged)) {
+                staged = before;
+                incremental = false;
+            }
+            built = snapshot::prepare_banner(scratch,
+                                             subscription.familyRootSoid,
+                                             staged.family0Version,
+                                             incremental ? before.family0Character : 0,
+                                             prepared);
+        }
+    } else {
+        // A subscribe establishes a fresh client-side store, so the answer is the live full body
+        // even while the push ladder is response-only.
+        built = snapshot::prepare_initial(scratch, subscription, {}, prepared);
+    }
+    middleware::queuez::Family empty{};
+    empty.type = subscription.familyType;
+    empty.rootSoid = subscription.familyRootSoid;
+    empty.flags = middleware::queuez::kFullSnapshotFlag;
+    const std::array families{built ? prepared.family : empty};
+    const bool encoded = middleware::queuez::encode_update(families, body, bodySize);
+    if (built) {
+        queuez_frame::clear_object_storage(
+            scratch, prepared.rawClearSize, prepared.compressedClearSize);
+    }
+    if (!encoded) {
+        bodySize = 0;
+        queuez_report::subscription_failure("answer");
+    }
+    return encoded;
 }
 
 } // namespace sunrise::server::bap::encrypted::push

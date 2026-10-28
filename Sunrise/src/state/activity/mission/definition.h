@@ -17,8 +17,8 @@ inline constexpr std::size_t kStateKeyByteCapacity = 64;
 inline constexpr std::size_t kVariableStringByteCapacity = 128;
 /** One action may name a run of object slots that answer on a single reserved revision. */
 inline constexpr std::size_t kIntentBurstCapacity = 63;
-/** A mission leaves at most eight objects out of the seed it selects. */
-inline constexpr std::size_t kMissionSeedOmitCapacity = 8;
+/** A mission leaves at most 32 objects out of the seeds it selects; the pike sets need 16. */
+inline constexpr std::size_t kMissionSeedOmitCapacity = 32;
 /** Squad Auth accepts at most fifteen authored member counts. */
 inline constexpr std::size_t kSquadMemberCapacity = 15;
 /** A compiled Slot Auth body must fit the widest bounded msg-5 table. */
@@ -43,6 +43,117 @@ inline constexpr std::uint64_t kAbsentHostOutputRevision = 0;
 inline constexpr std::uint64_t kAbsentTimerSequence = 0;
 /** Durable timer sequences begin at one. */
 inline constexpr std::uint64_t kFirstTimerSequence = 1;
+/** A new bound activity begins with its first mission attempt. */
+inline constexpr std::uint64_t kFirstAttemptGeneration = 1;
+/** Type-17 state six completes the mission without inventing a timed state ladder. */
+inline constexpr std::uint8_t kCompletedLifetimeState = 6;
+
+/** Only accepted native effects change the mission attempt owner. */
+struct AttemptState final {
+    std::uint64_t generation{kFirstAttemptGeneration};
+    bool complete{};
+};
+
+/** Squad Sense publishes a six-bit alive count. */
+inline constexpr std::int32_t kMaximumSquadAlive = 63;
+
+/** Count evidence belongs to one transported placement and its echoed spawn generation. */
+struct SquadPopulation final {
+    std::uint64_t requestKey{};
+    std::uint64_t attemptGeneration{};
+    std::uint64_t inputSequenceAtStage{};
+    std::uint64_t clientMessageSequenceAtStage{};
+    std::uint64_t lastInputSequence{};
+    std::uint32_t squadRow{};
+    std::uint32_t objectTag{};
+    std::uint32_t registryKey{};
+    std::uint32_t spawnGeneration{};
+    std::uint16_t slotIndex{};
+    std::int32_t expectedAlive{};
+    std::int32_t alive{};
+    std::int32_t maximumObservedAlive{};
+    /** Members ever created in this spawn generation, summed over the client's per-slot counts. */
+    std::int32_t maximumObservedCreated{};
+    bool generationKnown{};
+    bool aliveKnown{};
+};
+
+/** Only present generation, alive and created fields can update a population observation. */
+struct SquadPopulationReport final {
+    std::uint64_t attemptGeneration{};
+    std::uint64_t inputSequence{};
+    std::uint64_t clientMessageSequence{};
+    std::uint32_t objectTag{};
+    std::uint32_t registryKey{};
+    std::uint32_t spawnGeneration{};
+    std::uint16_t slotIndex{};
+    std::int32_t alive{};
+    std::int32_t created{};
+    bool generationKnown{};
+    bool aliveKnown{};
+    bool createdKnown{};
+    bool initialized{};
+};
+
+/** Type-23 reports position, power and lock as three independent channels. */
+inline constexpr std::size_t kDeviceChannelCount = 3;
+
+/** Only fields present in an accepted report may advance a request join. */
+struct DeviceReportedChannel final {
+    float value{};
+    std::int32_t sequence{-1};
+    bool valueKnown{};
+    bool sequenceKnown{};
+    bool operator==(const DeviceReportedChannel&) const = default;
+};
+
+/** A device desire gains report eligibility only after its exact output is staged. */
+struct DeviceRequestReport final {
+    DeviceReportedChannel reported{};
+    std::uint64_t requestKey{};
+    std::uint64_t attemptGeneration{};
+    std::uint64_t sourceGeneration{};
+    std::uint64_t inputSequenceAtStage{};
+    std::uint64_t clientMessageSequenceAtStage{};
+    std::uint32_t objectTag{};
+    std::uint32_t registryKey{};
+    std::uint32_t slotRow{};
+    std::uint16_t slotIndex{};
+    std::uint8_t channel{};
+    std::int16_t sequence{};
+    float value{};
+    bool applied{};
+};
+
+/** Accepted device deltas retain their input and attempt owners through deferred dispatch. */
+struct DeviceReport final {
+    std::array<DeviceReportedChannel, kDeviceChannelCount> channels{};
+    std::uint64_t attemptGeneration{};
+    std::uint64_t sourceGeneration{};
+    std::uint64_t inputSequence{};
+    std::uint64_t clientMessageSequence{};
+    std::uint32_t objectTag{};
+    std::uint32_t registryKey{};
+    std::uint16_t slotIndex{};
+};
+
+/** Only channels carried by a transported Auth body can renew a device report owner. */
+struct DevicePublication final {
+    std::array<DeviceReportedChannel, kDeviceChannelCount> channels{};
+    /** Zero means no exact pending or retained Host body supplied the publication. */
+    std::uint64_t originatingHostRevision{};
+    std::uint32_t objectTag{};
+    std::uint32_t registryKey{};
+    std::uint16_t slotIndex{};
+};
+
+/** The frame owns these input boundaries before its bytes reach transport. */
+struct DevicePublicationBoundary final {
+    std::uint64_t attemptGeneration{};
+    std::uint64_t sourceGeneration{};
+    std::uint64_t inputSequence{};
+    std::uint64_t clientMessageSequence{};
+};
 
 /** Exact SDK program identity bound to one activity-session generation. */
 struct ProgramKey final {
@@ -76,16 +187,48 @@ enum class IntentKind : std::uint8_t {
     actorCommand,
     playPerformance,
     restartCheckpoint,
+    signalAuthoredScene,
+    stopAuthoredScene,
+    playActorSequence,
+    assignCombatObjective,
+    runActorProgram,
+    retireActor,
+    setInteractableObject,
+    watchDamage,
+    setGhostLink,
+    holdSpawn,
+};
+
+/** Actor sequence values belong to one combatant and one SDK/client generation. */
+struct ActorSequenceOwner final {
+    std::array<std::byte, 32> sdkBuildSha256{};
+    std::array<std::byte, 32> sdkPayloadSha256{};
+    std::uint64_t activityClientGeneration{};
+    std::uint64_t sessionId{};
+    std::uint64_t sessionCreatedRevision{};
+    std::uint32_t activityRow{};
+    std::uint32_t scenarioRow{};
+    std::uint32_t slotRow{};
+    std::uint32_t actorClassRow{};
+    bool operator==(const ActorSequenceOwner&) const = default;
 };
 
 /** One object a mission omits, named the way a roster group is: its tag and its registry key. */
 struct MissionSeedOmission final {
     std::uint32_t objectTag{};
     std::uint32_t registryKey{};
+    bool operator==(const MissionSeedOmission&) const = default;
 };
 
 /** Typed action with RAII-owned body bytes and no packet or native pointers. */
 struct TypedIntent final {
+    std::uint32_t expectedObjectiveRevision{};
+    bool objectiveReconsider{};
+    bool objectiveReserved{};
+    bool objectivePreserveReservation{true};
+    bool objectiveRefreshAwareness{};
+    std::uint64_t attemptGeneration{kFirstAttemptGeneration};
+    ActorSequenceOwner sequenceOwner{};
     std::array<std::int32_t, kSquadMemberCapacity> squadCounts{};
     /** Objects the mission leaves out of the state it selects. */
     std::array<MissionSeedOmission, kMissionSeedOmitCapacity> seedOmissions{};
@@ -101,6 +244,7 @@ struct TypedIntent final {
     IntentKind kind{IntentKind::placeSquad};
     std::uint32_t firstRow{};
     std::uint32_t secondRow{};
+    std::uint32_t sceneEventKey{};
     std::uint32_t objectTag{};
     std::uint32_t registryKey{};
     std::uint32_t authSchema{};
@@ -112,6 +256,10 @@ struct TypedIntent final {
     std::uint64_t checkpointReleaseRequest{};
     /** Authored effective region selected by the generated mission-state table. */
     std::int32_t effectiveRegion{-1};
+    /** Catalog slot row of a type-66 rule the squad spawns at instead of its own; absent is -1. */
+    std::int32_t squadSpawnRuleRow{-1};
+    /** Catalog slot row of the type-60 volume a dialogue line waits for; absent is -1. */
+    std::int32_t dialogueFilterRow{-1};
     std::int32_t entryIndex{};
     std::int32_t actorCommandValue{};
     float deviceValue{};
@@ -177,6 +325,9 @@ struct MissionTimer final {
 
 /** Server-owned mission state retained with one exact activity session. */
 struct MissionState final {
+    AttemptState attempt{};
+    std::vector<SquadPopulation> squadPopulations{};
+    std::vector<DeviceRequestReport> deviceRequests{};
     /** Durable delivery queue with no policy count limit. */
     std::vector<PendingIntent> pendingIntents{};
     std::array<ScriptVariable, kVariableCapacity> variables{};

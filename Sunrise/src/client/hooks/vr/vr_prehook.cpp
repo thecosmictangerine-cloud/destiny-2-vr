@@ -23,13 +23,18 @@
 
 #include <Windows.h>
 
+#include <array>
 #include <atomic>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <initializer_list>
 #include <vector>
 
 #include "../../hooking/detour.h"
+#include "../../hooking/detour/transaction/detour_thread_transaction.h"
+#include "../../../core/logging/log.h"
+#include "vr_debug.h"
 
 namespace sunrise::client::hooks::vr::prehook {
 namespace {
@@ -165,6 +170,47 @@ bool retarget_jump(std::uintptr_t target, const std::uint8_t* thunk) noexcept {
     return ok;
 }
 
+/**
+ * Rewrites the displacement of the `call`/`jmp rel32` at `target` with every other thread suspended
+ * and none of them inside the function containing it. Tried a few times, a frame apart in effect,
+ * when a thread is caught there.
+ */
+bool retarget_suspended(std::uintptr_t target, const std::uint8_t* thunk) noexcept {
+    const std::int64_t rel64 = static_cast<std::int64_t>(reinterpret_cast<std::uintptr_t>(thunk))
+                               - static_cast<std::int64_t>(target + 5);
+    if (rel64 > INT32_MAX || rel64 < INT32_MIN) {
+        return false;
+    }
+    const auto rel = static_cast<std::int32_t>(rel64);
+    const std::array<hooking::detour::ProtectedCodeEntry, 1> guarded{
+        hooking::detour::ProtectedCodeEntry{reinterpret_cast<void*>(target)}};
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        hooking::detour::transaction::Threads threads{};
+        if (!hooking::detour::transaction::begin(threads)) {
+            Sleep(1);
+            continue;
+        }
+        if (hooking::detour::transaction::inspect(threads, guarded) != hooking::detour::transaction::InspectionResult::clear) {
+            (void)hooking::detour::transaction::abort(threads);
+            Sleep(2);
+            continue;
+        }
+        const auto page = reinterpret_cast<void*>(target & ~static_cast<std::uintptr_t>(0xFFF));
+        DWORD old = 0;
+        bool ok = false;
+        if (VirtualProtect(page, 0x2000, PAGE_EXECUTE_READWRITE, &old) != FALSE) {
+            std::memcpy(reinterpret_cast<void*>(target + 1), &rel, 4);
+            DWORD ignored = 0;
+            VirtualProtect(page, 0x2000, old, &ignored);
+            FlushInstructionCache(GetCurrentProcess(), reinterpret_cast<void*>(target), 5);
+            ok = true;
+        }
+        (void)hooking::detour::transaction::abort(threads);
+        return ok;
+    }
+    return false;
+}
+
 /** A requested post-call: where the call really returns to, and what to run first. */
 struct PostEntry final {
     std::uint64_t ret{};
@@ -218,7 +264,67 @@ std::uint8_t* make_return_trampoline() noexcept {
     return mem;
 }
 
+/**
+ *   push rbx / sub rsp, 0x40 / mov rbx, rcx                  ; rsp 16-aligned at the call below
+ *   movups xmm0-3, [rbx+0x20..0x50]
+ *   [rsp+0x20..0x38] := [rbx+0x68..0x80]                      ; stack arguments 5-8
+ *   mov rcx/rdx/r8/r9, [rbx+0..0x18] / call [rbx+0x60]
+ *   mov [rbx+0x88], rax / movss [rbx+0x90], xmm0 / add rsp, 0x40 / pop rbx / ret
+ */
+std::uint8_t* g_invokeThunk = nullptr;
+
+std::uint8_t* make_invoke_thunk() noexcept {
+    std::vector<std::uint8_t> c;
+    auto bytes = [&](std::initializer_list<std::uint8_t> b) { c.insert(c.end(), b); };
+    bytes({0x53});                                            // push rbx
+    bytes({0x48, 0x83, 0xEC, 0x40});                          // sub rsp, 0x40
+    bytes({0x48, 0x89, 0xCB});                                // mov rbx, rcx
+    bytes({0x0F, 0x10, 0x43, 0x20});                          // movups xmm0, [rbx+0x20]
+    bytes({0x0F, 0x10, 0x4B, 0x30});                          // movups xmm1, [rbx+0x30]
+    bytes({0x0F, 0x10, 0x53, 0x40});                          // movups xmm2, [rbx+0x40]
+    bytes({0x0F, 0x10, 0x5B, 0x50});                          // movups xmm3, [rbx+0x50]
+    bytes({0x48, 0x8B, 0x43, 0x68});                          // mov rax, [rbx+0x68]
+    bytes({0x48, 0x89, 0x44, 0x24, 0x20});                    // mov [rsp+0x20], rax
+    bytes({0x48, 0x8B, 0x43, 0x70});                          // mov rax, [rbx+0x70]
+    bytes({0x48, 0x89, 0x44, 0x24, 0x28});                    // mov [rsp+0x28], rax
+    bytes({0x48, 0x8B, 0x43, 0x78});                          // mov rax, [rbx+0x78]
+    bytes({0x48, 0x89, 0x44, 0x24, 0x30});                    // mov [rsp+0x30], rax
+    bytes({0x48, 0x8B, 0x83, 0x80, 0x00, 0x00, 0x00});        // mov rax, [rbx+0x80]
+    bytes({0x48, 0x89, 0x44, 0x24, 0x38});                    // mov [rsp+0x38], rax
+    bytes({0x48, 0x8B, 0x0B});                                // mov rcx, [rbx]
+    bytes({0x48, 0x8B, 0x53, 0x08});                          // mov rdx, [rbx+8]
+    bytes({0x4C, 0x8B, 0x43, 0x10});                          // mov r8, [rbx+0x10]
+    bytes({0x4C, 0x8B, 0x4B, 0x18});                          // mov r9, [rbx+0x18]
+    bytes({0xFF, 0x53, 0x60});                                // call [rbx+0x60]
+    bytes({0x48, 0x89, 0x83, 0x88, 0x00, 0x00, 0x00});        // mov [rbx+0x88], rax
+    bytes({0xF3, 0x0F, 0x11, 0x83, 0x90, 0x00, 0x00, 0x00});  // movss [rbx+0x90], xmm0
+    bytes({0x48, 0x83, 0xC4, 0x40});                          // add rsp, 0x40
+    bytes({0x5B});                                            // pop rbx
+    bytes({0xC3});                                            // ret
+    std::uint8_t* const mem = pool_alloc(c.size());
+    if (mem != nullptr) {
+        std::memcpy(mem, c.data(), c.size());
+        FlushInstructionCache(GetCurrentProcess(), mem, c.size());
+    }
+    return mem;
+}
+
 } // namespace
+
+bool invoke(CallRegs& regs) noexcept {
+    if (g_invokeThunk == nullptr) {
+        AcquireSRWLockExclusive(&g_lock);
+        if (g_invokeThunk == nullptr) {
+            g_invokeThunk = make_invoke_thunk();
+        }
+        ReleaseSRWLockExclusive(&g_lock);
+    }
+    if (g_invokeThunk == nullptr || regs.target == 0) {
+        return false;
+    }
+    reinterpret_cast<void (*)(CallRegs*)>(g_invokeThunk)(&regs);
+    return true;
+}
 
 bool request_post(std::uint8_t* frame, PostCallback post, std::uint64_t context) noexcept {
     if (g_returnTrampoline == nullptr || t_postCount >= t_post.size()) {
@@ -237,12 +343,100 @@ bool read(std::uintptr_t address, void* out, std::size_t size) noexcept {
 }
 
 bool write(std::uintptr_t address, const void* in, std::size_t size) noexcept {
+    // Data takes a plain copy into a region known to be committed and writable. Asking Windows is the
+    // expensive part, not the write: VirtualQuery (NtQueryVirtualMemory) measured 1.9 ms a call in this
+    // process (2026-10-18, 15000 calls), and WriteProcessMemory makes the same query inside -- the
+    // camera's five writes cost 9.6 ms of every frame (56 fps on the mock instead of the headset's
+    // rate) and a shot's eight a 16 ms hitch. So each thread remembers the few regions it writes to
+    // and asks again only for a new one, or once a second for a known one. Anything not writable
+    // (code) keeps WriteProcessMemory, which re-protects around the write.
+    struct Region final {
+        std::uintptr_t base{};
+        std::uintptr_t end{};
+        ULONGLONG checkedMs{};
+    };
+    thread_local std::array<Region, 8> t_regions{};
+    thread_local std::size_t t_next = 0;
+    if (address == 0 || size == 0) {
+        return false;
+    }
+    const ULONGLONG nowMs = GetTickCount64();
+    for (const Region& r : t_regions) {
+        if (address >= r.base && address + size <= r.end && nowMs - r.checkedMs < 1000) {
+            std::memcpy(reinterpret_cast<void*>(address), in, size);
+            return true;
+        }
+    }
+    MEMORY_BASIC_INFORMATION region{};
+    constexpr DWORD kWritable = PAGE_READWRITE | PAGE_EXECUTE_READWRITE;
+    if (VirtualQuery(reinterpret_cast<const void*>(address), &region, sizeof region) == sizeof region
+        && region.State == MEM_COMMIT && (region.Protect & kWritable) != 0 && (region.Protect & PAGE_GUARD) == 0
+        && address + size <= reinterpret_cast<std::uintptr_t>(region.BaseAddress) + region.RegionSize) {
+        const auto base = reinterpret_cast<std::uintptr_t>(region.BaseAddress);
+        Region* slot = nullptr;
+        for (Region& r : t_regions) {
+            if (r.base == base) {
+                slot = &r;
+            }
+        }
+        if (slot == nullptr) {
+            slot = &t_regions[t_next];
+            t_next = (t_next + 1) % t_regions.size();
+        }
+        *slot = Region{base, base + region.RegionSize, nowMs};
+        std::memcpy(reinterpret_cast<void*>(address), in, size);
+        return true;
+    }
     SIZE_T put = 0;
     return WriteProcessMemory(GetCurrentProcess(), reinterpret_cast<void*>(address), in, size, &put) != FALSE
            && put == size;
 }
 
+bool retarget_call(std::uintptr_t site, std::uintptr_t expected, const void* destination, const char*& failure) noexcept {
+    std::array<std::uint8_t, 5> call{};
+    if (!read(site, call.data(), call.size()) || call[0] != 0xE8) {
+        failure = "not_a_call";
+        return false;
+    }
+    std::int32_t rel = 0;
+    std::memcpy(&rel, call.data() + 1, 4);
+    if (site + 5 + static_cast<std::intptr_t>(rel) != expected) {
+        failure = "unexpected_target";
+        return false;
+    }
+    AcquireSRWLockExclusive(&g_lock);
+    // jmp [rip+0] ; dq destination -- in the pool, so a rel32 from the image reaches it.
+    std::uint8_t* const stub = pool_alloc(16);
+    if (stub == nullptr) {
+        ReleaseSRWLockExclusive(&g_lock);
+        failure = "pool";
+        return false;
+    }
+    const std::array<std::uint8_t, 6> jump{0xFF, 0x25, 0x00, 0x00, 0x00, 0x00};
+    std::memcpy(stub, jump.data(), jump.size());
+    const auto target = reinterpret_cast<std::uint64_t>(destination);
+    std::memcpy(stub + jump.size(), &target, sizeof target);
+    FlushInstructionCache(GetCurrentProcess(), stub, 16);
+    // Same encoding as `jmp rel32` from the displacement on: one interlocked write of it, when the
+    // four bytes sit inside one aligned 8- or 16-byte block.
+    bool ok = retarget_jump(site, stub);
+    if (!ok) {
+        // They straddle a 16-byte boundary (the getter's call does): no single interlocked write
+        // covers them. Every other thread is suspended instead -- Sunrise's own transaction, the one
+        // its hot detours go through -- and the write waits for a moment when none of them is inside
+        // the function the call belongs to.
+        ok = retarget_suspended(site, stub);
+    }
+    ReleaseSRWLockExclusive(&g_lock);
+    failure = ok ? "" : "retarget";
+    return ok;
+}
+
 bool attach(std::uintptr_t target, Callback callback, std::uint64_t cookie, const char*& failure) noexcept {
+    if (debug::has("detours off")) {
+        failure = "debug";
+        return false;
+    }
     DWORD64 imageBase = 0;
     PRUNTIME_FUNCTION fe = RtlLookupFunctionEntry(target, &imageBase, nullptr);
     if (fe == nullptr || imageBase + fe->BeginAddress != target) {

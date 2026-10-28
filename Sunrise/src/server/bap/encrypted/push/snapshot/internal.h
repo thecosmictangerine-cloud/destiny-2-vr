@@ -157,19 +157,6 @@ prepare(Scratch& scratch,
     std::span<const queuez::AcquisitionPresentationRow> acquisitionPresentationRows,
     Prepared& prepared) noexcept;
 
-/**
- * Builds the Family-4 character upsert carrying one prepared current-activity change.
- * @param scratch Object and compression storage owned by the lock.
- * @param update Checked queuez version after-image and resident character definition.
- * @param mutation Checked State after-image that is not committed yet.
- * @param prepared Gets the single character upsert descriptor.
- * @return True when the after-image encodes and the complete object fits.
- */
-[[nodiscard]] bool prepare_current_activity_character(Scratch& scratch,
-                                                      const queuez::EquipmentSwap& update,
-                                                      const state::PendingCurrentActivity& mutation,
-                                                      Prepared& prepared) noexcept;
-
 /** Builds the Family-4 character upsert carrying one accumulated item-state change. */
 [[nodiscard]] bool
 prepare_item_state(Scratch& scratch,

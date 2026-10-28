@@ -110,6 +110,7 @@ std::int64_t __fastcall physics_sync(std::byte* component, std::byte* outFlags) 
     hooks::fly::apply(component);
     // This tick is the only one that sees every component, so it is where the player's is found.
     client::player::position::observe(component);
+    hooks::vr::observe_physics(component);
     const PhysicsSync next = original<PhysicsSync>(kPhysicsSlot);
     return next != nullptr ? next(component, outFlags) : 0;
 }

@@ -19,6 +19,7 @@
 #include "../../../core/filesystem/path.h"
 #include "../../../core/logging/log.h"
 #include "../../../middleware/crypto/sha256.h"
+#include "../../../state/activity/membership/activity_membership_query.h"
 #include "../../../state/activity/mission/runtime.h"
 #include "../../../state/activity/runtime.h"
 #include "../../../state/activity_sdk/runtime.h"
@@ -138,9 +139,17 @@ reload_authorization(const state::activity::SessionBinding& binding) noexcept {
     instance.identity.playerKey = link.playerKey;
     instance.identity.publicTarget = link.publicTarget;
     // The bridge copies the world generation, so hand the program the rebuilt pair.
-    return lua_vm::rebind(instance.vm,
-                          instance.identity,
-                          sdk_bridge::definition_api(instance.view, instance.worldView));
+    if (!lua_vm::rebind(instance.vm,
+                        instance.identity,
+                        sdk_bridge::definition_api(instance.view, instance.worldView))) {
+        return false;
+    }
+    mission_state::Snapshot snapshot{};
+    if (!mission_state::state_snapshot(instance.view.binding, snapshot)) {
+        return false;
+    }
+    accept_mission_state(instance, snapshot);
+    return true;
 }
 
 /** Folds the activity name into a lowercase file stem; other bytes become single underscores. */
@@ -197,14 +206,16 @@ reload_authorization(const state::activity::SessionBinding& binding) noexcept {
     return true;
 }
 
+/** Writes `<stem>/<stem>.lua`: each mission owns a folder named after its script. */
 [[nodiscard]] bool controller_name(const sdk::Catalog& catalog,
                                    const format::Activity& activity,
                                    std::span<char> output) noexcept {
-    std::array<char, 256> stem{};
+    std::array<char, 120> stem{};
     if (!controller_stem(catalog, activity, stem)) {
         return false;
     }
-    const int length = std::snprintf(output.data(), output.size(), "%s.lua", stem.data());
+    const int length =
+        std::snprintf(output.data(), output.size(), "%s/%s.lua", stem.data(), stem.data());
     return length > 0 && static_cast<std::size_t>(length) < output.size();
 }
 
@@ -259,6 +270,8 @@ reload_authorization(const state::activity::SessionBinding& binding) noexcept {
                                                -1,
                                                wideName.data(),
                                                static_cast<int>(wideName.size()));
+    // Use backslashes; a root with the `\\?\` prefix does not accept `/`.
+    std::replace(wideName.begin(), wideName.end(), L'/', L'\\');
     core::path::Buffer authoredPath = g_scriptRoot;
     if (wideLength <= 1 || !core::path::append(authoredPath, L"\\")
         || !core::path::append(authoredPath, wideName.data())) {
@@ -435,10 +448,20 @@ enum class InitialStateGate : std::uint8_t {
         return InitialStateGate::ready;
     }
     activity_sdk_mission::Snapshot seed{};
+    std::array<sdk::MissionSeedOmission, sdk::kMissionSeedOmitCapacity> omissions{};
+    std::size_t omissionCount = 0;
+    if (!instance.initialStateSelected
+        && !lua_vm::initial_state_omissions(instance.vm, omissions, omissionCount)) {
+        fault_instance(instance, "program initial_state omit list could not be read");
+        return InitialStateGate::failed;
+    }
     const activity_sdk_mission::Status status =
-        instance.initialStateSelected ? activity_sdk_mission::query(instance.view, seed)
-                                      : activity_sdk_mission::select_state(
-                                            instance.view, instance.initialStateRegion, {}, seed);
+        instance.initialStateSelected
+            ? activity_sdk_mission::query(instance.view, seed)
+            : activity_sdk_mission::select_state(instance.view,
+                                                 instance.initialStateRegion,
+                                                 std::span(omissions).first(omissionCount),
+                                                 seed);
     if (status == activity_sdk_mission::Status::outputBusy) {
         return InitialStateGate::pending;
     }
@@ -551,6 +574,14 @@ enum class InitialStateGate : std::uint8_t {
         lua_vm::initial_state_region(instance.vm, instance.initialStateRegion);
     if (instance.initialStateDeclared) {
         instance.activeRegion = instance.initialStateRegion;
+        // The host names the arrival slice set; a launched activity's client names none.
+        state::activity::membership::note_declared_initial_region(instance.view.binding.sessionId,
+                                                                  instance.initialStateRegion);
+        std::uint32_t spawnSet = 0;
+        static_cast<void>(lua_vm::initial_state_spawn_set(instance.vm, spawnSet));
+        // Zero leaves the client on the set its own region names.
+        state::activity::membership::note_declared_spawn_set(instance.view.binding.sessionId,
+                                                             spawnSet);
     }
     if (!bind_mission_state(instance, now)) {
         instance.programStatus = ProgramStatus::programError;

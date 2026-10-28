@@ -24,6 +24,7 @@ record_character_seen(const CharacterNewItems& newItems,
 /** A clear bit means the item at that published row has been seen. */
 template <std::size_t N>
 [[nodiscard]] bool seen_at(const std::array<std::uint32_t, N>& bits, std::size_t row) noexcept {
+    // Each published seen-state word holds 32 item bits.
     constexpr std::size_t kWordBits = 32;
     return row < N * kWordBits && (bits[row / kWordBits] & (1U << (row % kWordBits))) == 0;
 }

@@ -32,6 +32,11 @@ enum class Delivery : std::uint8_t {
     /** The roster, answering the patch epoch its body has to echo back. */
     rosterNotification,
     purgeNotification,
+    /**
+     * The leave delta answering activity msg 15. It keeps every roster key and clears its
+     * presence, which is what unregisters the rows that client holds while their owner is valid.
+     */
+    leaveNotification,
 };
 
 /** State transaction family staged by one activity service request. */

@@ -9,15 +9,11 @@
 #include "../../../middleware/bap/activity_message/damage_monitor_auth.h"
 #include "../../../middleware/bap/activity_message/ghost_link_auth.h"
 #include "../../../middleware/bap/activity_message/scriptable_auth_body.h"
-#include "../../../state/activity/transactions/internal.h"
 #include "../activity_sdk_mission_runtime.h"
-#include "mission_script_cinematic.h"
-#include "mission_script_player_trigger.h"
 #include "mission_script_runtime_internal.h"
+#include "mission_script_runtime_objective.h"
 
-// Sense and host-state edge derivation. The client publishes levels, so every edge one
-// script sees is derived here by comparing the level against what this instance last saw.
-// Each function reads one instance and pushes the events it derived back into it.
+// Sense events retain levels within the owning mission attempt.
 
 namespace sunrise::server::activity::mission {
 namespace {
@@ -115,8 +111,9 @@ sense_value(std::span<const sense_values::DecodedValue> body,
     if (spare == nullptr) {
         for (SquadObservation& retained : instance.squadObservations) {
             bool empty = retained.aliveCount == 0;
-            for (const auto count : retained.slotCounts)
+            for (const auto count : retained.slotCounts) {
                 empty = empty && count == 0;
+            }
             if (empty) {
                 retained = {};
                 spare = &retained;
@@ -212,129 +209,7 @@ void objective_task_counters(std::span<const sense_values::DecodedValue> body,
     output.blocks = static_cast<std::uint8_t>((std::min)(blocks, output.value.size()));
 }
 
-/** @return True when one roster row is a committed peer of this instance's destination. */
-[[nodiscard]] bool peer_session(const RuntimeInstance& instance,
-                                const state::activity::SessionRosterRow& row) noexcept {
-    return row.joined && row.binding.sessionId != instance.view.binding.sessionId
-           && state::activity::transactions::same_destination(row.binding.destination,
-                                                              instance.view.binding.destination);
-}
-
-/** Mirrors the watched roster into the VM so any callback can read the current peer set. */
-void publish_peer_set(RuntimeInstance& instance) noexcept {
-    std::array<lua_vm::PeerSession, state::activity::kSessionCapacity> peers{};
-    std::size_t count = 0;
-    for (const SessionRosterWatch& watched : instance.sessionRoster) {
-        if (!watched.used) {
-            continue;
-        }
-        peers[count] = {
-            watched.sessionId, watched.createdRevision, watched.memberKey, watched.joinIdentity};
-        ++count;
-    }
-    lua_vm::publish_peers(instance.vm, std::span(peers.data(), count));
-}
-
 } // namespace
-
-/** Resolves a native player-trigger notification to its authored type-31 source. */
-void push_player_trigger(RuntimeInstance& instance, const host::Event& incident) noexcept {
-    if (!incident.hasPlayerTrigger) {
-        return;
-    }
-    const state::build_data::scriptables::Snapshot* const world = instance.worldView.snapshot();
-    if (world == nullptr) {
-        return;
-    }
-    middleware::bap::activity_message::player_trigger_incident::Payload payload{};
-    payload.registryKey = incident.playerTriggerRegistryKey;
-    payload.slotType = incident.playerTriggerSlotType;
-    payload.slotIndex = incident.playerTriggerSlotIndex;
-    payload.resolvedObjectId = incident.playerTriggerResolvedObjectId;
-    player_trigger::Source source{};
-    const player_trigger::ResolveStatus status = player_trigger::resolve(*world, payload, source);
-    if (status != player_trigger::ResolveStatus::ready) {
-        log_line(core::log::Level::warn,
-                 &instance,
-                 "player_trigger",
-                 status == player_trigger::ResolveStatus::ambiguous        ? "ambiguous"
-                 : status == player_trigger::ResolveStatus::invalidCatalog ? "invalid_catalog"
-                                                                           : "absent");
-        return;
-    }
-    host::Event event = incident;
-    event.kind = host::EventKind::playerTrigger;
-    event.firstRegistryKey = source.registryKey;
-    event.slotObjectTag = source.objectTag;
-    event.firstSlotIndex = source.slotIndex;
-    event.firstSlotType = source.slotType;
-    event.slotSenseSchema = 0;
-    event.playerTriggerRegistryKey = source.volumeRegistryKey;
-    event.playerTriggerSlotType = static_cast<std::int8_t>(source.volumeSlotType);
-    event.playerTriggerSlotIndex = static_cast<std::int16_t>(source.volumeSlotIndex);
-    push_script_event(instance, event);
-}
-
-/** Resolves a native cinematic notification to its exact authored Type-6 source. */
-void push_cinematic(RuntimeInstance& instance, const host::Event& incident) noexcept {
-    if (!incident.hasCinematic) {
-        return;
-    }
-    const state::build_data::scriptables::Snapshot* const world = instance.worldView.snapshot();
-    if (world == nullptr) {
-        return;
-    }
-    middleware::bap::activity_message::cinematic_incident::Payload target{};
-    target.registryKey = incident.cinematicRegistryKey;
-    target.slotType = incident.cinematicSlotType;
-    target.slotIndex = incident.cinematicSlotIndex;
-    target.runtimeObjectId = incident.cinematicRuntimeObjectId;
-    target.eventValue = incident.cinematicEventValue;
-    cinematic::Source source{};
-    const cinematic::ResolveStatus status = cinematic::resolve(*world, target, source);
-    std::array<char, 128> fields{};
-    const int written = std::snprintf(fields.data(),
-                                      fields.size(),
-                                      "registry=%08x slot_type=%d slot_index=%d target=%u",
-                                      target.registryKey,
-                                      static_cast<int>(target.slotType),
-                                      static_cast<int>(target.slotIndex),
-                                      incident.incidentTarget);
-    const std::string_view detail =
-        written > 0
-            ? std::string_view(fields.data(),
-                               (std::min)(static_cast<std::size_t>(written), fields.size() - 1))
-            : std::string_view{};
-    if (status != cinematic::ResolveStatus::ready) {
-        log_line(core::log::Level::warn,
-                 &instance,
-                 "cinematic",
-                 status == cinematic::ResolveStatus::ambiguous        ? "ambiguous"
-                 : status == cinematic::ResolveStatus::invalidCatalog ? "invalid_catalog"
-                                                                      : "absent",
-                 detail);
-        return;
-    }
-    using Signal = middleware::bap::activity_message::cinematic_incident::Signal;
-    const Signal signal = incident.cinematicSignal;
-    log_line(core::log::Level::debug,
-             &instance,
-             "cinematic",
-             signal == Signal::started         ? "started"
-             : signal == Signal::skipRequested ? "skip_requested"
-                                               : "terminated",
-             detail);
-    host::Event event = incident;
-    event.kind = signal == Signal::started         ? host::EventKind::cinematicStarted
-                 : signal == Signal::skipRequested ? host::EventKind::cinematicSkipRequested
-                                                   : host::EventKind::cinematicTerminated;
-    event.firstRegistryKey = source.registryKey;
-    event.slotObjectTag = source.objectTag;
-    event.firstSlotIndex = source.slotIndex;
-    event.firstSlotType = source.slotType;
-    event.slotSenseSchema = 0;
-    push_script_event(instance, event);
-}
 
 /**
  * Raises one event per watched volume whose occupancy changed.
@@ -459,19 +334,19 @@ void push_actor_path_edges(RuntimeInstance& instance,
         event.actorDeliveryRevision = slot->level.deliveryRevision;
         event.actorDeliveryState = slot->level.deliveryState;
         event.actorDeliveryKnown = (slot->level.seen & kActorSeenDelivery) == kActorSeenDelivery;
-        event.actorDead = slot->level.dead;
+        event.actorSuppressed = slot->level.suppressed;
         std::array<char, 160> details{};
         const int written =
             std::snprintf(details.data(),
                           details.size(),
                           "registry=%08X slot=%u generation=%d revision=%d "
-                          "state=%d dead=%u delivery_revision=%d delivery_state=%d",
+                          "state=%d suppressed=%u delivery_revision=%d delivery_state=%d",
                           slot->registryKey,
                           static_cast<unsigned>(slot->slotIndex),
                           slot->level.generation,
                           slot->level.revision,
                           slot->level.state,
-                          slot->level.dead ? 1U : 0U,
+                          slot->level.suppressed ? 1U : 0U,
                           event.actorDeliveryKnown ? slot->level.deliveryRevision : -1,
                           event.actorDeliveryKnown ? slot->level.deliveryState : -1);
         if (written > 0 && static_cast<std::size_t>(written) < details.size()) {
@@ -569,14 +444,16 @@ void push_object_interaction_edges(RuntimeInstance& instance,
         host::Event event = sense_edge_event(instance, observation);
         event.objectGeneration = level.generation;
         event.objectPresent = level.present;
-        event.objectAlive = level.alive;
+        // The alive lane carries Sense ordinal 1, which the script reads as interaction_open.
+        event.objectAlive = level.interactionOpen;
         event.objectOwnerKnown = level.ownerKnown;
         event.objectHasOwner = level.hasOwner;
         event.objectOwnerKey = level.ownerKey;
         const bool stateChanged =
             level.generationKnown && level.generation > 0 && level.stateKnown
             && (!before.stateKnown || before.generation != level.generation
-                || before.present != level.present || before.alive != level.alive
+                || before.present != level.present
+                || before.interactionOpen != level.interactionOpen
                 || before.ownerKnown != level.ownerKnown || before.hasOwner != level.hasOwner
                 || before.ownerKey != level.ownerKey);
         if (stateChanged) {
@@ -585,12 +462,12 @@ void push_object_interaction_edges(RuntimeInstance& instance,
             const int written = std::snprintf(details.data(),
                                               details.size(),
                                               "registry=%08X slot=%u generation=%d present=%u "
-                                              "alive=%u owner_known=%u has_owner=%u",
+                                              "interaction_open=%u owner_known=%u has_owner=%u",
                                               observation.key.registryKey,
                                               static_cast<unsigned>(observation.key.slotIndex),
                                               level.generation,
                                               level.present ? 1U : 0U,
-                                              level.alive ? 1U : 0U,
+                                              level.interactionOpen ? 1U : 0U,
                                               level.ownerKnown ? 1U : 0U,
                                               level.hasOwner ? 1U : 0U);
             if (written > 0 && static_cast<std::size_t>(written) < details.size()) {
@@ -631,6 +508,22 @@ void push_ghost_edges(RuntimeInstance& instance,
         event.ghostActive = slot->level.active;
         push_script_event(instance, event);
     }
+    publish_ghost_levels(instance);
+}
+
+/** Hands the VM the retained Ghost-link levels, so a callback can read one it did not receive. */
+void publish_ghost_levels(RuntimeInstance& instance) noexcept {
+    std::array<GhostLinkRow, kGhostObservationCapacity> rows{};
+    std::size_t count = 0;
+    for (const GhostObservation& observation : instance.ghostObservations) {
+        if (observation.used) {
+            rows[count++] = {observation.level,
+                             observation.registryKey,
+                             observation.objectTag,
+                             observation.slotIndex};
+        }
+    }
+    lua_vm::publish_ghost_levels(instance.vm, std::span(rows).first(count));
 }
 
 /**
@@ -642,15 +535,22 @@ void push_squad_edges(RuntimeInstance& instance,
                       const host::SenseObservationSnapshot& sense) noexcept {
     for (std::size_t index = 0; index < sense.observationCount; ++index) {
         const host::SenseObservation& observation = sense.observations[index];
-        if (observation.key.senseSchema != format::kSquadSenseSchema
+        if (observation.sourceGeneration != sense.sourceGeneration
+            || observation.key.slotType != format::kSquadSlotType
+            || observation.key.senseSchema != format::kSquadSenseSchema
             || observation.firstValue + observation.valueCount > sense.valueCount) {
             continue;
         }
         const std::span<const sense_values::DecodedValue> body(
             &sense.values[observation.firstValue], observation.valueCount);
         const std::uint32_t root = observation.key.schemaRow;
+        if (!observe_population(instance, observation, body)) {
+            return;
+        }
         SquadObservation* const squad = find_squad(instance, observation.key);
-        if (squad == nullptr) continue;
+        if (squad == nullptr) {
+            continue;
+        }
         const bool costsChanged = update_squad_objective_costs(squad->objectiveCosts, body, root);
         // Cost-only deltas retain combat counts; they must never manufacture a death.
         std::int32_t alive = squad->aliveCount;
@@ -659,7 +559,7 @@ void push_squad_edges(RuntimeInstance& instance,
         auto counts = squad->slotCounts;
         auto countLength = squad->slotCountLength;
         std::array<std::int32_t, host::kSquadSlotCapacity> incomingCounts{};
-        const auto incomingLength = read_squad_consumed_counts(body, incomingCounts);
+        const auto incomingLength = read_squad_created_counts(body, incomingCounts);
         if (incomingLength != 0) {
             counts = incomingCounts;
             countLength = incomingLength;
@@ -680,6 +580,7 @@ void push_squad_edges(RuntimeInstance& instance,
         state.squadObjectiveCosts = squad->objectiveCosts.values;
         state.squadObjectiveCostMask = squad->objectiveCosts.known;
         state.squadObjectiveRevision = squad->objectiveCosts.revision;
+        qualify_objective_costs(instance, state);
         state.squadAliveCount = alive;
         state.squadPreviousAliveCount = previousAlive;
         state.squadRemovalFlag = removal;
@@ -829,99 +730,6 @@ void push_objective_edges(RuntimeInstance& instance,
             }
         }
     }
-}
-
-/** Reports one committed phase change to the script. */
-void queue_phase_entered(RuntimeInstance& instance, std::uint32_t previousPhase) noexcept {
-    host::Event event{};
-    event.binding = instance.view.binding;
-    event.sequence = instance.missionStateRevision;
-    event.sourceGeneration = instance.view.activityClientGeneration;
-    event.missionSequence = instance.lastMissionSequence;
-    event.stateRevision = instance.missionStateRevision;
-    event.missionPhase = instance.missionPhase;
-    event.previousMissionPhase = previousPhase;
-    event.kind = host::EventKind::phaseEntered;
-    push_script_event(instance, event);
-}
-
-/** @return The identity every host-state edge that is not a Sense edge carries. */
-[[nodiscard]] host::Event state_edge_event(const RuntimeInstance& instance) noexcept {
-    host::Event event{};
-    event.binding = instance.view.binding;
-    event.sequence = instance.missionStateRevision;
-    event.sourceGeneration = instance.view.activityClientGeneration;
-    event.missionSequence = instance.lastMissionSequence;
-    return event;
-}
-
-/**
- * Raises one event per peer session that appeared or left this instance's destination.
- * A record replacement changes createdRevision, which counts as a leave and a join. The first read
- * only records the current peers, so a reattach never replays them.
- */
-void push_session_roster_edges(RuntimeInstance& instance,
-                               std::span<const state::activity::SessionRosterRow> roster) noexcept {
-    const bool first = !instance.sessionRosterObserved;
-    instance.sessionRosterObserved = true;
-    for (SessionRosterWatch& watched : instance.sessionRoster) {
-        if (!watched.used) {
-            continue;
-        }
-        const auto match = std::find_if(
-            roster.begin(), roster.end(), [&instance, &watched](const auto& row) noexcept {
-                return peer_session(instance, row) && row.binding.sessionId == watched.sessionId
-                       && row.binding.createdRevision == watched.createdRevision;
-            });
-        if (match != roster.end()) {
-            continue;
-        }
-        host::Event event = state_edge_event(instance);
-        event.peerSessionId = watched.sessionId;
-        event.peerSessionGeneration = watched.createdRevision;
-        event.peerMemberKey = watched.memberKey;
-        event.kind = host::EventKind::sessionLeft;
-        watched = {};
-        push_script_event(instance, event);
-    }
-    for (const state::activity::SessionRosterRow& row : roster) {
-        if (!peer_session(instance, row)) {
-            continue;
-        }
-        SessionRosterWatch* spare = nullptr;
-        bool known = false;
-        for (SessionRosterWatch& watched : instance.sessionRoster) {
-            if (watched.used && watched.sessionId == row.binding.sessionId
-                && watched.createdRevision == row.binding.createdRevision) {
-                watched.memberKey = row.memberKey;
-                watched.joinIdentity = row.joinIdentity;
-                known = true;
-                break;
-            }
-            if (!watched.used && spare == nullptr) {
-                spare = &watched;
-            }
-        }
-        if (known || spare == nullptr) {
-            continue;
-        }
-        spare->sessionId = row.binding.sessionId;
-        spare->createdRevision = row.binding.createdRevision;
-        spare->memberKey = row.memberKey;
-        spare->joinIdentity = row.joinIdentity;
-        spare->used = true;
-        if (first) {
-            continue;
-        }
-        host::Event event = state_edge_event(instance);
-        event.peerSessionId = row.binding.sessionId;
-        event.peerSessionGeneration = row.binding.createdRevision;
-        event.peerMemberKey = row.memberKey;
-        event.stateRevision = row.joinedRevision;
-        event.kind = host::EventKind::sessionJoined;
-        push_script_event(instance, event);
-    }
-    publish_peer_set(instance);
 }
 
 } // namespace sunrise::server::activity::mission

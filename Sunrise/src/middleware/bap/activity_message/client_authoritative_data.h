@@ -31,7 +31,8 @@ struct TeleportState final {
     std::int8_t state{};
     std::uint8_t token{};
     std::int32_t sliceSetIndex{kAbsentSliceSetIndex};
-    std::uint32_t sliceSetHash{};
+    /** Spawn set the move leaves as the client's spawn-point filter, not a slice-set name. */
+    std::uint32_t spawnSetHash{};
 };
 
 /** Wire zero names no slice set after the 10-bit leg field's bias is removed. */

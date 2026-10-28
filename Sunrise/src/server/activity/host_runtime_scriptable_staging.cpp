@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <limits>
 
+#include "../../state/activity/mission/runtime.h"
 #include "../../state/activity/runtime.h"
 #include "../gameplay/squad_entity_retirement.h"
+#include "host_runtime_ghost_link.h"
 #include "host_runtime_internal.h"
 
 namespace sunrise::server::activity::host {
@@ -12,7 +14,39 @@ namespace auth = middleware::bap::activity_message::scriptable_auth;
 namespace squad = middleware::bap::activity_message::squad_auth;
 using namespace detail;
 
+/**
+ * A borrowed output excludes every input already admitted before its transport attempt.
+ * @param binding Exact activity owning the output.
+ * @param output Receives both accepted-input heads while the Host lock is held.
+ */
+void stamp_output_boundary(const state::activity::SessionBinding& binding,
+                           PendingScriptableOverride& output) noexcept {
+    state::activity::mission::InputSequenceSnapshot input{};
+    output.missionInputBoundaryKnown =
+        state::activity::mission::input_sequence_snapshot(binding, input);
+    output.missionInputSequenceAtStage = input.issued;
+    output.clientMessageSequenceAtStage = latest_client_message_sequence();
+}
+
 } // namespace
+
+/** The Host lock orders the framing head with the durable accepted-input head. */
+bool publication_input_boundary(const state::activity::SessionBinding& binding,
+                                std::uint64_t& attemptGeneration,
+                                std::uint64_t& inputSequence,
+                                std::uint64_t& clientMessageSequence) noexcept {
+    attemptGeneration = inputSequence = clientMessageSequence = 0;
+    AcquireSRWLockShared(&g_lock);
+    state::activity::mission::InputSequenceSnapshot input{};
+    const bool known = state::activity::mission::input_sequence_snapshot(binding, input);
+    if (known) {
+        attemptGeneration = input.attemptGeneration;
+        inputSequence = input.issued;
+        clientMessageSequence = latest_client_message_sequence();
+    }
+    ReleaseSRWLockShared(&g_lock);
+    return known;
+}
 
 /** Reads the one pending typed ClientRef body without changing its counter. */
 bool pending_scriptable_override(const state::activity::SessionBinding& binding,
@@ -26,6 +60,7 @@ bool pending_scriptable_override(const state::activity::SessionBinding& binding,
                          && instance->pendingScriptable.revision != 0;
     if (pending) {
         output = instance->pendingScriptable;
+        stamp_output_boundary(binding, output);
     }
     ReleaseSRWLockShared(&g_lock);
     return pending;
@@ -50,6 +85,7 @@ bool pending_scriptable_override_for_activity_client(const state::activity::Sess
     }
     if (pending) {
         output = instance->pendingScriptable;
+        stamp_output_boundary(binding, output);
     }
     ReleaseSRWLockExclusive(&g_lock);
     return pending;
@@ -114,10 +150,12 @@ void note_scriptable_attempt(const state::activity::SessionBinding& binding,
         || (guard != nullptr && pending.kind == ScriptableOverrideKind::sdkAuth
             && pending.sdkCompiled)) {
         nextCounter = true;
+    } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::squadObjective) {
+        // The revision was derived from the transported estate while this ClientRef was reserved.
+        nextCounter = pending.generation > 0 && pending.generation <= squad::kMaximumGeneration;
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::squad
                && pending.generation <= squad::kMaximumGeneration) {
-        std::uint32_t next = 0;
-        nextCounter = squad::next_generation(guard->squad, next) && next == pending.generation;
+        nextCounter = pending.generation > (guard->squad.hasLast ? guard->squad.last : 0U);
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::combatantChannel) {
         auth::Type2ChannelState candidate = guard->type2;
         std::uint32_t revision = 0;
@@ -134,10 +172,30 @@ void note_scriptable_attempt(const state::activity::SessionBinding& binding,
             auth::next_type2_revision(candidate, revision) && revision == pending.generation;
         candidate.revision = revision;
         candidate.actorBinding = auth::Type2ActorBinding::squadMember;
-    } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::object) {
-        std::int32_t next = 0;
-        nextCounter = auth::next_type4_generation(guard->type4, next)
-                      && static_cast<std::uint64_t>(next) == pending.generation;
+    } else if (guard != nullptr
+               && (pending.kind == ScriptableOverrideKind::combatantProgram
+                   || pending.kind == ScriptableOverrideKind::combatantRetirement)) {
+        nextCounter = pending.generation > guard->type2AtomGeneration
+                      && pending.generation <= squad::kMaximumGeneration
+                      && (pending.actorSpawnGeneration == 0
+                          || (pending.actorSpawnGeneration > guard->type2SpawnGeneration
+                              && pending.actorSpawnGeneration <= squad::kMaximumGeneration));
+    } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::combatantSequence) {
+        // A retained generic Auth program may be ahead of this typed guard.
+        nextCounter = pending.generation > guard->type2AtomGeneration
+                      && pending.generation <= squad::kMaximumGeneration;
+    } else if (guard != nullptr
+               && (pending.kind == ScriptableOverrideKind::object
+                   || pending.kind == ScriptableOverrideKind::interactableObject)) {
+        nextCounter =
+            pending.generation > static_cast<std::uint64_t>((std::max)(guard->type4.last, 0))
+            && pending.generation <= squad::kMaximumGeneration;
+    } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::damageWatch) {
+        nextCounter = pending.generation > guard->damageRevision
+                      && pending.generation <= squad::kMaximumGeneration;
+    } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::ghostLink) {
+        nextCounter = pending.generation > guard->ghostLink.generation
+                      && pending.generation <= squad::kMaximumGeneration;
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::sequence) {
         std::uint8_t next = 0;
         nextCounter = auth::next_type5_revision(guard->type5, next) && next == pending.generation;
@@ -153,9 +211,7 @@ void note_scriptable_attempt(const state::activity::SessionBinding& binding,
         nextCounter = auth::next_type23_sequence(guard->type23, pending.channel, next)
                       && next == pending.sequence;
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::type31) {
-        std::uint64_t next = 0;
-        nextCounter =
-            auth::next_type31_generation(guard->type31, next) && next == pending.generation;
+        nextCounter = !guard->type31.hasLast || pending.generation >= guard->type31.last;
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::objectiveReset) {
         std::int32_t next = 0;
         nextCounter = auth::next_type3_generation(guard->type3, next)
@@ -164,6 +220,11 @@ void note_scriptable_attempt(const state::activity::SessionBinding& binding,
         std::int32_t next = 0;
         nextCounter = auth::next_type38_generation(guard->type38, next)
                       && static_cast<std::uint64_t>(next) == pending.generation;
+    } else if (guard != nullptr
+               && (pending.kind == ScriptableOverrideKind::authoredSceneEvent
+                   || pending.kind == ScriptableOverrideKind::authoredSceneStop)) {
+        nextCounter =
+            pending.generation != 0 && pending.generation == guard->authoredSceneGeneration;
     } else if (guard != nullptr && pending.kind == ScriptableOverrideKind::authoredScene) {
         std::uint32_t next = 0;
         nextCounter = next_authored_scene_generation(guard->authoredSceneGeneration, next)
@@ -192,9 +253,22 @@ void advance_staged_guard(ScriptableGuard* guard,
     } else if (pending.kind == ScriptableOverrideKind::combatantBinding) {
         guard->type2.revision = static_cast<std::uint32_t>(pending.generation);
         guard->type2.actorBinding = auth::Type2ActorBinding::squadMember;
-    } else if (pending.kind == ScriptableOverrideKind::object) {
+    } else if (pending.kind == ScriptableOverrideKind::combatantProgram
+               || pending.kind == ScriptableOverrideKind::combatantRetirement) {
+        guard->type2AtomGeneration = static_cast<std::uint32_t>(pending.generation);
+        if (pending.actorSpawnGeneration != 0) {
+            guard->type2SpawnGeneration = pending.actorSpawnGeneration;
+        }
+    } else if (pending.kind == ScriptableOverrideKind::combatantSequence) {
+        guard->type2AtomGeneration = static_cast<std::uint32_t>(pending.generation);
+    } else if (pending.kind == ScriptableOverrideKind::object
+               || pending.kind == ScriptableOverrideKind::interactableObject) {
         guard->type4.last = static_cast<std::int32_t>(pending.generation);
         guard->type4.hasLast = true;
+    } else if (pending.kind == ScriptableOverrideKind::damageWatch) {
+        guard->damageRevision = static_cast<std::uint32_t>(pending.generation);
+    } else if (pending.kind == ScriptableOverrideKind::ghostLink) {
+        ghost_link::advance(*guard, pending);
     } else if (pending.kind == ScriptableOverrideKind::sequence) {
         guard->type5.last = static_cast<std::uint8_t>(pending.generation);
         guard->type5.hasLast = true;
@@ -217,7 +291,10 @@ void advance_staged_guard(ScriptableGuard* guard,
         guard->type38.hasLast = true;
     } else if (pending.kind == ScriptableOverrideKind::authoredScene) {
         guard->authoredSceneGeneration = static_cast<std::uint32_t>(pending.generation);
-    } else if (pending.kind == ScriptableOverrideKind::dialogue) {
+    } else if (pending.kind == ScriptableOverrideKind::dialogue
+               && pending.dialogueCue < guard->type53.last.size()) {
+        auto& last = guard->type53.last[pending.dialogueCue];
+        last = (std::max)(last, pending.dialogueSequence);
     }
 }
 
@@ -304,6 +381,33 @@ std::size_t pending_scriptable_tail(const state::activity::SessionBinding& bindi
     return written;
 }
 
+/**
+ * Copies one retained output under the same lock that admits input and stages output.
+ * @param binding Exact activity owning the output.
+ * @param revision Exact transported output revision.
+ * @param output Receives the retained body, or an empty value when absent.
+ * @return True when that output remains retained.
+ */
+bool staged_scriptable_override(const state::activity::SessionBinding& binding,
+                                std::uint64_t revision,
+                                PendingScriptableOverride& output) noexcept {
+    output = {};
+    AcquireSRWLockShared(&g_lock);
+    const Instance* instance = find_instance(binding);
+    bool found = false;
+    if (instance != nullptr) {
+        for (const auto& retained : instance->scriptableAuthEstate) {
+            if (retained.revision == revision) {
+                output = retained;
+                found = true;
+                break;
+            }
+        }
+    }
+    ReleaseSRWLockShared(&g_lock);
+    return found;
+}
+
 /** @return True when any instance still owes a Host output. */
 bool any_output_pending() noexcept {
     AcquireSRWLockShared(&g_lock);
@@ -352,5 +456,60 @@ bool scriptable_auth_estate(const state::activity::SessionBinding& binding,
     ReleaseSRWLockShared(&g_lock);
     return copied;
 }
+
+namespace detail {
+
+/** Encodes one type-31 arm or disarm. */
+bool encode_trigger_pulse(const ScriptableRequest& request,
+                          const auth::Type31GenerationGuard& guard,
+                          PendingScriptableOverride& pending,
+                          std::size_t& written) noexcept {
+    written = 0;
+    pending.bitCount = static_cast<std::uint16_t>(auth::kType31BitCount);
+    std::uint64_t generation = 0;
+    const bool encoded =
+        auth::type31_arm_generation(guard, generation)
+        && auth::encode_type31({generation, request.triggerEnabled}, guard, pending.body, written);
+    pending.generation = generation;
+    return encoded;
+}
+
+/** Encodes one dialogue pulse on top of the body last transported for its slot. */
+bool encode_dialogue_pulse(const Instance& instance,
+                           const ScriptableRequest& request,
+                           const auth::Type53SequenceGuard& guard,
+                           PendingScriptableOverride& pending,
+                           std::size_t& written) noexcept {
+    written = 0;
+    pending.dialogueCue = request.dialogueCue;
+    auth::Type53Body base{};
+    for (const PendingScriptableOverride& retained : instance.scriptableAuthEstate) {
+        const ScriptableTarget& target = retained.target;
+        if (target.objectTag == request.target.objectTag
+            && target.registryKey == request.target.registryKey
+            && target.slotIndex == request.target.slotIndex
+            && target.slotType == request.target.slotType) {
+            // A body in another form carries no waiting row to keep.
+            if (!auth::decode_type53_body(
+                    std::span(retained.body).first(retained.byteCount), retained.bitCount, base)) {
+                base = {};
+            }
+            break;
+        }
+    }
+    std::int32_t sequence = 0;
+    std::size_t bits = 0;
+    auth::Type53Body body{};
+    const bool encoded =
+        auth::next_type53_sequence(guard, request.dialogueCue, sequence)
+        && auth::compose_type53(
+            base, {request.dialogueCue, sequence, request.dialogueFilter}, guard, body)
+        && auth::encode_type53_body(body, pending.body, written, bits);
+    pending.bitCount = static_cast<std::uint16_t>(bits);
+    pending.dialogueSequence = sequence;
+    return encoded;
+}
+
+} // namespace detail
 
 } // namespace sunrise::server::activity::host

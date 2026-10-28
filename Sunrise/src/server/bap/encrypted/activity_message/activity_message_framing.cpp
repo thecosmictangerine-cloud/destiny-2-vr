@@ -274,6 +274,27 @@ bool prepare_authority_query_answer(const ActivityClientBinding& binding,
     return true;
 }
 
+/** The client reported it is leaving, so the roster it holds is owed its leave delta. */
+bool prepare_peer_leave(const ActivityClientBinding& binding,
+                        const RosterDecodeMap& rosterDecode,
+                        IngressAdapter adapter,
+                        const service::Request& request,
+                        ActivityPlan& plan,
+                        bool& hasTransaction) noexcept {
+    if (!frame_only(binding, rosterDecode, adapter, request)) {
+        return false;
+    }
+    // With no delivered roster the client registered nothing on this link, so nothing is owed.
+    if (!rosterDecode.valid || rosterDecode.bindingGeneration != binding.bindingGeneration) {
+        return true;
+    }
+    plan.sessionId = request.sessionId;
+    plan.delivery = Delivery::leaveNotification;
+    plan.mutationDomain = MutationDomain::none;
+    hasTransaction = true;
+    return true;
+}
+
 /** A purge answer preserves the requesting client's complete mask and reason. */
 bool prepare_authority_purge(const ActivityClientBinding& binding,
                              const RosterDecodeMap& rosterDecode,

@@ -15,20 +15,22 @@ namespace sunrise::server::bap::encrypted::push::activity {
 
 /**
  * Finds the slice-set index a destination arrives in.
- * Order: authored override, the bubble the client named, the default destination's, then its first
- * live one. A fallback never crosses destinations; a foreign index loads wrong geometry silently.
+ * Order: authored override, the bubble the client named, the mission program's declared initial
+ * state, the default destination's, then its first live one. A fallback never crosses destinations.
  *
  * @param defaults Authored default destination and its numeric launch policy.
  * @param selection Destination the session committed, carrying any wire arrival hash or override.
  * @param name Destination package name.
  * @param layout Extracted layout for that name, or a zero-bubble layout when there is none.
+ * @param declaredRegion Initial-state region the attached mission program declared, or -1.
  * @return The slice-set index to publish.
  */
 [[nodiscard]] std::uint16_t
 arrival_slice_set(const state::activity::defaults::DefaultDestination& defaults,
                   const state::activity::destination::DestinationSelection& selection,
                   std::string_view name,
-                  const state::build_data::scenarios::Definition& layout) noexcept;
+                  const state::build_data::scenarios::Definition& layout,
+                  std::int32_t declaredRegion) noexcept;
 
 /** The region one session publishes, with the arrival slice set behind it. */
 struct EffectiveRegion final {

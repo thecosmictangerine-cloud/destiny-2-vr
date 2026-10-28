@@ -8,6 +8,7 @@
 #include "../../../core/logging/log.h"
 #include "../../../middleware/encoding/byte_order.h"
 #include "../../../middleware/secure_channel/runtime.h"
+#include "../../../middleware/web_service/messages/opcode206.h"
 #include "../../../state/activity/bubble_authority/runtime.h"
 #include "../../../state/runtime/runtime.h"
 #include "../../activity/host_runtime.h"
@@ -85,9 +86,9 @@ void record_committed_join(Session& session, const ConnectionFields& fields) noe
 /** Queues one safe msg-22 after-image only after State and connection publication commit. */
 void submit_committed_client_state(const activity_message::ActivityPlan& plan,
                                    const transactions::Publication& publication) noexcept {
-    // A committed msg 22 that changed nothing material is the client's settle report, sent once
-    // spawn-in completes. It carries no region, spawn or teleport delta, so the surface reads all
-    // three as absent, but it still arrives: the script needs it to time the opening line.
+    // A committed msg 22 that changed nothing material still reaches the surface with every
+    // delta field absent. The client sends such reports while loading as well as after the
+    // spawn, so a script must not time its opening on one.
     if (!plan.clientState.pending || !publication.clientState.committed) {
         return;
     }
@@ -308,6 +309,24 @@ bool consume(Session& session,
         outcome = {};
         handled = sendsReply;
     }
+    // A ws-206 subscribe is answered with the family's first snapshot inside the reply. The
+    // client creates the family from that blob and reads it with no null check.
+    if (handled && sendsReply && outcome.hasSubscription
+        && route.bodyCodec == BodyCodec::webService) {
+        middleware::web_service::Message message;
+        std::size_t bodySize = 0;
+        outcome.subscriptionAnswered =
+            middleware::web_service::parse_request(frame.body, message)
+            && message.opcode == middleware::web_service::messages::opcode206::kOpcode
+            && push::prepare_subscription_answer(
+                scratch, session.queuez, outcome.subscription, scratch.responsePayload, bodySize)
+            && middleware::web_service::messages::opcode206::encode_response(
+                message,
+                std::span(scratch.responsePayload).first(bodySize),
+                scratch.responseBody,
+                responseBodySize);
+        clear_prefix(scratch.responsePayload, bodySize);
+    }
     if (handled) {
         report_service_traffic(frame, route, responseBodySize);
     }
@@ -358,10 +377,6 @@ bool consume(Session& session,
         }
     }
     const auto* activityPlan = transaction_if<activity_message::ActivityPlan>(outcome);
-    const bool publishesFamily4 =
-        publishesQueuez
-        && (queuezPublication.after.family4Active != session.queuez.family4Active
-            || queuezPublication.after.family4Version != session.queuez.family4Version);
     if (handled && activityPlan != nullptr) {
         handled = route.responseMode == ResponseMode::uncorrelatedPush;
         if (!handled) {
@@ -373,10 +388,10 @@ bool consume(Session& session,
                                                               nextSendNonce,
                                                               scratch.framed,
                                                               framedSize)) {
-            // The transaction still commits. A push that cannot be built is one lost message, and
-            // dropping the commit with it would strand the client's reported state for the session.
+            // Reports still commit their observed state; a failed snapshot answer commits nothing.
             diagnostics::report_failure(frame.serviceId, "notify");
-            if (activityPlan->mutationDomain == activity_message::MutationDomain::authorityPurge) {
+            if (activityPlan->mutationDomain == activity_message::MutationDomain::authorityPurge
+                || activityPlan->delivery == activity_message::Delivery::refreshNotifications) {
                 handled = false;
             }
         }
@@ -388,7 +403,6 @@ bool consume(Session& session,
         || transaction_if<SubclassSelectionTransaction>(outcome) != nullptr
         || transaction_if<SocketPlugTransaction>(outcome) != nullptr
         || transaction_if<ItemStateTransaction>(outcome) != nullptr || artifactPurchase
-        || transaction_if<CurrentActivityTransaction>(outcome) != nullptr
         || transaction_if<ItemAcquisitionTransaction>(outcome) != nullptr
         || transaction_if<ProfileItemAcquisitionTransaction>(outcome) != nullptr
         || transaction_if<ItemDismantleTransaction>(outcome) != nullptr
@@ -537,12 +551,6 @@ bool consume(Session& session,
                 session.artifactResetRefreshCursor = 0;
             }
             session.accountMutationPublished = mutatesAccount && !resyncsCommittedAccount;
-            if (publishesFamily4) {
-                // The Family-4 store is updated in place, so pointer identity cannot detect its
-                // initial population or later revisions. Carry the exact committed publication
-                // across to the next native lookup, after the client has consumed this frame.
-                bap::notify_investment_publication();
-            }
         }
     }
     if (!handled) {

@@ -65,7 +65,10 @@ void select_default() noexcept {
         g_selected = {};
         return;
     }
-    if (selected_instance() != nullptr) {
+    // A public-target row keeps its instance after the client's link to it closes. A selection
+    // left there binds no client, so it moves to a linked row when one exists.
+    const host::InstanceSnapshot* current = selected_instance();
+    if (current != nullptr && server::bap::activity_link_count(current->binding) != 0) {
         return;
     }
     std::size_t selected = 0;

@@ -21,8 +21,6 @@ enum class HookSlot : std::size_t {
     httpExecuteRequest,
     bubbleAuthorityDecoder,
     contentUntrackedGetter,
-    signOnReadinessFailure,
-    signOnReadinessReady,
     count,
 };
 
@@ -71,16 +69,6 @@ namespace http {
 [[nodiscard]] void* execute_request_entry_point() noexcept;
 
 } // namespace http
-
-namespace signon {
-
-/** @return The pre-SignOn readiness replacement body, from the file that owns it. */
-[[nodiscard]] void* readiness_entry_point() noexcept;
-
-/** @return The pre-SignOn ready replacement body, from the file that owns it. */
-[[nodiscard]] void* ready_entry_point() noexcept;
-
-} // namespace signon
 
 #if defined(SUNRISE_BAP_HOOK_TEST)
 namespace testing {

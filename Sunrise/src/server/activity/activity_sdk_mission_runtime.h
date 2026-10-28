@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "../../state/activity_sdk/runtime.h"
 #include "../bap/runtime.h"
@@ -221,14 +222,17 @@ activate_task_slot_reserved(const state::activity_sdk::BoundView& view,
 play_dialogue_cue_slot_reserved(const state::activity_sdk::BoundView& view,
                                 std::uint32_t slotRow,
                                 std::uint16_t cueIndex,
-                                const host::ScriptableOutputReservation& reservation) noexcept;
+                                const host::ScriptableOutputReservation& reservation,
+                                std::optional<std::uint32_t> filterSlotRow = {}) noexcept;
 
 /** Queues only through the exact unarmed Host revision owned by Mission State. */
 [[nodiscard]] SceneStatus
 activate_authored_scene_reserved(const state::activity_sdk::BoundView& view,
                                  std::uint32_t occurrenceRow,
                                  std::uint32_t slotRow,
-                                 const host::ScriptableOutputReservation& reservation) noexcept;
+                                 const host::ScriptableOutputReservation& reservation,
+                                 std::uint32_t eventKey = 0,
+                                 bool stop = false) noexcept;
 
 /** @return Stable concise text for one mission runtime result. */
 [[nodiscard]] const char* status_name(Status status) noexcept;

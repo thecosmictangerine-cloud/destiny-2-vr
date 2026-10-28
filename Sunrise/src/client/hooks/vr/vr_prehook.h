@@ -57,6 +57,17 @@ inline std::uint64_t return_address(const std::uint8_t* frame) noexcept {
 [[nodiscard]] bool attach(std::uintptr_t target, Callback callback, std::uint64_t cookie,
                           const char*& failure) noexcept;
 
+/**
+ * Points ONE call instruction -- the `call rel32` at `site` -- at `destination`, through a stub near
+ * the image, leaving the function it called, and every other caller of it, untouched. The way to
+ * change what one caller gets without detouring a function the whole engine shares: a whole-function
+ * detour of the camera getter froze every destination load (docs/PLAYABLE.md).
+ * @param expected The function the call must currently reach; anything else and nothing is written.
+ * @return True when the call now reaches `destination`.
+ */
+[[nodiscard]] bool retarget_call(std::uintptr_t site, std::uintptr_t expected, const void* destination,
+                                 const char*& failure) noexcept;
+
 /** Runs when the hooked call returns. `context` is whatever the pre-hook passed along. */
 using PostCallback = void (*)(std::uint64_t context) noexcept;
 
@@ -79,10 +90,42 @@ bool request_post(std::uint8_t* frame, PostCallback post, std::uint64_t context)
  */
 std::size_t walk(const std::uint8_t* frame, std::uintptr_t* out, std::size_t capacity) noexcept;
 
+/**
+ * A call into the engine with every argument register set exactly: the integer registers, xmm0-3
+ * and four stack arguments, all at once -- which a C++ call cannot do when the callee reads an
+ * integer and a float from the same argument position (it does: the weapon functions take the
+ * object in rcx and the frame time in xmm1).
+ */
+struct CallRegs final {
+    std::uint64_t rcx{};
+    std::uint64_t rdx{};
+    std::uint64_t r8{};
+    std::uint64_t r9{};
+    std::array<std::array<float, 4>, 4> xmm{};
+    std::uint64_t target{};
+    std::array<std::uint64_t, 4> stack{};
+    std::uint64_t result{};
+    float resultFloat{};
+};
+static_assert(offsetof(CallRegs, xmm) == 0x20 && offsetof(CallRegs, target) == 0x60
+              && offsetof(CallRegs, stack) == 0x68 && offsetof(CallRegs, result) == 0x88
+              && offsetof(CallRegs, resultFloat) == 0x90);
+
+/**
+ * Calls `regs.target` with the registers in `regs`, on this thread, and stores rax and xmm0 back.
+ * @return False when the call thunk could not be made.
+ */
+bool invoke(CallRegs& regs) noexcept;
+
 /** @return True when Windows copied all of it: a pointer read that cannot fault. */
 [[nodiscard]] bool read(std::uintptr_t address, void* out, std::size_t size) noexcept;
 
-/** @return True when Windows wrote all of it. */
+/**
+ * A write that cannot fault: a plain copy into memory VirtualQuery reports committed and writable,
+ * WriteProcessMemory for anything else (code). Never WriteProcessMemory for data: it re-protects the
+ * page around each call, ~2 ms in this game.
+ * @return True when all of it was written.
+ */
 [[nodiscard]] bool write(std::uintptr_t address, const void* in, std::size_t size) noexcept;
 
 } // namespace sunrise::client::hooks::vr::prehook

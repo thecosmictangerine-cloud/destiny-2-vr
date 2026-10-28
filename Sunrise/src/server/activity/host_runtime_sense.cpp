@@ -9,10 +9,12 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <new>
 #include <span>
 
 #include "../../core/logging/log.h"
+#include "../../middleware/bap/activity_message/ghost_link_sense.h"
 #include "../../middleware/bap/activity_message/sense_observation_packet.h"
 #include "../../state/activity/runtime.h"
 #include "../../state/activity_sdk/format.h"
@@ -354,7 +356,9 @@ retain_sense_observations(Instance& instance, const SenseInput& input, std::uint
     next.sourceGeneration = input.sourceGeneration;
     for (std::size_t index = 0; index < packet.objectCount; ++index) {
         const sense::DecodedObject& object = packet.objects[index];
-        if (object.status != sense::ObjectStatus::decoded || !object.hasGeneration) continue;
+        if (object.status != sense::ObjectStatus::decoded || !object.hasGeneration) {
+            continue;
+        }
         const SenseObservationKey key{object.registryKey,
                                       object.objectTag,
                                       object.senseSchema,
@@ -448,6 +452,64 @@ void retain_squad_sense(Instance& instance, const SenseInput& input) noexcept {
     }
 }
 
+/** @return The committed guard for one exact reported slot, or null when none was armed. */
+[[nodiscard]] ScriptableGuard* find_ghost_link_guard(
+    Instance& instance,
+    const middleware::bap::activity_message::sense_update::DecodedObject& object) noexcept {
+    for (ScriptableGuard& guard : instance.scriptableGuards) {
+        if (guard.occupied && guard.target.registryKey == object.registryKey
+            && guard.target.objectTag == object.objectTag
+            && guard.target.slotType == object.slotType
+            && guard.target.slotIndex == object.slotIndex) {
+            return &guard;
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * Merges the client's type-65 reports and latches the end of the bar.
+ * The client cannot cross the duration on its own, so reaching the end is a host-owned change: it
+ * advances the state revision and the next roster carries the finishing Sense root.
+ */
+void retain_ghost_link_sense(Instance& instance, const SenseInput& input) noexcept {
+    namespace sense = middleware::bap::activity_message::sense_update;
+    namespace ghostAuth = middleware::bap::activity_message::ghost_link;
+    namespace ghostSense = middleware::bap::activity_message::ghost_link_sense;
+    const sense::DecodedPacket& packet = input.decoded;
+    if (input.sourceGeneration == 0 || packet.objectCount > packet.objects.size()
+        || packet.valueCount > packet.values.size()) {
+        return;
+    }
+    for (const sense::DecodedObject& object : std::span(packet.objects).first(packet.objectCount)) {
+        if (object.slotType != ghostAuth::kSlotType || object.senseSchema != ghostAuth::kSenseSchema
+            || object.status != sense::ObjectStatus::decoded || !object.hasGeneration
+            || object.firstValue > packet.valueCount
+            || object.valueCount > packet.valueCount - object.firstValue) {
+            continue;
+        }
+        ScriptableGuard* const guard = find_ghost_link_guard(instance, object);
+        ghostSense::Level level{};
+        if (guard == nullptr
+            || !ghostSense::read(
+                std::span(packet.values).subspan(object.firstValue, object.valueCount), level)) {
+            continue;
+        }
+        GhostLinkScan& scan = guard->ghostLink;
+        scan.counter = object.generationPlusOne;
+        scan.counterKnown = true;
+        scan.fraction = level.fraction;
+        scan.active = level.active;
+        const bool ended = scan.armed && !scan.finished && scan.generation != 0
+                           && level.generation == static_cast<std::int32_t>(scan.generation)
+                           && level.active && level.fraction >= kGhostLinkFinishFraction;
+        if (ended && instance.view.stateRevision != (std::numeric_limits<std::uint64_t>::max)()) {
+            scan.finished = true;
+            ++instance.view.stateRevision;
+        }
+    }
+}
+
 } // namespace
 
 namespace detail {
@@ -483,8 +545,10 @@ void apply_sense(const SenseInput& input, std::uint64_t now) noexcept {
     ++instance->view.senseCount;
     trace_scene_sense(*instance, input);
     retain_squad_sense(*instance, input);
+    retain_ghost_link_sense(*instance, input);
     static_cast<void>(retain_sense_observations(*instance, input, now));
     Event event{};
+    event.attemptGeneration = input.attemptGeneration;
     event.binding = input.binding;
     event.tick = now;
     event.kind = EventKind::senseUpdate;
@@ -560,6 +624,34 @@ bool snapshot_squad_sense(const state::activity::SessionBinding& binding,
                 found = true;
                 break;
             }
+        }
+    }
+    ReleaseSRWLockShared(&g_lock);
+    return found;
+}
+
+/** Copies the armed scan model for one exact type-65 slot that has reported at least once. */
+bool ghost_link_scan(const state::activity::SessionBinding& binding,
+                     const SenseObservationKey& key,
+                     GhostLinkLevel& output) noexcept {
+    output = {};
+    AcquireSRWLockShared(&g_lock);
+    const Instance* const instance = find_instance(binding);
+    bool found = false;
+    if (instance != nullptr) {
+        for (const ScriptableGuard& guard : instance->scriptableGuards) {
+            const GhostLinkScan& scan = guard.ghostLink;
+            if (!guard.occupied || guard.target.registryKey != key.registryKey
+                || guard.target.objectTag != key.objectTag || guard.target.slotType != key.slotType
+                || guard.target.slotIndex != key.slotIndex || !scan.armed || scan.generation == 0
+                || !scan.counterKnown) {
+                continue;
+            }
+            output.generation = static_cast<std::int32_t>(scan.generation);
+            output.counter = scan.counter;
+            output.finished = scan.finished;
+            found = true;
+            break;
         }
     }
     ReleaseSRWLockShared(&g_lock);

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../../../../../middleware/bap/activity_message/darkness_zone_auth.h"
+#include "../../../../../middleware/bap/activity_message/ghost_link_sense.h"
 #include "../../../../../middleware/content/packages/tables/region_reader.h"
 #include "../../../../../state/activity/defaults/activity_defaults_snapshot.h"
 #include "../../../../../state/activity/destination/activity_destination_spawn_binding.h"
@@ -24,88 +25,28 @@ namespace sunrise::server::bap::encrypted::push::activity {
 namespace layouts = state::build_data::scenarios;
 namespace squad = middleware::bap::activity_message::squad_auth;
 
-/** Resolves the one region a session publishes. */
-EffectiveRegion effective_region(const state::activity::SessionBinding& binding) noexcept {
-    EffectiveRegion region{};
-    region.index = state::activity::membership::kAbsentRegionIndex;
-    if (!state::activity::binding_matches(binding)) {
-        return region;
-    }
-    state::activity::defaults::ActivityDefaults defaults{};
-    state::activity::defaults::snapshot(defaults);
-    const state::activity::destination::DestinationSelection& selection = binding.destination;
-    const std::string_view name(reinterpret_cast<const char*>(selection.packageName.data()),
-                                selection.packageNameLength);
-    // A missing layout leaves a cleared definition, and the arrival rule then returns the
-    // authored fallback index.
-    layouts::Definition layout{};
-    static_cast<void>(state::build_data::find_scenario_layout(name, layout));
-    region.arrival = arrival_slice_set(defaults.defaultDestination, selection, name, layout);
-    const std::int32_t reported = state::activity::membership::player_region(binding.sessionId);
-    region.reported = reported >= 0;
-    region.index = region.reported ? reported : static_cast<std::int32_t>(region.arrival);
-    return region;
-}
+namespace {
 
-/** Resolves the exact region one selected BAP ActivityClient would put in msg 5. */
-EffectiveRegion selected_effective_region(const Session& session, std::uint16_t arrival) noexcept {
-    if (session.activity.role == ActivityClientRole::none
-        || !state::activity::binding_matches(session.activity.session)
-        || !state::activity::binding_matches(session.activity.source)) {
-        EffectiveRegion region{};
-        region.index = state::activity::membership::kAbsentRegionIndex;
-        region.arrival = arrival;
-        return region;
-    }
-    // The region the client is in. Its pending leg only names where it is heading, and after a
-    // z-leg switch it names the region behind the player.
-    const std::int32_t privateReportedRegion =
-        session.activity.role == ActivityClientRole::privateCurrent
-            ? state::activity::membership::player_region(session.activity.source.sessionId)
-            : state::activity::membership::kAbsentRegionIndex;
-    return select_activity_client_region(
-        session.activity.role, privateReportedRegion, session.activity.advertisedRegion, arrival);
-}
-
-/** Reads where the client says it is. */
-state::activity::membership::ClientPlacement
-client_placement(const Session& session, const RefreshReport* refresh) noexcept {
-    state::activity::membership::ClientPlacement placement =
-        state::activity::membership::reported_placement(session.activity.session.sessionId);
-    // Staging runs before the commit, so the refresh being answered is not in State yet.
-    if (refresh != nullptr) {
-        placement.bubble = refresh->bubble;
-        placement.bubbleRevision = refresh->revision;
-        if (refresh->hasCurrentRegion) {
-            placement.currentRegion = refresh->currentRegion;
+/** @return True when the published roster declares a Sense schema for this exact slot. */
+[[nodiscard]] bool declares_sense_slot(const message::Roster& roster,
+                                       const message::AuthOverride& value) noexcept {
+    for (std::size_t index = 0; index < roster.groupCount; ++index) {
+        const message::Group& group = roster.groups[index];
+        if (group.key != value.key || group.objectTag != value.objectTag) {
+            continue;
+        }
+        for (std::size_t slot = 0; slot < group.slotTypes.size(); ++slot) {
+            if (group.slotTypes[slot] == value.slotType
+                && group.slotIndices[slot] == value.slotIndex
+                && (group.slotFlags[slot] & message::kSlotSenseFlag) != 0) {
+                return true;
+            }
         }
     }
-    return placement;
+    return false;
 }
 
-/** Tests whether the client holds a slice set and no host move is due. */
-bool client_region_ready(const Session& session, const RefreshReport* refresh) noexcept {
-    const state::activity::membership::ClientPlacement placement =
-        client_placement(session, refresh);
-    const std::int32_t held = state::activity::membership::instantiated_region(placement);
-    const MissionSeedLease& lease = session.activityMissionSeed;
-    // A move is pending only while the client is somewhere other than the region the selection
-    // names. A selection naming the region it already holds moves nobody, and arming the gate
-    // behind a player who has arrived flashed their loading screen for one publish tick.
-    const bool movePending = lease.configured
-                             && lease.bindingGeneration == session.activity.bindingGeneration
-                             && lease.regionArrivalPending
-                             && static_cast<std::int64_t>(lease.plan.effectiveRegion) != held;
-    return !movePending && held >= 0;
-}
-
-/** Tests whether the client has reported arrival in its instantiated region. */
-bool client_in_world(const Session& session, const RefreshReport* refresh) noexcept {
-    // ws-702 world state 8 is the arrival report. It does not depend on the player spawn.
-    const state::activity::membership::ClientPlacement placement =
-        client_placement(session, refresh);
-    return placement.entered && client_region_ready(session, refresh);
-}
+} // namespace
 
 /** Merges one staged squad body after the complete cumulative frame reached transport output. */
 bool activate_staged_squad_override(Session& session) noexcept {
@@ -230,78 +171,6 @@ void rollback_staged_roster_state(Session& session) noexcept {
     session.activityRosterStaged = {};
 }
 
-/** Resolves the region one prepared membership body publishes. */
-EffectiveRegion planned_region(const state::activity::membership::PendingMutation& mutation,
-                               const state::activity::SessionBinding& binding) noexcept {
-    EffectiveRegion region = effective_region(binding);
-    // A pending leg naming a region is where the client is heading, so the body advertises it.
-    // That holds whether the leg arrived in this delta or in an earlier report. A negative one
-    // is a completed transition, and the committed position stands.
-    const std::int32_t pending =
-        mutation.authoritativeInput.hasRegion
-            ? mutation.authoritativeInput.region.index
-            : state::activity::membership::reported_region(binding.sessionId);
-    if (pending > state::activity::membership::kAbsentRegionIndex) {
-        region.index = pending;
-        region.reported = true;
-    }
-    return region;
-}
-
-/** Resolves the region one private link's membership body publishes. */
-EffectiveRegion private_planned_region(const state::activity::membership::PendingMutation& mutation,
-                                       const state::activity::SessionBinding& binding) noexcept {
-    EffectiveRegion region = planned_region(mutation, binding);
-    if (region.reported) {
-        return region;
-    }
-    server::gameplay::group::HostSessionBinding host{};
-    if (server::gameplay::private_host_session(binding, host) && host.regionIndex >= 0) {
-        region.index = host.regionIndex;
-        region.reported = true;
-    }
-    return region;
-}
-
-/** Lists the regions one membership body advertises a host for. */
-void directory_regions(const state::activity::SessionBinding& binding,
-                       std::int32_t regionIndex,
-                       std::span<std::int32_t> output,
-                       std::size_t& count) noexcept {
-    namespace tables = middleware::content::packages::tables;
-    count = 0;
-    if (output.empty() || regionIndex <= state::activity::membership::kAbsentRegionIndex
-        || !state::activity::binding_matches(binding)) {
-        return;
-    }
-    output[count] = regionIndex;
-    ++count;
-    const state::activity::destination::DestinationSelection& selection = binding.destination;
-    const std::string_view name(reinterpret_cast<const char*>(selection.packageName.data()),
-                                selection.packageNameLength);
-    layouts::Definition layout{};
-    if (!state::build_data::find_scenario_layout(name, layout)) {
-        return;
-    }
-    const std::size_t bubbles =
-        (std::min)(static_cast<std::size_t>(layout.bubbleCount), layout.bubbleStates.size());
-    for (std::size_t bubble = 0; bubble < bubbles && count < output.size(); ++bubble) {
-        // A bubble with no slice-set state has no slice set, so nothing can be hosted there.
-        if (layout.bubbleStates[bubble] != layouts::kBubbleEnabledByte) {
-            continue;
-        }
-        const auto region =
-            static_cast<std::int32_t>(tables::region_index(static_cast<std::uint32_t>(bubble)));
-        // One record per bubble, so the published region already speaks for its own bubble. Adding
-        // that bubble's state-zero region too would ask for two records in one slot.
-        if (static_cast<std::size_t>(regionIndex) / tables::kSliceSetIndexFactor == bubble) {
-            continue;
-        }
-        output[count] = region;
-        ++count;
-    }
-}
-
 /** Builds the roster body input for one session's current destination. */
 RosterOutcome
 build_roster_snapshot(Session& session,
@@ -342,7 +211,8 @@ build_roster_snapshot(Session& session,
         return RosterOutcome::noLayout;
     }
     const std::uint64_t hostedBubbles = hosted_bubble_mask(session);
-    if (!fill_roster(layout, hostedBubbles, scratch, snapshot.roster)) {
+    if (!fill_roster(
+            layout, hostedBubbles, publishes_top_level_groups(session), scratch, snapshot.roster)) {
         return RosterOutcome::noGroups;
     }
 
@@ -351,7 +221,13 @@ build_roster_snapshot(Session& session,
     // One resolution serves this body and the citizen advertisement in message 12. Two would let
     // the join descriptor land in a region record the client is not pending on.
     const EffectiveRegion committedRegion = selected_effective_region(
-        session, arrival_slice_set(defaults.defaultDestination, selection, name, layout));
+        session,
+        arrival_slice_set(defaults.defaultDestination,
+                          selection,
+                          name,
+                          layout,
+                          state::activity::membership::declared_initial_region(
+                              session.activity.session.sessionId)));
     const EffectiveRegion region = exactRegion == nullptr ? committedRegion : *exactRegion;
     if (exactRegion != nullptr
         && (session.activity.role != ActivityClientRole::privateCurrent || !region.reported
@@ -489,8 +365,7 @@ build_roster_snapshot(Session& session,
             return refuse_override("retained_auth_install");
         }
     }
-    // Message 5 resets every registered Auth slot before applying its bodies, so the complete
-    // latest-per-ClientRef estate is re-emitted and a later action cannot erase an earlier one.
+    // Each included Auth slot is replaced, so snapshots must carry its complete retained value.
     // Squads stay in their lease, which also owns group admission and per-group revisions.
     for (const server::activity::host::PendingScriptableOverride& retained : authEstate) {
         if (retained.kind == server::activity::host::ScriptableOverrideKind::squad
@@ -621,7 +496,10 @@ build_roster_snapshot(Session& session,
     snapshot.lifetime = lifetimeState;
     // Hold the native spawn gate until the ws-702 world state reads 8. A spawn before the fade
     // arms leaves the screen black.
-    snapshot.awaitClientSync = !client_in_world(session, refresh);
+    // A program that opens on a cutscene holds the spawn too, so no body exists to place.
+    snapshot.awaitClientSync =
+        !client_in_world(session, refresh)
+        || state::activity::membership::program_spawn_hold(session.activity.source.sessionId);
     // Player_BindComponents walks every type-13 reference and the player datum can name any one of
     // them. So every participation record carries the same player key. Selecting the first slot
     // leaves the authored cinematic participant unbound whenever it names another record.
@@ -629,13 +507,29 @@ build_roster_snapshot(Session& session,
     // The participation record's `+0` latches only when the region index is known.
     snapshot.region = static_cast<std::uint32_t>(region.index);
     snapshot.hasRegion = true;
-    // The override must name the exact slice set the client is in, so it follows the published
-    // region and is never floored to the bubble's first state. A pair naming the arrival is inert
-    // after a teleport, and the picker then falls back to an arbitrary point.
+    // The override names the slice set the client is in. The client applies a pair only there, and
+    // a forced set with no point in that slice set leaves the biped picker with no transform.
     snapshot.spawnSliceSet =
         region.index >= 0 ? static_cast<std::uint32_t>(region.index) : region.arrival;
     snapshot.spawnSetHash =
         state::activity::destination::attachable_spawn_set_hash(selection, fallback.spawnSetHash);
+    // The mission program owns its spawn set. A manual launch pick still wins over it.
+    const std::uint32_t declaredSpawn =
+        state::activity::membership::declared_spawn_set(session.activity.source.sessionId);
+    const bool programOwnsSpawn = declaredSpawn != 0 && !selection.hasSpawnSetOverride;
+    if (programOwnsSpawn) {
+        snapshot.spawnSetHash = declaredSpawn;
+    }
+    // A set answers only the slice sets of the bubble that declares it, so the program's set holds
+    // across a move while a derived set answers the arrival alone.
+    const std::uint16_t setAnswers = programOwnsSpawn
+                                         ? static_cast<std::uint16_t>(snapshot.spawnSliceSet)
+                                         : static_cast<std::uint16_t>(region.arrival);
+    if (snapshot.spawnSliceSet
+        != state::activity::destination::spawn_set_slice_set(
+            selection, snapshot.spawnSetHash, setAnswers)) {
+        snapshot.spawnSetHash = message::kAbsentSpawnSetHash;
+    }
     // An armed wipe respawns at its checkpoint spawn set, not at the arrival override.
     const std::uint32_t checkpoint = state::activity::membership::checkpoint_spawn_hash(
         session.activity.source.sessionId, region.index);
@@ -644,6 +538,39 @@ build_roster_snapshot(Session& session,
     }
     snapshot.hasSpawnOverride =
         snapshot.spawnSetHash != 0 && snapshot.spawnSetHash != message::kAbsentSpawnSetHash;
+    std::size_t firstAppended = seedGroupCount;
+    if (!promote_scenario_wide_groups(session, scratch, snapshot.roster, firstAppended)) {
+        return refuse_override("scenario_wide_groups");
+    }
+    // The client keys its state bytes by position, so the appended groups take the order of their
+    // first push and keep every bubble they were registered under.
+    order_appended_groups(session, scratch, snapshot.roster, firstAppended);
+    if (!retain_group_bubbles(session, scratch, snapshot.roster)) {
+        return refuse_override("group_bubbles");
+    }
+    order_sub_blocks(session, scratch, snapshot.roster);
+    for (std::size_t index = 0; retainedSquad && index < lease.groupCount; ++index) {
+        if (retainedGroupPositions[index] >= snapshot.roster.groups.size()) {
+            continue;
+        }
+        retainedGroupPositions[index] = snapshot.roster.groups.size();
+        const std::uint32_t key = lease.groups[index].scopeTarget.registryKey;
+        for (std::size_t position = 0; position < snapshot.roster.groupCount; ++position) {
+            if (snapshot.roster.groups[position].key == key) {
+                retainedGroupPositions[index] = position;
+                break;
+            }
+        }
+    }
+    if (pendingStateLocal) {
+        pendingGroupPosition = snapshot.roster.groups.size();
+        for (std::size_t position = 0; position < snapshot.roster.groupCount; ++position) {
+            if (snapshot.roster.groups[position].key == pendingTarget.registryKey) {
+                pendingGroupPosition = position;
+                break;
+            }
+        }
+    }
     advance_region_epoch(session, refresh);
     stamp_group_sequences(session, snapshot.roster);
     snapshot.stateSequence = session.activityRosterState;
@@ -697,6 +624,44 @@ build_roster_snapshot(Session& session,
         sense.slotIndex = auth.slotIndex;
         sense.slotType = auth.slotType;
         sense.counter = recovered.counter;
+        ++senseCount;
+    }
+    // The client cannot cross the Ghost-link duration on its own, so the host publishes the Sense
+    // root beside the unchanged Auth root: above 1.0 finishes the scene, 0.0 re-arms it.
+    namespace ghostAuth = middleware::bap::activity_message::ghost_link;
+    namespace ghostSense = middleware::bap::activity_message::ghost_link_sense;
+    for (const message::AuthOverride& auth : snapshot.authOverrides) {
+        // A slot the packages give no Sense schema carries no override; one sent anyway would
+        // refuse the whole body.
+        if (auth.slotType != ghostAuth::kSlotType || auth.authSchema != ghostAuth::kAuthSchema
+            || !declares_sense_slot(snapshot.roster, auth)) {
+            continue;
+        }
+        server::activity::host::SenseObservationKey key{};
+        key.registryKey = auth.key;
+        key.objectTag = auth.objectTag;
+        key.senseSchema = ghostAuth::kSenseSchema;
+        key.slotIndex = auth.slotIndex;
+        key.slotType = auth.slotType;
+        server::activity::host::GhostLinkLevel level{};
+        if (!server::activity::host::ghost_link_scan(session.activity.session, key, level)) {
+            continue;
+        }
+        message::SenseOverride& sense = scratch.rosterSenseOverrides[senseCount];
+        sense = {};
+        if (!ghostSense::encode(level.finished,
+                                level.finished ? ghostSense::kFinishedFraction : 0.0F,
+                                level.generation,
+                                sense.body,
+                                sense.byteCount,
+                                sense.bitCount)) {
+            return refuse_override("ghost_link_sense");
+        }
+        sense.key = auth.key;
+        sense.objectTag = auth.objectTag;
+        sense.slotIndex = auth.slotIndex;
+        sense.slotType = auth.slotType;
+        sense.counter = level.counter;
         ++senseCount;
     }
     snapshot.senseOverrides = std::span(scratch.rosterSenseOverrides).first(senseCount);

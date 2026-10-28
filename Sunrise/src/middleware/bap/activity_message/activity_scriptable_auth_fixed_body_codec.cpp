@@ -72,11 +72,11 @@ constexpr std::uint64_t kReservedGeneration = std::numeric_limits<std::uint64_t>
     return true;
 }
 
-/** @return True when one type-31 generation passes the client's monotonic gate. */
+/** @return True when one type-31 generation is not older than the host's last one. */
 [[nodiscard]] bool valid_type31(const Type31Preset& preset,
                                 const Type31GenerationGuard& guard) noexcept {
     return preset.generation != kReservedGeneration
-           && (!guard.hasLast || preset.generation > guard.last);
+           && (!guard.hasLast || preset.generation >= guard.last);
 }
 
 /** Writes the complete fixed-width 0x808099C4 child layout. */
@@ -252,6 +252,12 @@ bool next_type31_generation(const Type31GenerationGuard& guard, std::uint64_t& n
     return true;
 }
 
+/** A fresh trigger takes generation zero; every later arm or disarm takes the largest one. */
+bool type31_arm_generation(const Type31GenerationGuard& guard, std::uint64_t& next) noexcept {
+    next = guard.hasLast ? kReservedGeneration - 1 : 0;
+    return true;
+}
+
 /** Encodes one canonical type-31 configured-action pulse. */
 bool encode_type31(const Type31Preset& preset,
                    const Type31GenerationGuard& guard,
@@ -261,7 +267,8 @@ bool encode_type31(const Type31Preset& preset,
     if (!valid_type31(preset, guard)) {
         return false;
     }
-    return encode_type31_body({true, preset.generation, kUnusedAuxiliary}, output, written);
+    return encode_type31_body(
+        {preset.enabled, preset.generation, kUnusedAuxiliary}, output, written);
 }
 
 /** Encodes one complete type-31 body. */
@@ -398,6 +405,53 @@ bool decode_type35_body(std::span<const std::byte> input, Type35Body& body) noex
 bool validate_type35_body(std::span<const std::byte> input, std::size_t bitCount) noexcept {
     Type35Body body{};
     return bitCount == kType35BitCount && decode_type35_body(input, body);
+}
+
+/**
+ * Encodes the counted Type-24 output rows without changing unselected row revisions.
+ * @param body Rows in the target object's authored order.
+ * @param output Receives the packed body.
+ * @param written Receives the byte count, or zero on failure.
+ * @param writtenBits Receives the bit count, or zero on failure.
+ * @return False for invalid values, excessive rows or insufficient output space.
+ */
+bool encode_type24(const Type24Body& body,
+                   std::span<std::byte> output,
+                   std::size_t& written,
+                   std::size_t& writtenBits) noexcept {
+    written = 0;
+    writtenBits = 0;
+    if (body.count > body.channels.size()) {
+        return false;
+    }
+    const auto channels = std::span(body.channels).first(body.count);
+    for (const Type24Channel& channel : channels) {
+        if (!std::isfinite(channel.value) || channel.value < kType24MinimumValue
+            || channel.value > kType24MaximumValue || !std::isfinite(channel.blend)
+            || channel.blend < 0.F) {
+            return false;
+        }
+    }
+    const std::size_t bits = kType24CountWidth + channels.size() * kType24ChannelBitCount;
+    const std::size_t bytes = (bits + 7U) / 8U;
+    if (output.size() < bytes) {
+        return false;
+    }
+    encoding::bits::Writer writer(output.first(bytes));
+    bool encoded = writer.write(body.count, kType24CountWidth);
+    for (const Type24Channel& channel : channels) {
+        encoded = encoded
+                  && writer.write(std::bit_cast<std::uint32_t>(channel.revision) + kSigned32Bias,
+                                  kSigned32Width)
+                  && writer.write(std::bit_cast<std::uint32_t>(channel.value), kReal32Width)
+                  && writer.write(std::bit_cast<std::uint32_t>(channel.blend), kReal32Width);
+    }
+    if (!encoded || !writer.finish(written)) {
+        written = 0;
+        return false;
+    }
+    writtenBits = bits;
+    return true;
 }
 
 } // namespace sunrise::middleware::bap::activity_message::scriptable_auth

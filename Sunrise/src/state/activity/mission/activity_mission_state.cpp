@@ -117,11 +117,23 @@ namespace {
 
 /** Field-by-field equality of two typed intents. */
 [[nodiscard]] bool same_intent(const TypedIntent& left, const TypedIntent& right) noexcept {
-    return left.squadCounts == right.squadCounts && left.authBody == right.authBody
+    return left.expectedObjectiveRevision == right.expectedObjectiveRevision
+           && left.objectiveReconsider == right.objectiveReconsider
+           && left.objectiveReserved == right.objectiveReserved
+           && left.objectivePreserveReservation == right.objectivePreserveReservation
+           && left.objectiveRefreshAwareness == right.objectiveRefreshAwareness
+           && left.attemptGeneration == right.attemptGeneration
+           && left.seedOmissions == right.seedOmissions
+           && left.seedOmissionCount == right.seedOmissionCount && left.burstRows == right.burstRows
+           && left.burstRowCount == right.burstRowCount
+           && left.checkpointSpawnHash == right.checkpointSpawnHash
+           && left.checkpointReleaseRequest == right.checkpointReleaseRequest
+           && left.entryIndex == right.entryIndex && left.squadCounts == right.squadCounts
+           && left.authBody == right.authBody && left.sequenceOwner == right.sequenceOwner
            && left.sdkBuildSha256 == right.sdkBuildSha256 && left.kind == right.kind
            && left.firstRow == right.firstRow && left.secondRow == right.secondRow
            && left.objectTag == right.objectTag && left.registryKey == right.registryKey
-           && left.authSchema == right.authSchema
+           && left.sceneEventKey == right.sceneEventKey && left.authSchema == right.authSchema
            && left.actorCommandSelector == right.actorCommandSelector
            && left.actorCommandValue == right.actorCommandValue
            && left.authBitCount == right.authBitCount
@@ -288,6 +300,9 @@ namespace {
         return Status::outOfMemory;
     }
     for (std::size_t index = current.pendingIntents.size(); index < intents.size(); ++index) {
+        if (intents[index].attemptGeneration != candidate.attempt.generation) {
+            return Status::invalidTransition;
+        }
         if (candidate.nextIntentSequence == kAbsentIntentSequence) {
             return Status::intentSequenceExhausted;
         }
@@ -300,6 +315,38 @@ namespace {
         pending.sequence = candidate.nextIntentSequence;
         pending.missionRevision = nextMissionRevision;
         candidate.pendingIntents.push_back(std::move(pending));
+        if (intents[index].kind == IntentKind::placeSquad
+            || ((intents[index].kind == IntentKind::runActorProgram
+                 || intents[index].kind == IntentKind::activateAuthoredScene)
+                && intents[index].active)) {
+            const auto status = prepare_squad_population(candidate, intents[index]);
+            if (status != Status::ready) {
+                return status;
+            }
+        }
+        if (intents[index].kind == IntentKind::setDeviceChannel) {
+            DeviceRequestReport desired{};
+            desired.requestKey = intents[index].requestKey;
+            desired.attemptGeneration = intents[index].attemptGeneration;
+            desired.slotRow = intents[index].firstRow;
+            desired.channel = intents[index].deviceChannel;
+            desired.value = intents[index].deviceValue;
+            const auto found = std::find_if(candidate.deviceRequests.begin(),
+                                            candidate.deviceRequests.end(),
+                                            [&desired](const auto& existing) noexcept {
+                                                return existing.slotRow == desired.slotRow
+                                                       && existing.channel == desired.channel;
+                                            });
+            if (found != candidate.deviceRequests.end()) {
+                *found = desired;
+            } else {
+                try {
+                    candidate.deviceRequests.push_back(desired);
+                } catch (const std::bad_alloc&) {
+                    return Status::outOfMemory;
+                }
+            }
+        }
         candidate.nextIntentSequence =
             candidate.nextIntentSequence == (std::numeric_limits<std::uint64_t>::max)()
                 ? kAbsentIntentSequence
@@ -405,8 +452,13 @@ Status rebind_program(const SessionBinding& binding,
 }
 
 /** Atomically issues the next durable per-binding Host mission-input sequence. */
-bool issue_input_sequence(const SessionBinding& binding, std::uint64_t& output) noexcept {
+bool issue_input_sequence(const SessionBinding& binding,
+                          std::uint64_t& output,
+                          std::uint64_t* attemptGeneration) noexcept {
     output = 0;
+    if (attemptGeneration != nullptr) {
+        *attemptGeneration = 0;
+    }
     AcquireSRWLockExclusive(&runtime::storage::g_stateLock);
     ActivityState& activity = runtime::storage::g_state.activity;
     SessionRecord* const record = find_record(activity, binding);
@@ -421,6 +473,9 @@ bool issue_input_sequence(const SessionBinding& binding, std::uint64_t& output) 
                 if (publish(activity, *record)) {
                     record->mission = std::move(candidate);
                     output = highWater + 1;
+                    if (attemptGeneration != nullptr) {
+                        *attemptGeneration = record->mission.attempt.generation;
+                    }
                     issued = true;
                 }
             }
@@ -438,6 +493,7 @@ bool input_sequence_snapshot(const SessionBinding& binding,
     const SessionRecord* const record = find_record(runtime::storage::g_state.activity, binding);
     const bool found = record != nullptr;
     if (found) {
+        output.attemptGeneration = record->mission.attempt.generation;
         output.committed = record->mission.inputSequence;
         output.issued = record->mission.issuedInputSequence;
         output.faulted = record->mission.faulted;

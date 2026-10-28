@@ -22,72 +22,6 @@ namespace service = middleware::bap::matchmaking;
 static_assert(service::kJoinDescriptorSize == state::matchmaking::kDescriptorSize);
 
 /**
- * Makes a kind-4 target the selected character's current activity when its row authors that.
- * The client latches its fly-in variant at its launch commit, which follows this request.
- * @param request Fully validated request fields.
- * @param currentActivity Cleared, then prepared when the character's value changes.
- */
-void prepare_current_activity(const service::Request& request,
-                              state::PendingCurrentActivity& currentActivity) noexcept {
-    currentActivity = {};
-    if (request.kind != service::RequestKind::configuration) {
-        return;
-    }
-    if (!request.activity.hasDefinitionHash) {
-        core::log::write(core::log::Channel::server,
-                         core::log::Level::info,
-                         "ev=bap svc=42 stage=configuration result=no_activity");
-        return;
-    }
-    const state::activity_sdk::Snapshot catalog = state::activity_sdk::snapshot();
-    const state::activity_sdk::format::Activity* row = nullptr;
-    if (catalog != nullptr) {
-        for (const state::activity_sdk::format::Activity& activity : catalog->activities()) {
-            if (activity.definitionHash == request.activity.definitionHash) {
-                row = &activity;
-                break;
-            }
-        }
-    }
-    std::array<char, core::log::kLineCapacity> line{};
-    if (row == nullptr) {
-        const int count = std::snprintf(
-            line.data(),
-            line.size(),
-            "ev=bap svc=42 stage=configuration result=unknown_activity activity_hash=0x%08X",
-            request.activity.definitionHash);
-        if (count > 0) {
-            core::log::write(core::log::Channel::server,
-                             core::log::Level::warn,
-                             {line.data(), static_cast<std::size_t>(count)});
-        }
-        return;
-    }
-    const std::string_view name = catalog->string(row->internalName);
-    const bool policy = state::activity::defaults::current_activity_from_launch(name);
-    const bool changed = policy && row->activityIndex <= (std::numeric_limits<std::uint16_t>::max)()
-                         && state::prepare_current_activity(
-                             static_cast<std::uint16_t>(row->activityIndex), currentActivity);
-    const int count = std::snprintf(line.data(),
-                                    line.size(),
-                                    "ev=bap svc=42 stage=configuration result=ok "
-                                    "activity_hash=0x%08X type_hash=0x%08X activity=%u "
-                                    "name=%.*s current_activity_policy=%u changed=%u",
-                                    request.activity.definitionHash,
-                                    request.activity.typeHash,
-                                    row->activityIndex,
-                                    static_cast<int>(name.size()),
-                                    name.data(),
-                                    policy ? 1U : 0U,
-                                    changed ? 1U : 0U);
-    if (count > 0) {
-        core::log::write(core::log::Channel::server,
-                         core::log::Level::info,
-                         {line.data(), static_cast<std::size_t>(count)});
-    }
-}
-
-/**
  * Finds the State-backed fields for the request kinds that are not static.
  * @param context Active logical matchmaking context.
  * @param request Fully validated request fields with a borrowed descriptor.
@@ -132,8 +66,7 @@ bool encode_response(state::matchmaking::ContextHandle context,
                      std::span<std::byte> output,
                      std::size_t& written,
                      state::matchmaking::PendingMutation& mutation,
-                     bool& hasMutation,
-                     state::PendingCurrentActivity& currentActivity) noexcept {
+                     bool& hasMutation) noexcept {
     written = 0;
     hasMutation = false;
     SecureZeroMemory(&mutation, sizeof mutation);
@@ -144,7 +77,6 @@ bool encode_response(state::matchmaking::ContextHandle context,
         SecureZeroMemory(&mutation, sizeof mutation);
         response = {};
     }
-    prepare_current_activity(request, currentActivity);
 
     state::matchmaking::LatestSnapshot latest{};
     if (response.kind == service::RequestKind::locateSession

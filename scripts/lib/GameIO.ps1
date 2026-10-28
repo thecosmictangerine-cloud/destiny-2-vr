@@ -34,6 +34,8 @@ $script:Keys = @{
     'SPACE'  = @(0x20, 0x39, $false)
     'INSERT' = @(0x2D, 0x52, $true)
     'TAB'    = @(0x09, 0x0F, $false)
+    'F1'     = @(0x70, 0x3B, $false)
+    'F2'     = @(0x71, 0x3C, $false)
     'F8'     = @(0x77, 0x42, $false)
     'F9'     = @(0x78, 0x43, $false)
     'F10'    = @(0x79, 0x44, $false)
@@ -44,6 +46,8 @@ $script:Keys = @{
     'D'      = @(0x44, 0x20, $false)
     'E'      = @(0x45, 0x12, $false)
     'R'      = @(0x52, 0x13, $false)
+    'M'      = @(0x4D, 0x32, $false)
+    'I'      = @(0x49, 0x17, $false)
     # Weapon slots: kinetic, energy, power.
     '1'      = @(0x31, 0x02, $false)
     '2'      = @(0x32, 0x03, $false)
@@ -352,8 +356,18 @@ game directory is both on the loader's search path and already excluded from Def
 removes two whole classes of cause at once.
 #>
 function Enable-MockXr {
+    # VR comes up with the game since 2026-10-17; the older scripts press F9 themselves, so a game
+    # launched from here starts with it off unless -StartOn. An environment variable, not the
+    # settings file: it reaches only the game this shell launches, never the player's.
+    param([switch]$StartOn)
+    if ($StartOn) { Remove-Item Env:SVR_START -ErrorAction SilentlyContinue } else { $env:SVR_START = 'off' }
+    # The batteries were written for the eye-shaped render; the player's `display_shape desktop` (for
+    # recording) must not reach them. Scripts that want desktop still write `shape desktop` themselves.
+    $env:SVR_DISPLAY_SHAPE = 'eye'
     $repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $built = Join-Path $repo 'build\mockxr\SunriseVR_MockXR.dll'
+    # A pinned copy, when one is named: a run must not pick up a mock that is being rebuilt.
+    if ($env:SVR_MOCK_DLL) { $built = $env:SVR_MOCK_DLL }
     if (-not (Test-Path $built)) { throw "mock not built: $built" }
     $deployed = Join-Path $script:GameDir 'SunriseVR_MockXR.dll'
     Copy-Item $built $deployed -Force

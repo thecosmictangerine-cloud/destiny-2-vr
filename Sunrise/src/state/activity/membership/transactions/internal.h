@@ -39,7 +39,7 @@ inline bool equal(const SpawnState& first, const SpawnState& second) noexcept {
 inline bool equal(const TeleportState& first, const TeleportState& second) noexcept {
     return first.state == second.state && first.token == second.token
            && first.sliceSetIndex == second.sliceSetIndex
-           && first.sliceSetHash == second.sliceSetHash;
+           && first.spawnSetHash == second.spawnSetHash;
 }
 
 /** @return True when both reported legs hold the same fields. */
@@ -112,11 +112,10 @@ inline MembershipState merge(const MembershipState& state,
         && merged.region.index == merged.hostTeleport.sliceSetIndex) {
         merged.hostTeleport.state = kHostTeleportSpawnState;
     }
-    // The machine wraps its state byte to 0 at the spawn and keeps the latched token, so state 0
-    // with this token is the client saying the teleport finished. Retire it here, not at the
-    // commit, so the answering body carries the client's own block and its screen releases.
+    // Retire the matching teleport before staging the answer so its screen can release.
     if (merged.hasHostTeleport && merged.hostTeleport.state == kHostTeleportSpawnState
-        && merged.teleport.state == 0 && merged.teleport.token == merged.hostTeleport.token) {
+        && merged.teleport.state == kClientTeleportResetState
+        && merged.teleport.token == merged.hostTeleport.token) {
         merged.hasHostTeleport = false;
         merged.hostTeleport = {};
     }

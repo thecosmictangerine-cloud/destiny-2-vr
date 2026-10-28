@@ -578,6 +578,11 @@ void draw_squad_table(const sdk::BoundView& view,
 
 } // namespace
 
+std::string_view squad_display_name(const sdk::Catalog& catalog,
+                                    const format::Squad& squad) noexcept {
+    return source_label(catalog, squad);
+}
+
 /** Draws generated scenario squads and the guarded server-side place action. */
 void draw(const sdk::BoundView& view, const format::Scenario& scenario) noexcept {
     const sdk::Catalog& catalog = *view.catalog;

@@ -10,20 +10,20 @@
 #include "scriptable_auth_body.h"
 #include "squad_auth_body.h"
 
-// Type-2 combatant Auth bodies that drive one named actor: a movement path, a custom action, a
-// passenger delivery and a retirement. All four share the root prefix in fields .0 to .3.
+// Type-2 paths, abilities, referenced-slot registration and retirement share one root prefix.
 
 namespace sunrise::middleware::bap::activity_message::combatant_auth {
 
 namespace fields = auth_fields;
 
+// Actor control bodies use the Type 2 Auth schema.
 inline constexpr std::uint32_t kSchema = scriptable_auth::kType2Schema;
-/** Root .1 mode and .2 marker are written as one; the client keeps the placement it has. */
+/** Root .1 and .2 encode logical zero with bias one: recreate and own the named actor. */
 inline constexpr std::uint8_t kRootModeWidth = 2;
 inline constexpr std::uint8_t kRootMarkerWidth = 3;
 inline constexpr std::uint32_t kRootModeValue = 1;
 inline constexpr std::uint32_t kRootMarkerValue = 1;
-/** Field .6 program header: two 6-bit values written as 0 then 1. Meaning unverified. */
+/** A one-lane program starts at progress zero and carries count one. */
 inline constexpr std::uint8_t kProgramHeaderWidth = 6;
 inline constexpr std::uint32_t kProgramHeaderFirst = 0;
 inline constexpr std::uint32_t kProgramHeaderSecond = 1;
@@ -88,7 +88,7 @@ struct ActionRequest final {
     return value != 0 && value <= fields::kMaximumCounter;
 }
 
-/** Writes root fields .0 to .3: the spawn generation, mode one, marker one and the enabled bit. */
+/** Writes the spawn revision, recreate mode, named-actor ownership and enable state. */
 [[nodiscard]] inline bool
 write_root(encoding::bits::Writer& writer, std::uint32_t generation, bool enabled) noexcept {
     const std::array<fields::Field, 5> root{{
@@ -177,13 +177,8 @@ write_root(encoding::bits::Writer& writer, std::uint32_t generation, bool enable
            && fields::finish_exact(writer, kActionBits, kActionBytes, written);
 }
 
-/**
- * Encodes one delivery manifest: the reserved squads the actor carries. Field .6 stays absent
- * so a delivery never replaces the movement program.
- * @param output At least the manifest's byte count.
- * @param written Receives the byte count. @param bits Receives the meaningful bit count.
- * @return False on an empty, oversized or repeated manifest, or an out-of-range counter.
- */
+// TODO: expose a named operation once the actor registration consumer is proved.
+/** Encodes a bounded, duplicate-free Type-1 reference list. */
 [[nodiscard]] inline bool encode_delivery(std::uint32_t generation,
                                           std::uint32_t revision,
                                           std::span<const SquadReference> squads,

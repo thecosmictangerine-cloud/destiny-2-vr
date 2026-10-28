@@ -23,9 +23,8 @@ struct Outcome {
     bool hasRecordClaim{};
     /** An earned title changed on the selected character; roster and banner must be republished. */
     bool hasTitleEquip{};
-    /** An opcode-504 pick moved the selection and its Family-4 object still has to follow. */
+    /** An opcode-504 pick was recorded and its Family-4 update still has to follow. */
     bool hasSelectedCharacter{};
-    bool selectedCharacterChanged{};
     std::uint64_t selectedCharacterSoid{};
     /** Reset is precommitted because it changes persistence and account currency together. */
     bool hasArtifactReset{};

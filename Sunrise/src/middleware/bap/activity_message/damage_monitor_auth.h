@@ -14,6 +14,7 @@ namespace sunrise::middleware::bap::activity_message::damage_monitor {
 
 namespace fields = auth_fields;
 
+// Type 20 uses these component and Auth/Sense schema identities.
 inline constexpr std::uint8_t kSlotType = 20;
 inline constexpr std::uint32_t kComponentClass = 0x80809560U;
 inline constexpr std::uint32_t kAuthSchema = 0x80809563U;

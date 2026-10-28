@@ -122,6 +122,8 @@ push_client_message_member(lua_State* state, const host::Event& event, std::stri
         lua_pushinteger(state, event.teleportSliceSetIndex);
     } else if (key == "teleport_slice_set_hash" && event.clientStateHasTeleport) {
         lua_pushinteger(state, event.teleportSliceSetHash);
+    } else if (key == "entered" && event.clientEntered) {
+        lua_pushboolean(state, 1);
     } else {
         lua_pushnil(state);
     }

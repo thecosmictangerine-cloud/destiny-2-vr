@@ -65,6 +65,13 @@ struct Tables final {
     std::span<const format::SobjectRsatFieldBinding> sobjectRsatFieldBindings{};
     std::span<const format::RuntimeTypeDefinition> runtimeTypeDefinitions{};
     std::span<const format::ActorStateName> actorStateNames{};
+    std::span<const format::ActorSequenceTable> actorSequenceTables{};
+    std::span<const format::ActorSequenceEntry> actorSequenceEntries{};
+    std::span<const format::ActorSequenceBinding> actorSequenceBindings{};
+    std::span<const format::DialogueCue> dialogueCues{};
+    std::span<const format::CombatObjectiveGroup> combatObjectiveGroups{};
+    std::span<const format::ActorAbility> actorAbilities{};
+    std::span<const format::ActorAbilityTarget> actorAbilityTargets{};
 };
 
 /** Canonical pack build and publication outcomes. */

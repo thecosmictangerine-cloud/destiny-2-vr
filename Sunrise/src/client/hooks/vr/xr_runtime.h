@@ -37,6 +37,15 @@ struct HeadPose final {
     /** Symmetric horizontal FOV covering both eye frusta, in radians. */
     float horizontalFov{};
     float aspect{};
+    /**
+     * Each eye's own translation from the recentre origin, left at index 0, folded like `offset`.
+     * `offset` is one of these (or their midpoint) -- whichever eye the image is rendered from.
+     */
+    std::array<Vector, 2> eyeOffsets{};
+    /** Which position `offset` holds: 0 the midpoint, 1 the left eye, 2 the right. */
+    int eye{};
+    /** The yaw fold (room anchor minus the recentre facing) the vectors were turned by, radians. */
+    float fold{};
     /** Frame index the pose came from, so a consumer can tell a stale pose from a fresh one. */
     std::uint64_t frame{};
     bool valid{};
@@ -73,6 +82,13 @@ struct HandPose final {
      * check.
      */
     Vector palm{};
+    /**
+     * The GRIP pose's own orientation (its -Z forward, +Y up), same basis. OpenXR defines its -Z as
+     * the axis of the tube a closed hand makes: where a sword's hilt lies in the fist (vr_body.cpp).
+     * Never the weapon's: that is `forward`, the pointing ray. Falls back to the aim's axes.
+     */
+    Vector gripForward{};
+    Vector gripUp{};
     /** Frame index the pose came from, so a consumer can tell a stale pose from a fresh one. */
     std::uint64_t frame{};
     /**
@@ -126,15 +142,31 @@ enum class Status : unsigned char {
 };
 
 /**
- * Brings up the OpenXR runtime, instance, system and session on the game's D3D11 device.
- * Safe to call every frame: it does the work once and reports the same answer after that.
+ * Brings up the OpenXR runtime, instance and system on a thread of its own, then the session on the
+ * game's D3D11 device on THIS (the present) thread, the only one on which the runtime may touch the
+ * device safely; retries a failure (3 s without a headset or runtime, 10 s otherwise).
+ * Call every present while VR is on: it never waits for the init thread; the session's creation is
+ * a hitch of that one call's length.
  * @param device The device the game is already presenting with.
- * @return True once a session is running.
+ * @return True once a session exists (it runs when the runtime says READY; see active()).
  */
 [[nodiscard]] bool initialize(ID3D11Device* device) noexcept;
 
-/** Tears the session and instance down and unloads the runtime. */
-void shutdown() noexcept;
+/**
+ * Tears the session and instance down (VR switched off). Never blocks: while the init thread or the
+ * frame thread is inside a runtime call it does nothing, so call it every present while off.
+ * @return True on the call that took something down.
+ */
+bool shutdown() noexcept;
+
+/**
+ * Logs the modules the loader filter has seen since the last call (`ev=vr.xr dll`): which were the
+ * runtime's and which were handed on to the game's own notification callback. Present thread.
+ */
+void drain_loader_log() noexcept;
+
+/** @return True while the runtime gives the session input focus (the headset is on, no system menu). */
+[[nodiscard]] bool session_focused() noexcept;
 
 /** @return True while a session is running and poses are being produced. */
 [[nodiscard]] bool active() noexcept;
@@ -209,6 +241,12 @@ void note_rendered_aspect(float aspect) noexcept;
  */
 [[nodiscard]] float rendered_fov() noexcept;
 
+/**
+ * @return The room facing taken at the last recentre (radians, game yaw). A sample's `fold` is the
+ *         room anchor it was folded with minus this.
+ */
+[[nodiscard]] float origin_yaw() noexcept;
+
 /** Takes the next head position as the origin, so the player can re-seat themselves. */
 void recentre() noexcept;
 
@@ -234,7 +272,111 @@ void set_render_eye(int eye) noexcept;
 /** @return The eye the image is rendered from (see set_render_eye). */
 [[nodiscard]] int render_eye() noexcept;
 
+/**
+ * The position of the eye the player AIMS with, from a head pose: the set_render_eye() eye (the
+ * midpoint for 0). In mono it is `offset` itself; in alternating stereo `offset` flips between the
+ * eyes every frame, and a sight must still line up with the one eye the player shoots with.
+ */
+[[nodiscard]] Vector aiming_eye_offset(const HeadPose& head) noexcept;
+
 /** @return A short, stable name for the runtime in use, for the log. */
 [[nodiscard]] const char* runtime_name() noexcept;
+
+/**
+ * What one mono image has to cover to fill both eyes, and at what density.
+ *
+ * The engine renders one symmetric frustum, so a mono image must hold the union of both eyes'
+ * fields: `tanHalfWidth` and `tanHalfHeight` are the largest tangents of any eye edge. The density
+ * is the runtime's recommended eye resolution over that eye's tangent extent -- pixels per tangent
+ * unit at the centre of the panel, which is what "as sharp as the headset can show" means.
+ */
+struct EyeGeometry final {
+    float tanHalfWidth{};
+    float tanHalfHeight{};
+    float pixelsPerTanX{};
+    float pixelsPerTanY{};
+    std::uint32_t recommendedWidth{};
+    std::uint32_t recommendedHeight{};
+    bool valid{};
+};
+
+/** @return The geometry of the current session's eyes; invalid before views have been located. */
+[[nodiscard]] EyeGeometry eye_geometry() noexcept;
+
+/**
+ * Alternating-eye stereo (docs/DISPLAY.md): each frame is rendered from one eye, the other eye's
+ * last image is kept, and each image is declared at the pose it was drawn from. False = mono.
+ */
+void set_stereo(bool alternate) noexcept;
+[[nodiscard]] bool stereo() noexcept;
+
+/**
+ * Each projection view declares its own eye's share of the image (true, the default) or the whole
+ * image with the symmetric FOV it was rendered with (false: the submission before 2026-10-16, which a
+ * runtime that ignores declared FOVs shows doubled). `crop on|off` in SVR_Display.txt.
+ */
+void set_per_eye_crop(bool perEye) noexcept;
+[[nodiscard]] bool per_eye_crop() noexcept;
+
+/**
+ * A deliberate error in the DECLARATION only, never the image: the declared pose turned by `yawDegrees`
+ * about up, every declared FOV tangent scaled by `fovScale`. A runtime that honours declarations moves
+ * or rescales the picture by exactly that; one that ignores them shows no change -- the experiment
+ * that tells which kind a runtime is, read off its mirror. `probe <deg> <scale>`; `probe 0 1` is off.
+ */
+void set_declaration_probe(float yawDegrees, float fovScale) noexcept;
+
+/**
+ * How far ahead of the frame's predicted display time the head and hands are located: measured by
+ * default (negative), so each image is drawn for the instant it is really shown; or fixed, in
+ * milliseconds (0 = the frame's own prediction, the behaviour before 2026-10-16). `lead auto|off|<ms>`.
+ */
+void set_lead(float milliseconds) noexcept;
+/** @return The lead in use, in milliseconds. */
+[[nodiscard]] float lead_ms() noexcept;
+
+/*
+ * The frame ledger. Every consumer that turns the head pose into pixels takes its sample from one
+ * record, so the camera, the gun, the arms and the layer agree about every frame -- a requirement
+ * the moment consecutive frames are drawn from different eyes, where a gun placed against the other
+ * eye's camera is off by the whole eye distance.
+ */
+
+/**
+ * Camera thread, at the camera write: takes the latest pose and both hands, picks the eye this
+ * frame is drawn from (the next one in alternating stereo, the configured one in mono -- `offset`
+ * is set to it) and latches the result as this frame's sample.
+ * @return False while no pose has been published.
+ */
+[[nodiscard]] bool camera_frame(HeadPose& head, HandPose& left, HandPose& right) noexcept;
+
+/** Camera thread, after the block is written: what was written, for the GPU to recognise. */
+void commit_camera(const Vector& position, const Vector& forward) noexcept;
+
+/**
+ * The sample the camera hook latched for the frame being built. For consumers later in the same
+ * camera update (the weapon). Falls back to the latest pose before the first latch.
+ * @return False when it fell back.
+ */
+bool camera_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept;
+
+/**
+ * Render thread: the world's camera as the GPU received it (view constants row 7 and -row 6).
+ * Names the record the frame being drawn was built from.
+ */
+void note_world_camera(const float* position, const float* forward) noexcept;
+
+/**
+ * The sample of the frame the GPU is drawing now, by the camera its world view carried. For
+ * consumers on the render thread (the arms' rewrite). Falls back to the latest pose.
+ * @return False when it fell back.
+ */
+bool drawn_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept;
+
+/** @return The ledger sequence of the frame the camera hook is building (0 before the first). */
+[[nodiscard]] std::uint64_t camera_sequence() noexcept;
+
+/** @return The ledger sequence of the frame the GPU is drawing (0 before the first match). */
+[[nodiscard]] std::uint64_t drawn_sequence() noexcept;
 
 } // namespace sunrise::client::hooks::vr::xr

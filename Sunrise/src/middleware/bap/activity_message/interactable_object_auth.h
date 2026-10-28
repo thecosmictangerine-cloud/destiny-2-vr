@@ -40,13 +40,15 @@ inline constexpr std::uint32_t kUseVisibilityDefault = 0;
  * @param generation Positive object generation; a new one respawns the entry.
  * @param trackOwner Adds the ownership subscription.
  * @param active Field .2, whether the entry is active.
+ * @param used Sends the row already latched at revision one, the state after a first use.
  * @param written Receives kBytes or kOwnerBytes.
  */
 [[nodiscard]] inline bool encode(std::int32_t generation,
                                  std::span<std::byte> output,
                                  std::size_t& written,
                                  bool trackOwner = false,
-                                 bool active = true) noexcept {
+                                 bool active = true,
+                                 bool used = false) noexcept {
     written = 0;
     const std::size_t bytes = trackOwner ? kOwnerBytes : kBytes;
     const std::size_t bits = trackOwner ? kOwnerBits : kBits;
@@ -71,9 +73,10 @@ inline constexpr std::uint32_t kUseVisibilityDefault = 0;
         {kInteractionSubscription, 32},
     }};
     const std::array<fields::Field, 1> visibility{{{kUseVisibilityDefault, kUseVisibilityWidth}}};
+    // The row's revision and latch; the client takes them only when the revision is newer.
     const std::array<fields::Field, 2> tail{{
-        {fields::kSigned32Bias, 32}, // signed zero
-        {0, fields::kBoolWidth},
+        {fields::kSigned32Bias + (used ? 1U : 0U), 32},
+        {used ? 1U : 0U, fields::kBoolWidth},
     }};
     return fields::write_fields(writer, head) && fields::write_absent_client_ref(writer)
            && fields::write_fields(writer, transform) && fields::write_fields(writer, visibility)

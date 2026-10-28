@@ -127,14 +127,11 @@ bool stage_select_character(const SessionState& before,
     if (seated && before.family4Residents[characterIndex].objectSoid == 0) {
         return false;
     }
-    // A pick that names the resident character resends no object. Sending the move for it would
-    // delete and re-add the same key, which cost the ship and the banner.
+    // A pick that names the resident character only patches the account. Sending the move for it
+    // would delete and re-add the same key, which cost the ship and the banner.
     const bool changePending = before.family3Phase != Family3Phase::normal;
     const bool samePick =
         seated && before.family4Residents[characterIndex].objectSoid == selectedCharacterSoid;
-    if (samePick && !changePending) {
-        return false;
-    }
     for (std::size_t index = 0; !samePick && index < before.family4ResidentCount; ++index) {
         if (before.family4Residents[index].objectSoid == selectedCharacterSoid) {
             return false;
@@ -162,7 +159,7 @@ bool stage_select_character(const SessionState& before,
     // Zero means there was no resident to release, which is what makes the first pick an add.
     select.previousCharacterSoid = seated ? before.family4Residents[characterIndex].objectSoid : 0;
     select.selectedCharacterSoid = selectedCharacterSoid;
-    select.patchAccount = changePending;
+    select.patchAccount = changePending || samePick;
     return valid(select.after);
 }
 
@@ -171,13 +168,6 @@ bool stage_equipment_swap(const SessionState& before,
                           std::uint64_t characterSoid,
                           EquipmentSwap& swap) noexcept {
     return stage_character_upsert(before, characterSoid, "equip", swap);
-}
-
-/** Stages the character upsert a current-activity change carries, preserving the manifest. */
-bool stage_current_activity_character(const SessionState& before,
-                                      std::uint64_t characterSoid,
-                                      EquipmentSwap& swap) noexcept {
-    return stage_character_upsert(before, characterSoid, "current_activity", swap);
 }
 
 /** Stages a same-character Family-0 appearance-record upsert after an equipment swap. */

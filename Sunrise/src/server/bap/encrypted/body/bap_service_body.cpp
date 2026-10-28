@@ -174,29 +174,10 @@ bool process(const ServiceRoute& route,
             return false;
         }
         bool hasMutation = false;
-        state::PendingCurrentActivity currentActivity{};
-        const bool encoded = matchmaking::encode_response(matchmakingContext,
-                                                          requestBody,
-                                                          output,
-                                                          written,
-                                                          *mutation,
-                                                          hasMutation,
-                                                          currentActivity);
+        const bool encoded = matchmaking::encode_response(
+            matchmakingContext, requestBody, output, written, *mutation, hasMutation);
         if (!hasMutation) {
             clear_transaction(outcome);
-        }
-        if (encoded && !hasMutation && currentActivity.prepared) {
-            auto* transaction = emplace_transaction<CurrentActivityTransaction>(outcome);
-            if (transaction == nullptr
-                || !queuez::stage_current_activity_character(
-                    queuezState, currentActivity.characterSoid, transaction->update)) {
-                core::log::write(core::log::Channel::server,
-                                 core::log::Level::warn,
-                                 "ev=current_activity stage=queuez_preflight result=fail");
-                clear_transaction(outcome);
-            } else {
-                transaction->pending = currentActivity;
-            }
         }
         return encoded;
     }
@@ -454,7 +435,7 @@ bool process(const ServiceRoute& route,
                                                    itemAcquisition->accountSoid,
                                                    itemAcquisition->characterSoid,
                                                    itemAcquisition->acquiredInstanceSoid,
-                                                   itemAcquisition->profileChanged,
+                                                   itemAcquisition->updates_account(),
                                                    transaction->update)) {
                 core::log::write(core::log::Channel::server,
                                  core::log::Level::warn,
@@ -675,7 +656,8 @@ bool process(const ServiceRoute& route,
                 return false;
             }
         }
-        if (webOutcome.hasSelectedCharacter && webOutcome.selectedCharacterChanged) {
+        // Every pick is answered, the current character included; character select waits on it.
+        if (webOutcome.hasSelectedCharacter) {
             auto* selectCharacter = emplace_transaction<queuez::SelectCharacter>(outcome);
             if (selectCharacter != nullptr
                 && queuez::stage_select_character(

@@ -15,8 +15,6 @@ namespace {
         http::execute_request_entry_point(),
         bubble_authority::decoder_entry_point(),
         bubble_authority::content_untracked_entry_point(),
-        signon::readiness_entry_point(),
-        signon::ready_entry_point(),
     };
 }
 
@@ -39,8 +37,6 @@ GameSpecs game_specs() noexcept {
         hooking::detour::Spec{resolved.httpExecuteRequest, replacements[1]},
         hooking::detour::Spec{resolved.bubbleAuthorityDecoder, replacements[2]},
         hooking::detour::Spec{resolved.contentUntrackedGetter, replacements[3]},
-        hooking::detour::Spec{resolved.signOnReadinessFailure, replacements[4]},
-        hooking::detour::Spec{resolved.signOnReadinessReady, replacements[5]},
     };
 }
 

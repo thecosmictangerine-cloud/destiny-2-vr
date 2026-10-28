@@ -92,12 +92,12 @@ struct PendingMutation final {
  * slice-set transition to the named region, so this is the host's only mid-activity move.
  * @param sessionId Joined activity session to move.
  * @param sliceSetIndex Authored region to move to, or the absent sentinel to clear the arm.
- * @param sliceSetHash Slice-set name hash that region belongs to.
+ * @param spawnSetHash Spawn set filter after the move; the empty-name hash means `default`.
  * @return True when the session exists and the arm changed.
  */
 [[nodiscard]] bool arm_host_teleport(std::uint64_t sessionId,
                                      std::int32_t sliceSetIndex,
-                                     std::uint32_t sliceSetHash) noexcept;
+                                     std::uint32_t spawnSetHash) noexcept;
 
 /**
  * Arms one native hard wipe on an exact session generation. Arming the same request key again
@@ -113,6 +113,9 @@ struct PendingMutation final {
 /** @return True while an armed wipe's spawn block still has to reach the client. */
 [[nodiscard]] bool hard_wipe_needs_publish(std::uint64_t sessionId) noexcept;
 
+/** @return True while the client has not yet mirrored an armed wipe's start block. */
+[[nodiscard]] bool hard_wipe_start_unseen(std::uint64_t sessionId) noexcept;
+
 /** Releases the wipe the request key armed, so the client's wait is answered. */
 [[nodiscard]] bool release_hard_wipe(const SessionBinding& binding,
                                      std::uint64_t requestKey) noexcept;
@@ -120,6 +123,27 @@ struct PendingMutation final {
 /** @return The spawn set the armed wipe named for this region, or zero. */
 [[nodiscard]] std::uint32_t checkpoint_spawn_hash(std::uint64_t sessionId,
                                                   std::int32_t region) noexcept;
+
+/** Records the region the attached mission program declared as its initial state. */
+void note_declared_initial_region(std::uint64_t sessionId, std::int32_t region) noexcept;
+
+/** Records the spawn set the attached mission program declared with its initial state. */
+void note_declared_spawn_set(std::uint64_t sessionId, std::uint32_t spawnSetHash) noexcept;
+
+/** Holds or releases the mission program's spawn hold for one joined session. */
+void set_program_spawn_hold(std::uint64_t sessionId, bool held) noexcept;
+
+/** @return True while the mission program holds this session's spawn. */
+[[nodiscard]] bool program_spawn_hold(std::uint64_t sessionId) noexcept;
+
+/** @return The declared initial-state region, or -1 while no program declared one. */
+[[nodiscard]] std::int32_t declared_initial_region(std::uint64_t sessionId) noexcept;
+
+/** @return The spawn set the attached program declared, or zero while none is declared. */
+[[nodiscard]] std::uint32_t declared_spawn_set(std::uint64_t sessionId) noexcept;
+
+/** @return The current activity State revision. */
+[[nodiscard]] std::uint64_t state_revision() noexcept;
 
 /**
  * @param sessionId Joined activity session.
@@ -173,14 +197,14 @@ struct ClientPlacement final {
     std::int32_t bubble{kMinimumRefreshBubble};
     /** Membership revision the refresh that named the bubble had applied. */
     std::uint32_t bubbleRevision{kAbsentRevision};
-    /** The client wrote its status back while holding a region: it is in the world. */
-    bool entered{};
+    /** The client's last character write-back reported the in-world state. */
+    bool clientInWorld{};
 };
 
 /**
  * Records the world state the client's character write-back (ws 702) reports.
- * The body's field at objB `+12068` reads 8 once the client is in the world, and 1 through a
- * load. So the value decides entry, and the send's timing does not.
+ * The field at objB `+12068` reads 8 in the world and 1 through a load, so the value decides
+ * entry, not the send's timing. The region is a separate report, read where entry is tested.
  * @param inWorld True when the field carries the in-world value.
  */
 void note_client_writeback(bool inWorld) noexcept;

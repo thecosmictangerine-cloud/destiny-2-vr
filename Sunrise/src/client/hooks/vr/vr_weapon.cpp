@@ -21,6 +21,10 @@
 
 #include "vr_weapon.h"
 
+#include "vr_debug.h"
+#include "vr_prehook.h"
+#include "vr_state.h"
+
 #include <Windows.h>
 
 #include <intrin.h>
@@ -40,6 +44,9 @@
 #include "../../hooking/detour.h"
 #include "runtime.h"
 #include "vr_ads.h"
+#include "vr_frames.h"
+#include "vr_profile.h"
+#include "vr_mode.h"
 #include "vr_math.h"
 #include "vr_two_hand.h"
 #include "xr_runtime.h"
@@ -63,6 +70,26 @@ constexpr std::uintptr_t kPosePtrRva = 0x12D50F0;
  * comes out of here.
  */
 constexpr std::uintptr_t kXformRva = 0xD5D7F0;
+/**
+ * The two CALL SITES the weapon is driven through, patched one instruction each (prehook::
+ * retarget_call) instead of detouring the functions they call. A whole-function detour of the camera
+ * getter, which the engine calls from many places, froze every destination load from the first F9 of
+ * a session on -- 80-250 ms after `activity:in_world`, its main thread waiting for ever -- and nothing
+ * but the weapon ever needed it changed (bisected on the mock, 2026-10-17, docs/PLAYABLE.md). The
+ * getter's call is inside the transform builder (+0xD5D7F0 + 0x3D, returning to D5D832); the
+ * transform builder's is the weapon's own call (returning to D5896F).
+ */
+constexpr std::uintptr_t kGetterCallRva = 0xD5D832 - 5;
+constexpr std::uintptr_t kXformCallRva = 0xD5896F - 5;
+/**
+ * The render view's call of the getter (RESEARCH.md: the view takes position and orientation from it,
+ * not from the block). Patched so that in third person it alone sees the eye at the Guardian's head,
+ * while the block -- the camera the engine culls the Guardian with -- keeps the chase camera's
+ * position (vr_mode.h set_render_eye). Outside third person it hands on exactly what the getter said.
+ */
+constexpr std::uintptr_t kRenderCallRva = 0xB363FA - 5;
+std::atomic<std::uintptr_t> g_getterOriginal{0};
+std::atomic<std::uintptr_t> g_xformOriginal{0};
 constexpr std::array<std::uint8_t, 18> kGetterPrologue{0x48, 0x89, 0x5C, 0x24, 0x08, 0x48, 0x89, 0x74, 0x24,
                                                        0x10, 0x57, 0x48, 0x83, 0xEC, 0x20, 0x49, 0x8B, 0xF8};
 constexpr std::array<std::uint8_t, 9> kPosePtrPrologue{0x40, 0x53, 0x48, 0x83, 0xEC, 0x20, 0x48, 0x63, 0xD9};
@@ -380,6 +407,8 @@ Sample g_published{};
 /** The frame the transform detour really handed the engine, for the ADS learner on the render thread. */
 SRWLOCK g_drawnLock = SRWLOCK_INIT;
 DrawnFrame g_drawn{};
+/** The last few placements, so the render thread can take the one of the frame it is drawing. */
+std::array<DrawnFrame, 8> g_drawnRing{};
 std::uintptr_t g_base = 0;
 std::uint32_t g_frame = 0;
 /** Fake pose regions for the pointer path, one per player index the accessor is asked about. */
@@ -407,8 +436,9 @@ void count_caller(Path& path, std::uintptr_t rva) noexcept {
             if (caller.rva.compare_exchange_strong(expected, rva, std::memory_order_acq_rel)) {
                 current = rva;
                 std::array<void*, kTraceDepth> frames{};
-                const USHORT got =
-                    RtlCaptureStackBackTrace(0, static_cast<DWORD>(frames.size()), frames.data(), nullptr);
+                const USHORT got = debug::has("nostack")
+                                       ? USHORT{0}
+                                       : RtlCaptureStackBackTrace(0, static_cast<DWORD>(frames.size()), frames.data(), nullptr);
                 for (std::size_t i = 0; i < got && i < caller.stack.size(); ++i) {
                     caller.stack[i] = reinterpret_cast<std::uintptr_t>(frames[i]);
                 }
@@ -466,10 +496,16 @@ bool hand_pose_for(Pose& out) noexcept {
     xr::HeadPose head{};
     xr::HandPose left{};
     xr::HandPose hand{};
-    // One lock acquisition for both, so the head and the hand cannot come from different frames.
-    xr::frame_sample(head, left, hand);
+    // The sample the camera hook latched for this frame (the frame ledger): the gun is placed against
+    // the camera the frame is really drawn from, which in alternating stereo is a different eye every
+    // frame -- the latest pose instead would put it a whole eye distance off whenever they differ.
+    (void)xr::camera_sample(head, left, hand);
     if (!hand.valid) {
         return false;
+    }
+    if (frames::tracing()) {
+        const float v[6] = {head.offset[0], head.offset[1], head.offset[2], hand.palm[0], hand.palm[1], hand.palm[2]};
+        frames::note(frames::Kind::weapon, head.frame, v);
     }
     const xr::HandPose raw = hand;
     apply_seat_rotation(hand);
@@ -518,6 +554,10 @@ bool hand_pose_for(Pose& out) noexcept {
 
 /** @return The pose a rule asks for, and whether it is usable this frame. */
 bool pose_for(Source source, Pose& out) noexcept {
+    // On the screen the game draws itself as it is: nothing is handed a pose of ours.
+    if (state::view() != state::View::immersive) {
+        return false;
+    }
     switch (source) {
     case Source::body: out = engine_pose(); break;
     case Source::head: out = head_pose(); break;
@@ -532,9 +572,13 @@ bool pose_for(Source source, Pose& out) noexcept {
     return n > 0.5F && n < 1.5F;
 }
 
+std::atomic<std::uint64_t> g_weaponFrames{0};
+
 void __fastcall getter_replacement(Vector* pos, Vector* fwd, Vector* up) noexcept {
+    profile::Scope timer(profile::weapon);
+    g_weaponFrames.fetch_add(1, std::memory_order_relaxed);
     const auto rva = reinterpret_cast<std::uintptr_t>(_ReturnAddress()) - g_base;
-    const auto original = reinterpret_cast<Getter>(g_handles[0].original);
+    const auto original = reinterpret_cast<Getter>(g_getterOriginal.load(std::memory_order_acquire));
     if (original != nullptr) {
         original(pos, fwd, up);
     }
@@ -551,6 +595,18 @@ void __fastcall getter_replacement(Vector* pos, Vector* fwd, Vector* up) noexcep
     }
     if (up != nullptr) {
         *up = pose.up;
+    }
+}
+
+std::atomic<std::uint64_t> g_renderEyes{0};
+
+void __fastcall render_view_replacement(Vector* pos, Vector* fwd, Vector* up) noexcept {
+    const auto original = reinterpret_cast<Getter>(g_getterOriginal.load(std::memory_order_acquire));
+    if (original != nullptr) {
+        original(pos, fwd, up);
+    }
+    if (pos != nullptr && mode::render_eye(pos->data())) {
+        g_renderEyes.fetch_add(1, std::memory_order_relaxed);
     }
 }
 
@@ -576,8 +632,9 @@ float* __fastcall pose_ptr_replacement(int playerIndex) noexcept {
  * Runs on the camera thread after the original, so the caller reads whatever is left here.
  */
 void __fastcall xform_replacement(void* out) noexcept {
+    profile::Scope timer(profile::weapon);
     const auto rva = reinterpret_cast<std::uintptr_t>(_ReturnAddress()) - g_base;
-    const auto original = reinterpret_cast<Xform>(g_handles[2].original);
+    const auto original = reinterpret_cast<Xform>(g_xformOriginal.load(std::memory_order_acquire));
     void* const result = original != nullptr ? original(out) : nullptr;
     count_caller(g_xform, rva);
     if (out == nullptr) {
@@ -592,7 +649,7 @@ void __fastcall xform_replacement(void* out) noexcept {
             lanes[lane] = forced;
         }
     }
-    if (g_xformDelta.load(std::memory_order_acquire) && xform_gated(rva)) {
+    if (g_xformDelta.load(std::memory_order_acquire) && xform_gated(rva) && state::view() == state::View::immersive) {
         // The sample the getter handed to the weapon this frame, on this thread. Falling back to a
         // fresh read keeps a misconfigured session working (`getter ... body`, say), but the pivot
         // correction is then computed against an orientation the engine was not given, so it is
@@ -609,9 +666,13 @@ void __fastcall xform_replacement(void* out) noexcept {
             t_sample.valid = false;
         } else {
             xr::HandPose left{};
-            xr::frame_sample(head, left, hand);
+            (void)xr::camera_sample(head, left, hand);
             drawn = hand;
             g_latchMissed.store(true, std::memory_order_relaxed);
+        }
+        if (frames::tracing()) {
+            const float v[6] = {head.offset[0], head.offset[1], head.offset[2], 0.0F, 0.0F, 0.0F};
+            frames::note(frames::Kind::xform, head.frame, v);
         }
         if (hand.valid && head.valid) {
             // Where the weapon must end up, stated once:
@@ -672,9 +733,11 @@ void __fastcall xform_replacement(void* out) noexcept {
                 f.local.t = math::V3{lanes[4], lanes[5], lanes[6]};
                 f.lanesIn = {before[4], before[5], before[6]};
                 f.valid = true;
+                f.ledger = xr::camera_sequence();
                 AcquireSRWLockExclusive(&g_drawnLock);
                 f.serial = g_drawn.serial + 1;
                 g_drawn = f;
+                g_drawnRing[f.serial % g_drawnRing.size()] = f;
                 ReleaseSRWLockExclusive(&g_drawnLock);
             }
         }
@@ -704,6 +767,10 @@ void install() noexcept {
     if (g_installTried.exchange(true, std::memory_order_acq_rel)) {
         return;
     }
+    if (debug::has("detours off") || debug::has("nodetour weapon")) {
+        report("ev=vr.weapon install result=skipped reason=debug");
+        return;
+    }
     for (auto& forced : g_xformForce) {
         forced.store(std::numeric_limits<float>::quiet_NaN(), std::memory_order_release);
     }
@@ -720,17 +787,31 @@ void install() noexcept {
         report("ev=vr.weapon install result=fail reason=prologue_mismatch");
         return;
     }
-    const std::array<hooking::detour::Spec, 3> specs{
-        hooking::detour::Spec{reinterpret_cast<void*>(getter), reinterpret_cast<void*>(&getter_replacement)},
-        hooking::detour::Spec{reinterpret_cast<void*>(posePtr), reinterpret_cast<void*>(&pose_ptr_replacement)},
-        hooking::detour::Spec{reinterpret_cast<void*>(xform), reinterpret_cast<void*>(&xform_replacement)},
-    };
-    if (!hooking::detour::install(specs, g_handles)) {
-        report("ev=vr.weapon install result=fail reason=detour");
+    const char* failure = "";
+    g_getterOriginal.store(getter, std::memory_order_release);
+    g_xformOriginal.store(xform, std::memory_order_release);
+    if (!prehook::retarget_call(g_base + kGetterCallRva, getter, reinterpret_cast<const void*>(&getter_replacement), failure)) {
+        reportf("ev=vr.weapon install result=fail site=getter reason=%s", failure);
         return;
     }
+    if (!prehook::retarget_call(g_base + kXformCallRva, xform, reinterpret_cast<const void*>(&xform_replacement), failure)) {
+        reportf("ev=vr.weapon install result=fail site=xform reason=%s", failure);
+        return;
+    }
+    if (!debug::has("norender eye")
+        && !prehook::retarget_call(g_base + kRenderCallRva, getter, reinterpret_cast<const void*>(&render_view_replacement), failure)) {
+        // Not fatal: third person then shows the eye through the block, without the Guardian's arms.
+        reportf("ev=vr.weapon install site=render result=fail reason=%s", failure);
+    }
+    // The pose pointer was only ever a probe (no default rule): detoured only when asked for.
+    if (debug::has("weapon ptr")) {
+        const hooking::detour::Spec spec{reinterpret_cast<void*>(posePtr), reinterpret_cast<void*>(&pose_ptr_replacement)};
+        if (!hooking::detour::install(spec, g_handles[1])) {
+            report("ev=vr.weapon install ptr=fail");
+        }
+    }
     g_installed.store(true, std::memory_order_release);
-    reportf("ev=vr.weapon install result=ok getter=0x%llX ptr=0x%llX xform=0x%llX",
+    reportf("ev=vr.weapon install result=ok mode=call_sites getter=0x%llX ptr=0x%llX xform=0x%llX",
             static_cast<unsigned long long>(kGetterRva), static_cast<unsigned long long>(kPosePtrRva),
             static_cast<unsigned long long>(kXformRva));
 }
@@ -1190,12 +1271,31 @@ DrawnFrame drawn_frame() noexcept {
     return f;
 }
 
+DrawnFrame drawn_frame_for(std::uint64_t ledger) noexcept {
+    AcquireSRWLockShared(&g_drawnLock);
+    DrawnFrame f = g_drawn;
+    if (ledger != 0) {
+        for (const DrawnFrame& candidate : g_drawnRing) {
+            if (candidate.valid && candidate.ledger == ledger) {
+                f = candidate;
+                break;
+            }
+        }
+    }
+    ReleaseSRWLockShared(&g_drawnLock);
+    return f;
+}
+
 void retake_reference() noexcept {
     // Nothing to retake any more, and that is the fix rather than an omission. The weapon's
     // placement is a pure function of this frame's head and hand poses, so a recentre moves the
     // shared origin and both move with it; there is no stored reference left that could disagree
     // with the new one. Kept as a symbol so F7's handler reads the same as it always did.
     report("ev=vr.weapon recentre result=noop reason=stateless_placement");
+}
+
+std::uint64_t weapon_frames() noexcept {
+    return g_weaponFrames.load(std::memory_order_relaxed);
 }
 
 } // namespace sunrise::client::hooks::vr::weapon

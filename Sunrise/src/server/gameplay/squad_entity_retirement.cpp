@@ -228,16 +228,12 @@ void report(const char* stage,
 } // namespace
 /**
  * Captures outgoing map-prop allocations for an explicit same-bubble state reset.
- * @param
- * view Authenticated activity and source generation.
- * @param world Pinned generated package graph
- * for that activity.
+ * @param view Authenticated activity and source generation.
+ * @param world Pinned generated package graph for that activity.
  * @param transition Durable mission intent identity.
- * @param fromRegion
- * Instantiated outgoing authored state.
+ * @param fromRegion Instantiated outgoing authored state.
  * @param toRegion Requested authored state.
- * @return
- * Ready only after every captured tree's purge publication has committed.
+ * @return Ready only after every captured tree's purge publication has committed.
  */
 TransitionStatus begin_placed_transition(const state::activity_sdk::BoundView& view,
                                          const state::build_data::scriptables::Snapshot& world,

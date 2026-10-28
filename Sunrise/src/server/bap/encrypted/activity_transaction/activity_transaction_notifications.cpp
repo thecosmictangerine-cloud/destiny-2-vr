@@ -2,6 +2,7 @@
 
 #include "../../../../middleware/secure_channel/runtime.h"
 #include "../../../gameplay/gameplay_advertisement.h"
+#include "../bap_connection_publication.h"
 #include "../push/activity/activity_arrival.h"
 #include "../push/activity/activity_global_state_push.h"
 #include "../push/activity/activity_membership_push.h"
@@ -50,7 +51,7 @@ namespace {
  * @param nonce Local send nonce advanced only by complete staged notifications.
  * @param response Lock-owned complete-frame staging storage.
  * @param written Existing staged byte count, updated only by complete notifications.
- * @return True when at least one of the three notifications was staged.
+ * @return True only when the complete requested snapshot was staged.
  */
 [[nodiscard]] bool stage_refresh(Session& session,
                                  Scratch& scratch,
@@ -60,23 +61,25 @@ namespace {
                                  std::span<std::byte> response,
                                  std::size_t& written,
                                  bool allowEntityRetirement) noexcept {
-    bool staged = push::activity::append_global_state_notification(
-                      scratch, session.activity.session, key, nonce, response, written)
-                  && push::activity::append_world_globals_notification(
-                      scratch, session.activity.session.sessionId, key, nonce, response, written);
-    bool stagedMembership = false;
-    if (session.activity.role == ActivityClientRole::privateCurrent
-        && activity.membershipMutation.hasSnapshot && !advertisement_pending(session, activity)) {
-        stagedMembership = push::activity::append_membership_notification(
-            scratch, session, activity, key, nonce, response, written);
-        staged = stagedMembership || staged;
-    }
-    // Message 18 asks for the whole host snapshot, so its roster is solicited and is never
-    // suppressed as a repeat. The client sends it when its own mirror is stale, which the host's
-    // delivered-body record cannot see. Its bubble field names the slice set the client holds.
+    const auto initialNonce = nonce;
+    const auto initialWritten = written;
+    const bool initialRosterDebt = session.activityRosterOwedForEpoch;
+    const bool needsMembership = session.activity.role == ActivityClientRole::privateCurrent;
+    const bool membershipReady =
+        !needsMembership
+        || (activity.membershipMutation.hasSnapshot && !advertisement_pending(session, activity));
     const push::activity::RefreshReport refresh{activity.membershipMutation.bubbleIndex,
                                                 activity.membershipMutation.requestedRevision};
-    return push::activity::append_roster_notification(session,
+    const bool complete =
+        membershipReady
+        && push::activity::append_global_state_notification(
+            scratch, session.activity.session, key, nonce, response, written)
+        && push::activity::append_world_globals_notification(
+            scratch, session.activity.session.sessionId, key, nonce, response, written)
+        && (!needsMembership
+            || push::activity::append_membership_notification(
+                scratch, session, activity, key, nonce, response, written))
+        && push::activity::append_roster_notification(session,
                                                       scratch,
                                                       key,
                                                       nonce,
@@ -86,8 +89,15 @@ namespace {
                                                       nullptr,
                                                       true,
                                                       &refresh,
-                                                      allowEntityRetirement)
-           || staged;
+                                                      allowEntityRetirement);
+    if (!complete) {
+        push::activity::discard_staged_roster(session);
+        discard_staged_advertisement(session);
+        session.activityRosterOwedForEpoch = initialRosterDebt;
+        nonce = initialNonce;
+        written = initialWritten;
+    }
+    return complete;
 }
 
 /**
@@ -234,6 +244,22 @@ bool stage_notifications(Session& session,
                                                           true,
                                                           nullptr,
                                                           allowEntityRetirement);
+    }
+    if (activity.delivery == activity_message::Delivery::leaveNotification) {
+        // The client waits in shutting_down with its slice set current, so region readiness is not
+        // a gate here. Answering the report is what unregisters the rows it still holds.
+        return push::activity::append_roster_notification(session,
+                                                          scratch,
+                                                          key,
+                                                          nonce,
+                                                          response,
+                                                          written,
+                                                          nullptr,
+                                                          nullptr,
+                                                          true,
+                                                          nullptr,
+                                                          false,
+                                                          true);
     }
     if (activity.delivery == activity_message::Delivery::entitySlotNotification) {
         return push::activity::append_entity_slot_notification(scratch,

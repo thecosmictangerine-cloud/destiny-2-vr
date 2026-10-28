@@ -9,32 +9,27 @@
 #include "auth_fields.h"
 #include "scriptable_auth_body.h"
 
-// Type-26 mission effect (hop-on). A new revision detaches the old effect, then the client
-// attaches the authored effect to the entities its type-34 filter selects. No filter removes all.
+// TODO: Map the hop-on predicate and spawn-entry host model before exposing a mission control.
 
 namespace sunrise::middleware::bap::activity_message::mission_effect {
 
 namespace fields = auth_fields;
 
+// Type 26 uses this schema and fixed body size.
 inline constexpr std::uint8_t kSlotType = 26;
 inline constexpr std::uint32_t kComponentClass = 0x8080953FU;
 inline constexpr std::uint32_t kSchema = 0x8080954BU;
 inline constexpr std::size_t kBits = 186;
 inline constexpr std::size_t kBytes = 24;
 
-/**
- * Encodes the effect body.
- * @param filter Type-34 filter slot; ignored when disabled.
- * @param revision Positive revision; a change re-attaches.
- * @param written Receives kBytes.
- */
+/** Encodes the existing constrained wire preset without asserting hop-on lifecycle semantics. */
 [[nodiscard]] inline bool encode(scriptable_auth::Type2LaneClientRef filter,
                                  bool enabled,
-                                 std::int32_t revision,
+                                 std::int32_t controlWord,
                                  std::span<std::byte> output,
                                  std::size_t& written) noexcept {
     written = 0;
-    if (revision <= 0 || output.size() < kBytes
+    if (controlWord <= 0 || output.size() < kBytes
         || (enabled
             && (filter.slotType != scriptable_auth::kType34SlotType || filter.slotIndex < 0))) {
         return false;
@@ -45,11 +40,11 @@ inline constexpr std::size_t kBytes = 24;
     encoding::bits::Writer writer(output.first(kBytes));
     const std::array<fields::Field, 6> head{{
         {0, fields::kBoolWidth},
-        {enabled ? 0U : 1U, fields::kBoolWidth}, // disabled
-        {fields::kSigned32Bias, 32},             // signed zero
-        {fields::kSigned32Bias, 32},             // signed zero
-        {fields::kSigned32Bias, 32},             // signed zero
-        {static_cast<std::uint32_t>(revision) + fields::kSigned32Bias, 32},
+        {enabled ? 0U : 1U, fields::kBoolWidth},
+        {fields::kSigned32Bias, 32}, // signed zero
+        {fields::kSigned32Bias, 32}, // signed zero
+        {fields::kSigned32Bias, 32}, // signed zero
+        {static_cast<std::uint32_t>(controlWord) + fields::kSigned32Bias, 32},
     }};
     return fields::write_fields(writer, head)
            && writer.write(filter.registryKey, fields::kClientRefKeyWidth)

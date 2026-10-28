@@ -21,6 +21,9 @@
 
 namespace sunrise::server::activity::host {
 
+using AuthoredSceneDependencies =
+    middleware::bap::activity_message::sensor_auth_update::AuthoredSceneDependencies;
+
 /** Activity instances tracked by the diagnostic host. */
 inline constexpr std::size_t kInstanceCapacity = state::activity::kSessionCapacity;
 /** Recent normalized events retained for the panel and HUD. */
@@ -136,11 +139,17 @@ enum class EventKind : std::uint8_t {
     objectState = 36,
     /** A damage monitor published new health, shield or revision values. */
     damageState = 37,
+    /** A gameplay policy accepted the first damage to an exact selected squad. */
+    squadProvoked = 38,
+    /** A device reported changed current channel values or accepted sequences. */
+    deviceState = 39,
+    /** An accepted client report moved the held region to another authored region. */
+    regionChanged = 40,
 };
 
 /** Kinds are numbered without gaps, so the last one plus one is the count. */
 inline constexpr std::size_t kEventKindCount =
-    static_cast<std::size_t>(EventKind::damageState) + 1U;
+    static_cast<std::size_t>(EventKind::regionChanged) + 1U;
 
 /**
  * Terminal delivery outcome of one script-requested effect.
@@ -246,7 +255,21 @@ enum class ScriptableOverrideKind : std::uint8_t {
     lifetime,
     /** Type-42 performance start: one state name behind a rising per-slot generation. */
     performance,
+    authoredSceneEvent,
+    authoredSceneStop,
+    combatantSequence,
+    squadObjective,
+    combatantProgram,
+    combatantRetirement,
+    interactableObject,
+    damageWatch,
+    /** Type-65 Ghost-link scan: the host owns its generation and finishes its bar. */
+    ghostLink,
 };
+
+/** The client stalls one frame short of the duration, so this reported fraction is the bar's end.
+ */
+inline constexpr float kGhostLinkFinishFraction = 0.99F;
 
 /** Current diagnostic state of one retained incident. */
 enum class IncidentStatus : std::uint8_t {
@@ -307,6 +330,7 @@ struct SenseInput final {
     /** Complete value-owned decode copied before decrypted transport storage is cleared. */
     middleware::bap::activity_message::sense_update::DecodedPacket decoded{};
     bool hasFirstObject{};
+    std::uint64_t attemptGeneration{};
 };
 
 /** Exact package and schema identity for one observed Sense ClientRef. */
@@ -325,6 +349,21 @@ snapshot_squad_sense(const state::activity::SessionBinding& binding,
                      std::uint64_t sourceGeneration,
                      const SenseObservationKey& key,
                      middleware::bap::activity_message::squad_sense::State& output) noexcept;
+
+/** What the msg-5 builder needs to publish one type-65 Sense root. */
+struct GhostLinkLevel final {
+    /** Generation the host last transported in the Auth body. */
+    std::int32_t generation{};
+    /** Client's last reported per-object counter for this slot. */
+    std::uint32_t counter{};
+    /** The client reported the bar at its end and the host owes it the finishing fraction. */
+    bool finished{};
+};
+
+/** Copies the armed scan model for one exact type-65 slot that has reported at least once. */
+[[nodiscard]] bool ghost_link_scan(const state::activity::SessionBinding& binding,
+                                   const SenseObservationKey& key,
+                                   GhostLinkLevel& output) noexcept;
 
 /** One latest complete msg-6 object observation with values in its owning snapshot. */
 struct SenseObservation final {
@@ -400,6 +439,7 @@ struct IncidentInput final {
         middleware::bap::activity_message::cinematic_incident::Signal::started};
     bool hasPlayerTrigger{};
     bool hasCinematic{};
+    std::uint64_t attemptGeneration{};
 };
 
 /** Safe msg-22 after-image submitted only after State and connection publication commit. */
@@ -409,6 +449,7 @@ struct ClientStateChangeInput final {
     std::uint64_t sourceGeneration{};
     std::uint64_t clientMessageSequence{};
     std::uint32_t payloadBytes{};
+    std::uint64_t attemptGeneration{};
 };
 
 /** A committed msg-20 request emitted by the client's simulation-entity low-water path. */
@@ -417,6 +458,7 @@ struct EntitySlotsRequestedInput final {
     std::uint64_t sourceGeneration{};
     std::uint64_t clientMessageSequence{};
     std::int32_t requestedCount{};
+    std::uint64_t attemptGeneration{};
 };
 
 /** Framing metadata copied after exact ActivityClient ownership checks. */
@@ -436,6 +478,10 @@ struct ClientMessageInput final {
 
 /** One value-owned event, with no view into decrypted transport storage. */
 struct Event final {
+    /** Attempt owner stamped when the native input or derived fact is admitted. */
+    std::uint64_t attemptGeneration{};
+    std::array<std::uint64_t, state::activity::mission::kDeviceChannelCount>
+        deviceAppliedRequests{};
     state::activity::SessionBinding binding{};
     /** Present only for an internally synthesized timerElapsed callback. */
     state::activity::mission::StateKey timerName{};
@@ -481,6 +527,16 @@ struct Event final {
     float damageHealth{-1.0F};
     float damageShield{-1.0F};
     std::int32_t damageRevision{};
+    /** Current position, power and lock levels; masks distinguish unknown fields. */
+    std::array<float, middleware::bap::activity_message::scriptable_auth::kType23ChannelCount>
+        deviceValues{};
+    std::array<std::int32_t,
+               middleware::bap::activity_message::scriptable_auth::kType23ChannelCount>
+        deviceSequences{};
+    std::uint8_t deviceValueMask{};
+    std::uint8_t deviceSequenceMask{};
+    bool deviceFirstReport{};
+    bool deviceReset{};
     /** Object level, for objectState and objectInteracted events. */
     std::int32_t objectGeneration{};
     bool objectPresent{};
@@ -499,11 +555,15 @@ struct Event final {
     std::int32_t actorDeliveryRevision{};
     std::int32_t actorDeliveryState{};
     bool actorDeliveryKnown{};
-    bool actorDead{};
+    bool actorSuppressed{};
     /** Objective costs the squad published, one per task group, with a bit per known cost. */
     std::array<float, kSquadObjectiveGroupCount> squadObjectiveCosts{};
     std::uint32_t squadObjectiveCostMask{};
     std::uint32_t squadObjectiveRevision{};
+    std::uint32_t squadObjectiveRegistryKey{};
+    std::uint16_t squadObjectiveSlotIndex{};
+    std::int32_t squadObjectiveTaskGroup{-1};
+    bool squadObjectiveCostQualified{};
     /** Per-slot member counts the client published, for squadState events. */
     std::array<std::int32_t, kSquadSlotCapacity> squadSlotCounts{};
     /** Alive members the client published. Six bits on the wire, so 0 through 63. */
@@ -570,6 +630,7 @@ struct Event final {
      * the leg it did not restate reads absent. -1 while the client holds no region.
      */
     std::int32_t heldRegionIndex{state::activity::membership::kAbsentRegionIndex};
+    std::int32_t previousRegionIndex{state::activity::membership::kAbsentRegionIndex};
     /** Membership revision from the committed msg-22 after-image. */
     std::uint32_t membershipRevision{};
     std::uint32_t teleportSliceSetHash{};
@@ -615,6 +676,8 @@ struct Event final {
     bool clientStateHasCurrentRegion{};
     bool clientStateHasSpawn{};
     bool clientStateHasTeleport{};
+    /** The arrival answer reached the client; it spawns on that roster. */
+    bool clientEntered{};
     bool hasPlayerTrigger{};
     bool hasCinematic{};
 
@@ -788,6 +851,11 @@ struct PendingIncident final {
 
 /** Immutable typed body retained byte-for-byte until exact transport staging. */
 struct PendingScriptableOverride final {
+    std::uint32_t actorSpawnGeneration{};
+    /** Accepted input head when this output reached transport. */
+    std::uint64_t missionInputSequenceAtStage{};
+    std::uint64_t clientMessageSequenceAtStage{};
+    bool missionInputBoundaryKnown{};
     state::gameplay::squad_entity_retirement::Eligibility squadRetirement{};
     std::array<std::byte,
                middleware::bap::activity_message::sensor_auth_update::kAuthOverrideByteCapacity>
@@ -827,10 +895,31 @@ inline constexpr std::size_t kPendingScriptableTailCapacity = 63;
 pending_scriptable_tail(const state::activity::SessionBinding& binding,
                         std::span<PendingScriptableOverride> output) noexcept;
 
+/** Copies one exact retained transport output for native request-to-report joins. */
+[[nodiscard]] bool staged_scriptable_override(const state::activity::SessionBinding& binding,
+                                              std::uint64_t revision,
+                                              PendingScriptableOverride& output) noexcept;
+
+/** Captures the attempt and both input heads before a publication reaches the caller. */
+[[nodiscard]] bool publication_input_boundary(const state::activity::SessionBinding& binding,
+                                              std::uint64_t& attemptGeneration,
+                                              std::uint64_t& inputSequence,
+                                              std::uint64_t& clientMessageSequence) noexcept;
+
 /** Copies the latest delivered Auth body for every full ClientRef in this client generation. */
 [[nodiscard]] bool scriptable_auth_estate(const state::activity::SessionBinding& binding,
                                           std::uint64_t activityClientGeneration,
                                           std::vector<PendingScriptableOverride>& output) noexcept;
+
+/** Queues a native objective decision after both SDK slot identities are validated. */
+[[nodiscard]] bool
+request_squad_objective(const state::activity::SessionBinding& binding,
+                        const ScriptableTarget& target,
+                        const state::build_data::scenarios::RosterGroup* stateLocalRosterGroup,
+                        const state::activity::mission::TypedIntent& decision,
+                        std::uint16_t objectiveIndex,
+                        std::uint64_t expectedActivityClientGeneration,
+                        const ScriptableOutputReservation& reservation) noexcept;
 
 /** Queues one owned msg-6 prefix for the Activity Host service. */
 [[nodiscard]] bool submit_sense(const SenseInput& input) noexcept;
@@ -897,6 +986,44 @@ request_type23_override(const state::activity::SessionBinding& binding,
     std::uint64_t expectedActivityClientGeneration,
     const ScriptableOutputReservation* reservation = nullptr) noexcept;
 
+/** Existing active sources cannot be silently repurposed by a named-actor creation. */
+enum class ActorProgramSourceStatus : std::uint8_t { missing, ready, incompatible };
+
+/** Reads the exact source and whether native creation may prepare it. */
+[[nodiscard]] ActorProgramSourceStatus
+actor_program_source_status(const state::activity::SessionBinding& binding,
+                            const ScriptableTarget& source,
+                            PendingScriptableOverride* output = nullptr) noexcept;
+
+/** Scene preparation must preserve an active actor owned by another binding mode. */
+enum class ActorSquadBindingStatus : std::uint8_t { missing, ready, incompatible };
+
+/** The SDK owns the parent relation; this query checks the transported actor binding mode. */
+[[nodiscard]] ActorSquadBindingStatus
+actor_squad_binding_status(const state::activity::SessionBinding& binding,
+                           const ScriptableTarget& actor) noexcept;
+
+/** Queues an actor program without accepting caller-owned revisions. */
+[[nodiscard]] bool request_type2_program(const state::activity::SessionBinding& binding,
+                                         const ScriptableTarget& target,
+                                         const ScriptableTarget& source,
+                                         const state::build_data::scenarios::RosterGroup* group,
+                                         std::span<const std::byte> body,
+                                         std::uint16_t bits,
+                                         bool spawn,
+                                         std::uint64_t expectedActivityClientGeneration,
+                                         const ScriptableOutputReservation* reservation = nullptr,
+                                         bool retire = false) noexcept;
+
+/** Queues a sequence on an enabled combatant without changing its actor binding. */
+[[nodiscard]] bool request_state_local_type2_sequence(
+    const state::activity::SessionBinding& binding,
+    const ScriptableTarget& target,
+    const state::build_data::scenarios::RosterGroup& stateLocalRosterGroup,
+    std::uint32_t sequenceHash,
+    std::uint64_t expectedActivityClientGeneration,
+    const ScriptableOutputReservation* reservation = nullptr) noexcept;
+
 /** Queues squad-member binding for one exact generated type-2 combatant slot. */
 [[nodiscard]] bool request_state_local_type2_squad_binding(
     const state::activity::SessionBinding& binding,
@@ -916,11 +1043,11 @@ request_type23_override(const state::activity::SessionBinding& binding,
     std::uint64_t expectedActivityClientGeneration,
     const ScriptableOutputReservation* reservation = nullptr) noexcept;
 
-/** Queues one type-31 pulse for an exact package-derived ClientRef. */
-[[nodiscard]] bool
-request_type31_override(const state::activity::SessionBinding& binding,
-                        const ScriptableTarget& target,
-                        const ScriptableOutputReservation* reservation = nullptr) noexcept;
+/** Queues one type-31 arm, or a disarm, for an exact package-derived ClientRef. */
+[[nodiscard]] bool request_type31_override(const state::activity::SessionBinding& binding,
+                                           const ScriptableTarget& target,
+                                           const ScriptableOutputReservation* reservation = nullptr,
+                                           bool enabled = true) noexcept;
 
 /** Queues one type-31 pulse carried by the exact generated group in the current activity seed. */
 [[nodiscard]] bool request_state_local_type31_override(
@@ -928,7 +1055,8 @@ request_type31_override(const state::activity::SessionBinding& binding,
     const ScriptableTarget& target,
     const state::build_data::scenarios::RosterGroup& stateLocalRosterGroup,
     std::uint64_t expectedActivityClientGeneration,
-    const ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const ScriptableOutputReservation* reservation = nullptr,
+    bool enabled = true) noexcept;
 
 /** Queues one authored sequence restart from the exact generated mission group. */
 [[nodiscard]] bool request_state_local_sequence_override(
@@ -978,7 +1106,10 @@ request_type31_override(const state::activity::SessionBinding& binding,
     const ScriptableTarget& target,
     const state::build_data::scenarios::RosterGroup& stateLocalRosterGroup,
     std::uint64_t expectedActivityClientGeneration,
-    const ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const ScriptableOutputReservation* reservation = nullptr,
+    const AuthoredSceneDependencies& dependencies = {},
+    std::uint32_t eventKey = 0,
+    bool stop = false) noexcept;
 
 /** Queues one authored dialogue line from the exact generated group in the mission seed. */
 [[nodiscard]] bool request_state_local_dialogue_override(
@@ -988,7 +1119,8 @@ request_type31_override(const state::activity::SessionBinding& binding,
     std::uint16_t cueIndex,
     std::uint16_t authoredCueCount,
     std::uint64_t expectedActivityClientGeneration,
-    const ScriptableOutputReservation* reservation = nullptr) noexcept;
+    const ScriptableOutputReservation* reservation = nullptr,
+    middleware::bap::activity_message::scriptable_auth::Type2LaneClientRef filter = {}) noexcept;
 
 /** Queues one squad placement intent for an exact package-derived ClientRef. */
 [[nodiscard]] bool request_squad_override(
@@ -1001,7 +1133,11 @@ request_type31_override(const state::activity::SessionBinding& binding,
     std::optional<std::uint32_t> nameHash = std::nullopt,
     const ScriptableOutputReservation* reservation = nullptr,
     std::array<std::int8_t, 4> authoredProfile = {},
-    state::gameplay::squad_entity_retirement::Eligibility squadRetirement = {}) noexcept;
+    state::gameplay::squad_entity_retirement::Eligibility squadRetirement = {},
+    std::optional<middleware::bap::activity_message::squad_auth::Destination> destination =
+        std::nullopt,
+    std::optional<middleware::bap::activity_message::squad_auth::SpawnRule> spawnRule =
+        std::nullopt) noexcept;
 
 /** Queues one generation-bound activity lifetime state through the serialized output slot. */
 [[nodiscard]] bool
@@ -1018,7 +1154,8 @@ request_sdk_auth_override(const state::activity::SessionBinding& binding,
                           std::span<const std::byte> body,
                           std::uint16_t bitCount,
                           std::uint64_t expectedActivityClientGeneration,
-                          const ScriptableOutputReservation* reservation = nullptr) noexcept;
+                          const ScriptableOutputReservation* reservation = nullptr,
+                          ScriptableOverrideKind kind = ScriptableOverrideKind::sdkAuth) noexcept;
 
 /** @return True while any live instance holds a committed output the transport has not sent. */
 [[nodiscard]] bool any_output_pending() noexcept;

@@ -78,7 +78,7 @@ selected_character(const state::AccountState& account) noexcept {
                                         pending.accountSoid,
                                         pending.characterSoid,
                                         pending.acquiredInstanceSoid,
-                                        pending.profileChanged,
+                                        pending.updates_account(),
                                         acquisition)) {
         core::log::write(core::log::Channel::server,
                          core::log::Level::warn,
@@ -314,7 +314,7 @@ selected_character(const state::AccountState& account) noexcept {
         // Family 4 already produced a complete frame. Appearance and roster are derived views,
         // so they retry in their own deferred lane rather than holding the account update.
         session.abilityRefreshDueTick = GetTickCount64();
-        session.abilityRefreshArmed = true;
+        session.characterRefreshScope = CharacterRefreshScope::recordsAndRoster;
     }
     return true;
 }
@@ -432,13 +432,14 @@ selected_character(const state::AccountState& account) noexcept {
     return true;
 }
 
-/** Refreshes appearance and roster after an asynchronous ability-bucket rebuild. */
+/** Refreshes character records after an asynchronous ability-bucket rebuild. */
 [[nodiscard]] bool consume_ability_refresh(Session& session,
                                            Scratch& scratch,
                                            std::span<std::byte> response,
                                            std::size_t& written,
                                            bool& touchesScratch) noexcept {
-    if (!session.abilityRefreshArmed || GetTickCount64() < session.abilityRefreshDueTick) {
+    if (session.characterRefreshScope == CharacterRefreshScope::none
+        || GetTickCount64() < session.abilityRefreshDueTick) {
         return false;
     }
     // Retain the arm until a family that reads abilities is active.
@@ -453,29 +454,33 @@ selected_character(const state::AccountState& account) noexcept {
     bool wrote = false;
     if (current.family0Active) {
         queuez::SessionState appearanceAfter{};
-        if (push::append_account_resync_appearance_notification(scratch,
-                                                                current,
-                                                                session.sessionKey,
-                                                                nextSendNonce,
-                                                                scratch.framed,
-                                                                framedSize,
-                                                                appearanceAfter)) {
-            current = appearanceAfter;
-            wrote = true;
+        if (!push::append_account_resync_appearance_notification(scratch,
+                                                                 current,
+                                                                 session.sessionKey,
+                                                                 nextSendNonce,
+                                                                 scratch.framed,
+                                                                 framedSize,
+                                                                 appearanceAfter)) {
+            return false;
         }
+        current = appearanceAfter;
+        wrote = true;
     }
     if (current.family3Active) {
         queuez::SessionState rosterAfter{};
-        if (push::append_account_resync_roster_notification(scratch,
-                                                            current,
-                                                            session.sessionKey,
-                                                            nextSendNonce,
-                                                            scratch.framed,
-                                                            framedSize,
-                                                            rosterAfter)) {
-            current = rosterAfter;
-            wrote = true;
+        if (!push::append_account_resync_roster_notification(
+                scratch,
+                current,
+                session.sessionKey,
+                nextSendNonce,
+                scratch.framed,
+                framedSize,
+                rosterAfter,
+                session.characterRefreshScope == CharacterRefreshScope::recordsAndRoster)) {
+            return false;
         }
+        current = rosterAfter;
+        wrote = true;
     }
     if (!wrote || framedSize == 0 || framedSize > response.size() || !queuez::valid(current)) {
         core::log::write(core::log::Channel::server,
@@ -488,7 +493,7 @@ selected_character(const state::AccountState& account) noexcept {
     session.sendNonce = nextSendNonce;
     session.queuez = current;
     // Clear the arm only after publication.
-    session.abilityRefreshArmed = false;
+    session.characterRefreshScope = CharacterRefreshScope::none;
     return true;
 }
 
@@ -534,8 +539,7 @@ selected_character(const state::AccountState& account) noexcept {
     middleware::secure_channel::advance_nonce(nextSendNonce);
     session.sendNonce = nextSendNonce;
     session.queuez.family5Version = version;
-    // The Client rebuilds its evaluated unlock state only on the next armed freshness verdict.
-    bap::notify_investment_publication();
+    // The client rebuilds its derived unlock state on the family-4 update that follows this.
     return true;
 }
 
@@ -639,7 +643,9 @@ selected_character(const state::AccountState& account) noexcept {
         // changed item resident has landed so reset cannot leave the previous champion effect
         // cached.
         session.abilityRefreshDueTick = GetTickCount64();
-        session.abilityRefreshArmed = true;
+        if (session.characterRefreshScope == CharacterRefreshScope::none) {
+            session.characterRefreshScope = CharacterRefreshScope::records;
+        }
     }
     return true;
 }

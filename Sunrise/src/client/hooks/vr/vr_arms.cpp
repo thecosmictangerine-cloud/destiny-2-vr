@@ -84,6 +84,8 @@
 #include "../graphics/renderer/world_lines.h"
 #include "runtime.h"
 #include "vr_ads.h"
+#include "vr_dual.h"
+#include "vr_frames.h"
 #include "vr_gpu.h"
 #include "vr_math.h"
 #include "vr_two_hand.h"
@@ -238,6 +240,21 @@ struct Grip final {
 };
 Grip g_grip{};
 V3 g_lastCtrlR{};
+
+/**
+ * The right hand's hold on a weapon, kept per weapon for the LEFT hand (dual wield, docs/DUAL-WIELD.md):
+ * the hand in the right controller's frame and every right finger in the hand's frame, taken while the
+ * weapon was in the right hand and at rest. The left hand holds the left weapon as this, mirrored --
+ * the same mirror that places the gun -- so hand and gun agree whatever weapon it is.
+ */
+struct GripSnapshot final {
+    std::uintptr_t key{};
+    Affine hand{};
+    std::array<Affine, kMaxBones> finger{};
+    std::array<bool, kMaxBones> fingerSet{};
+};
+std::array<GripSnapshot, 8> g_snapshots{};
+std::atomic<std::uintptr_t> g_snapshotWanted{0};
 float g_seatError = 0.0F;
 /**
  * The canonical right-hand grip: the hand's rotation in the controller's (forward, left, up)
@@ -486,6 +503,8 @@ V3 solve_joint(const JointLs& ls, const V3& prior) noexcept {
  * exclusively. Leaves the rig invalid -- and the arms to the game -- unless every joint the
  * solver needs is backed by real skin on both sides.
  */
+int g_lastFromSkeleton = 0;
+
 void rebuild_rig() noexcept {
     Rig rig{};
     Labels labels = g_labels;
@@ -494,18 +513,35 @@ void rebuild_rig() noexcept {
         std::swap(labels.side[left], labels.side[right]);
     }
     bool ok = true;
+    // The skeleton's joints in bind space (ARMS.md, solved on the Hunter by both methods to 0.1 mm; every
+    // Guardian's arm pieces share this skeleton). A pair the meshes do not show -- the Warlock's gauntlets
+    // stop at the elbow, the upper arm is the robe's sleeve -- starts from these, and the animation's
+    // least squares (observe) then refines it to the character's own.
+    static const std::array<std::array<V3, 3>, 2> kSkeletonJoints{{
+        {{V3{-0.027F, 0.186F, 1.485F}, V3{0.077F, 0.324F, 1.274F}, V3{0.292F, 0.392F, 1.156F}}},
+        {{V3{-0.027F, -0.186F, 1.485F}, V3{0.077F, -0.324F, 1.274F}, V3{0.292F, -0.392F, 1.156F}}},
+    }};
+    int fromSkeleton = 0;
     for (int s = 0; s < 2; ++s) {
         for (int j = 0; j < 3; ++j) {
             const auto pr = joint_pair(labels.side[static_cast<std::size_t>(s)], j);
             double mass = 0.0;
             V3 joint{};
             if (!pair_joint(pr[0], pr[1], joint, mass)) {
-                ok = false;
-                continue;
+                // Which side is left comes from the hands' bind centroids, which a glove always gives.
+                joint = kSkeletonJoints[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)];
+                ++fromSkeleton;
+                if (g_mass[static_cast<std::size_t>(labels.side[static_cast<std::size_t>(s)].hand)] <= 0.0) {
+                    ok = false;
+                }
             }
             rig.prior[static_cast<std::size_t>(s)][static_cast<std::size_t>(j)] = joint;
         }
     }
+    if (fromSkeleton > 0 && fromSkeleton != g_lastFromSkeleton) {
+        reportf("ev=vr.arms rig joints_from_skeleton=%d (the meshes show no overlap there)", fromSkeleton);
+    }
+    g_lastFromSkeleton = fromSkeleton;
     if (!ok) {
         g_rig = rig;
         return;
@@ -714,9 +750,15 @@ struct Inputs final {
 };
 
 bool sample(Inputs& in) noexcept {
-    xr::frame_sample(in.head, in.left, in.right);
+    // The sample of the frame the GPU is drawing (the frame ledger, named by the world's view): the
+    // palettes are camera-relative, so they must be posed against the very camera of their frame.
+    (void)xr::drawn_sample(in.head, in.left, in.right);
     if (!in.head.valid) {
         return false;
+    }
+    if (frames::tracing()) {
+        const float v[6] = {in.head.offset[0], in.head.offset[1], in.head.offset[2], 0.0F, 0.0F, 0.0F};
+        frames::note(frames::Kind::arms, in.head.frame, v);
     }
     in.bodyYaw = g_bodyYaw.load(std::memory_order_relaxed);
     return true;
@@ -941,6 +983,18 @@ bool ready() noexcept {
            && g_bodyYawValid.load(std::memory_order_relaxed);
 }
 
+namespace {
+
+/**
+ * The right hand's fingers round a gun's grip, relative to the hand frame: the closed fist a free hand
+ * makes in third person (the game's own idle hand there is open). Under g_lock.
+ */
+std::array<Affine, kMaxBones> g_fist{};
+std::array<bool, kMaxBones> g_fistSet{};
+bool g_fistValid = false;
+
+} // namespace
+
 bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
     if (!ready() || bones == nullptr || out == nullptr) {
         return false;
@@ -960,10 +1014,18 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         return false;
     }
 
-    // The body: a frame hung from the neck and turned to the body's heading.
+    // The body: a frame hung from the neck and turned to the body's heading. The neck hangs from the
+    // middle of the head, not from the camera: in alternating-eye stereo the camera is a different eye
+    // every frame, and a body hung from it moved 3 cm sideways from one eye's image to the other's --
+    // the hands stayed on the controllers, so the arms changed shape between the eyes (measured: a
+    // 0.2-0.6 deg vertical disparity on the left forearm, impossible for any real object).
     const V3 f = to_v3(in.head.forward);
     const V3 u = to_v3(in.head.up);
-    const V3 neck = -(f * params.neckFwd) - u * params.neckUp;
+    const V3 eyeL = to_v3(in.head.eyeOffsets[0]);
+    const V3 eyeR = to_v3(in.head.eyeOffsets[1]);
+    const bool eyesKnown = length(eyeR - eyeL) > 1e-4F;
+    const V3 eyeToCentre = eyesKnown ? (eyeL + eyeR) * 0.5F - to_v3(in.head.offset) : V3{};
+    const V3 neck = eyeToCentre - (f * params.neckFwd) - u * params.neckUp;
     const M3 yaw = yaw_matrix(in.bodyYaw);
     const V3 shoulderMid = neck + yaw * V3{params.shoulderFwd, 0.0F, params.shoulderUp};
     const Affine body{yaw, shoulderMid - yaw * rig.shoulderMid};
@@ -1044,8 +1106,12 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
             // Self-seating: how far the drawn right palm is from the controller's grip pose, in
             // the controller's basis, back to the weapon module. Only while the controller is
             // steady: a moving hand puts its own latency into the measurement.
-            const float moved = length(ctrlR.t - g_lastCtrlR);
-            g_lastCtrlR = ctrlR.t;
+            // Measured in the room, not relative to the camera: in alternating-eye stereo the camera
+            // is a different eye every frame, and a camera-relative controller jumps by the whole eye
+            // distance each frame -- which read as a hand never still, and froze every seat.
+            const V3 ctrlRoom = to_v3(in.right.palm);
+            const float moved = length(ctrlRoom - g_lastCtrlR);
+            g_lastCtrlR = ctrlRoom;
             g_ctrlSteady = moved < 0.004F;
             if (moved < 0.004F && atRest) {
                 V3 e = transpose(ctrlR.m) * (palmDrawn[right] - ctrlR.t);
@@ -1127,6 +1193,46 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         }
         ReleaseSRWLockExclusive(&g_lock);
     }
+    // A snapshot of the right hand's hold for the left (dual wield), from a palette with every finger,
+    // at rest, one-handed, with the grip learned.
+    const std::uintptr_t snapKey = g_snapshotWanted.load(std::memory_order_relaxed);
+    if (snapKey != 0 && !inAds && atRest && !twoHanded && boneCount >= rig.fingerSpan && g_grip.valid && in.right.valid) {
+        AcquireSRWLockExclusive(&g_lock);
+        GripSnapshot* slot = nullptr;
+        for (GripSnapshot& s : g_snapshots) {
+            if (s.key == snapKey || (slot == nullptr && s.key == 0)) {
+                slot = &s;
+            }
+        }
+        if (slot == nullptr) {
+            slot = &g_snapshots[0];
+        }
+        *slot = GripSnapshot{};
+        slot->key = snapKey;
+        slot->hand = g_grip.rel;
+        for (std::size_t b = 0; b < boneCount && b < kMaxBones; ++b) {
+            if (rig.seg[b] == segHand && rig.side[b] == right && static_cast<int>(b) != handR) {
+                slot->finger[b] = inverse_rigid(animated[right]) * read_rows(bones + b * 12);
+                slot->fingerSet[b] = true;
+            }
+        }
+        ReleaseSRWLockExclusive(&g_lock);
+        g_snapshotWanted.store(0, std::memory_order_relaxed);
+        reportf("ev=vr.arms grip_snapshot key=%llX hand_t=%.3f,%.3f,%.3f", static_cast<unsigned long long>(snapKey),
+                slot->hand.t.x, slot->hand.t.y, slot->hand.t.z);
+    }
+    // The fist, for third person: the fingers round the gun's grip, at rest and one-handed.
+    if (!inAds && atRest && !twoHanded && boneCount >= rig.fingerSpan && in.right.valid && (frame % 30) == 0) {
+        AcquireSRWLockExclusive(&g_lock);
+        for (std::size_t b = 0; b < boneCount && b < kMaxBones; ++b) {
+            if (rig.seg[b] == segHand && rig.side[b] == right && static_cast<int>(b) != handR) {
+                g_fist[b] = inverse_rigid(animated[right]) * read_rows(bones + b * 12);
+                g_fistSet[b] = true;
+            }
+        }
+        g_fistValid = true;
+        ReleaseSRWLockExclusive(&g_lock);
+    }
     // The foregrip, from the first palette of the frame that carries every finger (the gloves; the
     // gauntlet layers stop at bone 52).
     if (!inAds && boneCount >= rig.fingerSpan && g_foreFrame.exchange(frame, std::memory_order_relaxed) != frame) {
@@ -1146,12 +1252,28 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         target[left] = Affine{r, ctrlL.t - r * palmOffsetL};
     }
 
+    // Dual wield: the left hand holds its own weapon, as the right hand held that weapon, mirrored, and
+    // moves with the gun's kick and reload tilt.
+    std::uintptr_t dualKey = 0;
+    Affine dualMotion{};
+    const GripSnapshot* dualGrip = nullptr;
+    if (leftDriven && dual::left_hold(dualKey, dualMotion)) {
+        for (const GripSnapshot& s : g_snapshots) {
+            if (s.key == dualKey && dualKey != 0) {
+                dualGrip = &s;
+            }
+        }
+        if (dualGrip != nullptr) {
+            target[left] = ctrlL * dualMotion * mirror(dualGrip->hand);
+        }
+    }
+
     // The hold: the left hand on the weapon's handguard, blended in from the controller by the
     // hold's weight. Everything about WHERE comes from this palette -- the learned foregrip carried
     // by the drawn right hand -- so the hand lands on the gun exactly as drawn, whatever frame the
     // weapon's orientation was computed in. Along the handguard it slides to the point nearest
     // the controller, which, with the barrel steered through the left palm, is the palm itself.
-    const float holdW = leftDriven && g_fore.valid ? g_holdW.load(std::memory_order_relaxed) : 0.0F;
+    const float holdW = leftDriven && g_fore.valid && dualGrip == nullptr ? g_holdW.load(std::memory_order_relaxed) : 0.0F;
     const bool holdAim = g_holdAim.load(std::memory_order_relaxed);
     V3 snapPalm{};
     V3 guardA{};
@@ -1235,6 +1357,13 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         }
         case segHand:
             if (s == left && leftDriven && static_cast<int>(b) != labels.side[left].hand) {
+                const int mirrored = rig.mirrorOf[b];
+                if (dualGrip != nullptr && mirrored >= 0 && mirrored < static_cast<int>(kMaxBones)
+                    && dualGrip->fingerSet[static_cast<std::size_t>(mirrored)]) {
+                    // Closed round the left weapon's grip: the right hand's fingers on it, mirrored.
+                    m = target[left] * mirror(dualGrip->finger[static_cast<std::size_t>(mirrored)]);
+                    break;
+                }
                 Affine rel = left_finger(rig, bones, boneCount, animated[right], b, grip);
                 if (holdW > 0.0F && g_fore.fingerSet[b]) {
                     // Around the handguard: the fingers the game wrapped round this weapon's
@@ -1301,6 +1430,270 @@ bool rewrite(const float* bones, std::size_t boneCount, float* out) noexcept {
         ReleaseSRWLockShared(&g_lock);
     }
     g_rewrites.fetch_add(1, std::memory_order_relaxed);
+    return true;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Third person (docs/SWORD-SPARROW.md)
+// ---------------------------------------------------------------------------------------------
+//
+// With a sword, in the Tower or on a sparrow the engine draws no first-person viewmodel: the arms are
+// the Guardian's own gloves and gauntlets -- the very meshes the viewmodel uses, on the same 72-bone
+// skeleton, in the same bind space (2026-10-18 captures) -- skinned by world-space palettes. vr_body.cpp
+// hands them here made camera-relative, so the same rig, the same IK and the same hands pose them.
+
+namespace {
+
+std::atomic<std::uint64_t> g_freeRewrites{0};
+/** The blade's trim about the controller's left axis (radians, positive raises the tip). */
+std::atomic<float> g_swordPitch{0.0F};
+
+/** The rotation taking unit `a` onto unit `b`, the shortest way. */
+M3 rotation_between(const V3& a, const V3& b) noexcept {
+    const V3 axis = cross(a, b);
+    const float s = length(axis);
+    const float c = dot(a, b);
+    if (s < 1e-6F) {
+        return c > 0.0F ? M3{} : axis_angle(normalize(cross(a, std::fabs(a.x) < 0.9F ? V3{1, 0, 0} : V3{0, 1, 0})), 3.14159265F);
+    }
+    return axis_angle(axis * (1.0F / s), std::atan2(s, c));
+}
+
+/** The right hand's hold in its controller's frame: the one learned on the guns, else the canonical one. */
+M3 right_hold() noexcept {
+    if (g_grip.valid) {
+        return g_grip.rel.m;
+    }
+    // ARMS.md: the hand cannon's, at rest, in the controller's (forward, left, up) frame.
+    return mat_of({0.0836F, -0.3577F, -0.0256F, 0.9297F});
+}
+
+/**
+ * Where a free hand goes (the frame at the bind wrist, axes of the hand): its palm on the controller's
+ * grip pose, turned the way the right hand holds a gun (mirrored for the left); the sword hand then
+ * swung about the palm so the blade lies along the fist's axis. Deterministic in the sample, so the
+ * sword palette (drawn apart, perhaps before the gloves) gets the very hand the gloves get.
+ */
+Affine free_target(const Rig& rig, std::size_t s, const FreeContext& ctx) noexcept {
+    const xr::HandPose& hand = s == right ? ctx.right : ctx.left;
+    const Affine ctrl = controller_frame(hand, ctx.head);
+    const M3 hold = right_hold();
+    M3 r = s == right ? ctrl.m * hold : ctrl.m * mirror(Affine{hold, V3{}}).m;
+    const int other = 1 - static_cast<int>(s);
+    const float twoHand = ctx.swordValid ? std::clamp(ctx.twoHand, 0.0F, 1.0F) : 0.0F;
+    if (ctx.swordValid && ctx.swordHand == static_cast<int>(s)) {
+        const Affine g = s == right ? ctx.sword : mirror(ctx.sword);
+        const V3 bladeLocal = normalize(g.m * V3{0.0F, 0.0F, 1.0F});
+        V3 want = normalize(to_v3(hand.gripForward), to_v3(hand.forward));
+        const float pitch = g_swordPitch.load(std::memory_order_relaxed);
+        if (pitch != 0.0F) {
+            want = axis_angle(ctrl.m.c[1], -pitch) * want;
+        }
+        if (twoHand > 0.0F) {
+            // Two hands on the hilt: the blade runs from the lower hand through this one.
+            const xr::HandPose& support = other == 1 ? ctx.right : ctx.left;
+            const V3 line = to_v3(hand.palm) - to_v3(support.palm);
+            if (length(line) > 0.04F) {
+                want = normalize(want * (1.0F - twoHand) + normalize(line) * twoHand, want);
+            }
+        }
+        r = orthonormalize(rotation_between(normalize(r * bladeLocal), want) * r);
+    } else if (twoHand > 0.0F && ctx.swordHand == other) {
+        // The support hand: closed round the hilt below the sword hand, on the line the blade runs along,
+        // turned like the sword hand's grip mirrored and laid along the same axis.
+        const xr::HandPose& main = other == 1 ? ctx.right : ctx.left;
+        const Affine mainCtrl = controller_frame(main, ctx.head);
+        const V3 axis = normalize(to_v3(main.palm) - to_v3(hand.palm), normalize(to_v3(main.gripForward)));
+        const float along = std::clamp(dot(mainCtrl.t - ctrl.t, axis), 0.08F, 0.22F);
+        const V3 onHilt = mainCtrl.t - axis * along;
+        const V3 tubeNow = normalize(to_v3(hand.gripForward), to_v3(hand.forward));
+        const M3 held = orthonormalize(rotation_between(tubeNow, axis) * r);
+        const Affine free{r, ctrl.t - r * (rig.palm[s] - rig.w[s])};
+        const Affine onIt{held, onHilt - held * (rig.palm[s] - rig.w[s])};
+        return blend_about(free, onIt, twoHand, rig.palm[s] - rig.w[s]);
+    }
+    return Affine{r, ctrl.t - r * (rig.palm[s] - rig.w[s])};
+}
+
+/** The closed hand's finger `b` relative to the hand frame: the fist from the guns, else the game's own. */
+Affine closed_finger(const Rig& rig, const float* bones, std::size_t boneCount, const Affine& gameRight,
+                     std::size_t b, std::size_t side) noexcept {
+    const int rb = side == right ? static_cast<int>(b) : rig.mirrorOf[b];
+    if (rb < 0 || static_cast<std::size_t>(rb) >= boneCount) {
+        return Affine{M3{}, -rig.w[side]};
+    }
+    const auto r = static_cast<std::size_t>(rb);
+    const Affine rel = g_fistValid && g_fistSet[r] ? g_fist[r] : inverse_rigid(gameRight) * read_rows(bones + r * 12);
+    return side == right ? rel : mirror(rel);
+}
+
+} // namespace
+
+bool free_ready() noexcept {
+    return g_enabled.load(std::memory_order_relaxed) && g_rig.valid && enabled() && xr::active();
+}
+
+bool free_hand_bone(const FreeContext& ctx, int side, Affine& out) noexcept {
+    if (!free_ready() || side < 0 || side > 1 || !ctx.head.valid) {
+        return false;
+    }
+    AcquireSRWLockShared(&g_lock);
+    const auto s = static_cast<std::size_t>(side);
+    const Affine t = free_target(g_rig, s, ctx);
+    out = Affine{t.m, t.t - t.m * g_rig.w[s]};
+    ReleaseSRWLockShared(&g_lock);
+    return true;
+}
+
+bool hand_bones(int& leftHand, int& rightHand) noexcept {
+    AcquireSRWLockShared(&g_lock);
+    leftHand = g_labels.side[left].hand;
+    rightHand = g_labels.side[right].hand;
+    const bool ok = g_rig.valid;
+    ReleaseSRWLockShared(&g_lock);
+    return ok;
+}
+
+bool palm_points(const float* bones, std::size_t boneCount, V3& leftPalm, V3& rightPalm) noexcept {
+    AcquireSRWLockShared(&g_lock);
+    const int hl = g_labels.side[left].hand;
+    const int hr = g_labels.side[right].hand;
+    const bool ok = g_rig.valid && hl >= 0 && hr >= 0 && static_cast<std::size_t>(std::max(hl, hr)) < boneCount;
+    if (ok) {
+        leftPalm = read_rows(bones + static_cast<std::size_t>(hl) * 12) * g_rig.palm[left];
+        rightPalm = read_rows(bones + static_cast<std::size_t>(hr) * 12) * g_rig.palm[right];
+    }
+    ReleaseSRWLockShared(&g_lock);
+    return ok;
+}
+
+bool rewrite_free(const float* bones, std::size_t boneCount, float* out, const FreeContext& ctx) noexcept {
+    if (!free_ready() || bones == nullptr || out == nullptr || !ctx.head.valid) {
+        return false;
+    }
+    AcquireSRWLockShared(&g_lock);
+    const Rig& rig = g_rig;
+    const Labels& labels = g_labels;
+    const Params params = g_params;
+    const int handL = labels.side[left].hand;
+    const int handR = labels.side[right].hand;
+    if (!rig.valid || static_cast<std::size_t>(std::max(handL, handR)) >= boneCount) {
+        ReleaseSRWLockShared(&g_lock);
+        return false;
+    }
+    // The body, hung from the neck exactly as in first person, facing the context's heading.
+    const V3 f = to_v3(ctx.head.forward);
+    const V3 u = to_v3(ctx.head.up);
+    const V3 eyeL = to_v3(ctx.head.eyeOffsets[0]);
+    const V3 eyeR = to_v3(ctx.head.eyeOffsets[1]);
+    const bool eyesKnown = length(eyeR - eyeL) > 1e-4F;
+    const V3 eyeToCentre = eyesKnown ? (eyeL + eyeR) * 0.5F - to_v3(ctx.head.offset) : V3{};
+    const V3 neck = eyeToCentre - (f * params.neckFwd) - u * params.neckUp;
+    const M3 yaw = yaw_matrix(ctx.bodyYaw);
+    const V3 shoulderMid = neck + yaw * V3{params.shoulderFwd, 0.0F, params.shoulderUp};
+    const Affine body{yaw, shoulderMid - yaw * rig.shoulderMid};
+
+    // The game's own hands (a sword in the right one, the handlebars, an idle pose).
+    std::array<Affine, 2> animated{};
+    for (std::size_t s = 0; s < 2; ++s) {
+        const Affine m = read_rows(bones + static_cast<std::size_t>(labels.side[s].hand) * 12);
+        animated[s] = Affine{orthonormalize(m.m), m * rig.w[s]};
+    }
+    std::array<Affine, 2> target{};
+    for (std::size_t s = 0; s < 2; ++s) {
+        target[s] = free_target(rig, s, ctx);
+        const float w = std::clamp(ctx.bar[s], 0.0F, 1.0F);
+        if (w > 0.0F) {
+            // On the handlebar: the game's own hand there, blended in about the palm.
+            target[s] = blend_about(target[s], animated[s], w, rig.palm[s] - rig.w[s]);
+        }
+    }
+    const float gripL = std::clamp(ctx.left.valid ? xr::input_state().gripL : 0.0F, 0.0F, 1.0F);
+    const float gripR = std::clamp(ctx.right.valid ? xr::input_state().gripR : 0.0F, 0.0F, 1.0F);
+
+    // Solve both arms (as in first person).
+    std::array<Affine, 2> upperT{};
+    std::array<Affine, 2> foreT{};
+    std::array<V3, 2> foreAxis{};
+    std::array<V3, 2> elbowT{};
+    std::array<float, 2> twist{};
+    std::array<float, 2> stretch{};
+    for (std::size_t s = 0; s < 2; ++s) {
+        const V3 outward = V3{params.pole.x, s == left ? params.pole.y : -params.pole.y, params.pole.z};
+        const V3 pole = yaw * outward;
+        const V3 shoulder = body * rig.s[s];
+        const V3 wrist = target[s].t;
+        const IkResult ik = solve_two_bone(shoulder, wrist, rig.l1[s], rig.l2[s], pole, params.stretchMax);
+        const V3 dh = normalize(wrist - ik.s);
+        V3 p = pole - dh * dot(pole, dh);
+        p = normalize(p, normalize(cross(dh, V3{0, 0, 1}), V3{0, 1, 0}));
+        const V3 n = normalize(cross(p, dh), V3{0, 0, 1});
+        const M3 upperRot = frame_from(ik.e - ik.s, n) * transpose(rig.upperBind[s]);
+        upperT[s] = Affine{upperRot, ik.s - upperRot * rig.s[s]};
+        if (ik.k > 1.0001F) {
+            upperT[s] = stretch_about(ik.s, normalize(ik.e - ik.s), ik.k) * upperT[s];
+        }
+        const M3 foreRot = frame_from(wrist - ik.e, n) * transpose(rig.foreBind[s]);
+        foreT[s] = Affine{foreRot, ik.e - foreRot * rig.e[s]};
+        foreAxis[s] = normalize(wrist - ik.e);
+        elbowT[s] = ik.e;
+        twist[s] = wrap(twist_about(target[s].m * transpose(foreRot), foreAxis[s]));
+        stretch[s] = ik.k;
+    }
+
+    for (std::size_t b = 0; b < boneCount && b < kMaxBones; ++b) {
+        const float* in4 = bones + b * 12;
+        float* out4 = out + b * 12;
+        const auto s = static_cast<std::size_t>(rig.side[b] < 0 ? 0 : rig.side[b]);
+        Affine m{};
+        switch (rig.seg[b]) {
+        case segBody: m = body; break;
+        case segUpper: m = upperT[s]; break;
+        case segFore:
+        case segForeTwist: {
+            const M3 r = axis_angle(foreAxis[s], twist[s] * rig.twist[b]);
+            m = rotate_about(r, elbowT[s]) * foreT[s];
+            if (stretch[s] > 1.0001F) {
+                m = stretch_about(elbowT[s], foreAxis[s], stretch[s]) * m;
+            }
+            break;
+        }
+        case segHand: {
+            const int handBone = labels.side[s].hand;
+            if (static_cast<int>(b) == handBone) {
+                m = Affine{target[s].m, target[s].t - target[s].m * rig.w[s]};
+                break;
+            }
+            Affine rel{};
+            if (ctx.swordValid && ctx.swordHand == static_cast<int>(s)) {
+                // Round the hilt: the game's own right hand on it (mirrored for the left).
+                const int rb = s == right ? static_cast<int>(b) : rig.mirrorOf[b];
+                if (rb >= 0 && static_cast<std::size_t>(rb) < boneCount) {
+                    rel = inverse_rigid(animated[right]) * read_rows(bones + static_cast<std::size_t>(rb) * 12);
+                    rel = s == right ? rel : mirror(rel);
+                } else {
+                    rel = Affine{M3{}, -rig.w[s]};
+                }
+            } else {
+                // Free: open to closed with the hand's own grip button; on the handlebar, the game's.
+                const Affine open{M3{}, -rig.w[s]};
+                const float curl = std::max(s == right ? gripR : gripL,
+                                            ctx.swordValid && ctx.swordHand == 1 - static_cast<int>(s) ? ctx.twoHand : 0.0F);
+                rel = blend_about(open, closed_finger(rig, bones, boneCount, animated[right], b, s), curl, rig.cen[b]);
+                const float w = std::clamp(ctx.bar[s], 0.0F, 1.0F);
+                if (w > 0.0F) {
+                    rel = blend_about(rel, inverse_rigid(animated[s]) * read_rows(in4), w, rig.cen[b]);
+                }
+            }
+            m = target[s] * rel;
+            break;
+        }
+        default: std::memcpy(out4, in4, sizeof(float) * 12); continue;
+        }
+        write_rows(m, out4);
+    }
+    ReleaseSRWLockShared(&g_lock);
+    g_freeRewrites.fetch_add(1, std::memory_order_relaxed);
     return true;
 }
 
@@ -1386,6 +1779,11 @@ void poll_commands() noexcept {
             rebuild_rig();
         } else if (std::strcmp(verb, "relearn") == 0) {
             g_grip = Grip{};
+        } else if (std::strcmp(verb, "sword") == 0 && std::strcmp(a, "pitch") == 0
+                   && sscanf_s(line.data(), "%*s %*s %f", &v[0]) == 1) {
+            // sword pitch <deg>: the blade raised (+) or lowered from the fist's axis, live.
+            g_swordPitch.store(std::clamp(v[0], -60.0F, 60.0F) * 0.0174533F, std::memory_order_relaxed);
+            reportf("ev=vr.arms sword pitch_deg=%.1f", v[0]);
         } else if (std::strcmp(verb, "canon") == 0 && n >= 2) {
             // canon learn|on|off|reset|aim <deg>
             if (std::strcmp(a, "learn") == 0) {
@@ -1689,7 +2087,8 @@ void update_hold() noexcept {
 
     // Nothing to hold (arms off, rig unknown, a controller missing): every squeeze is the grenade,
     // which is exactly what the left grip did before the hold existed.
-    const bool live = hp.on && ready() && in.valid && l.valid && r.valid;
+    // In dual wield the left hand holds a weapon of its own: there is no second hand for this one.
+    const bool live = hp.on && ready() && in.valid && l.valid && r.valid && !dual::dual();
     const bool zoneKnown = live && foreKnown;
     const bool zoneOk = live && foreOk;
     const bool support = length(fcNow) < hp.pistol;
@@ -1843,6 +2242,12 @@ void set_grip_grenade(bool on) noexcept {
 
 bool holding() noexcept {
     return g_holdW.load(std::memory_order_relaxed) > 0.0F;
+}
+
+void snapshot_grip(std::uintptr_t key) noexcept {
+    if (key != 0) {
+        g_snapshotWanted.store(key, std::memory_order_relaxed);
+    }
 }
 
 } // namespace sunrise::client::hooks::vr::arms

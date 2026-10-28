@@ -1,7 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+
+#include "vr_math.h"
+#include "xr_runtime.h"
 
 struct ID3D11Device;
 struct ID3D11DeviceContext;
@@ -69,5 +73,55 @@ void set_grip_grenade(bool on) noexcept;
 
 /** @return True while the left hand holds the weapon, or is still letting go of it. Any thread. */
 [[nodiscard]] bool holding() noexcept;
+
+/**
+ * Keeps the right hand's hold on the weapon in hand -- the hand in the controller's frame and its
+ * fingers -- as the hold the LEFT hand will have on that weapon in dual wield (mirrored), at the next
+ * palette drawn at rest. Any thread.
+ */
+void snapshot_grip(std::uintptr_t key) noexcept;
+
+/**
+ * Everything a third-person pose needs (docs/SWORD-SPARROW.md): the sample of the frame the palette
+ * belongs to, camera-relative like the palette handed in, and what each hand holds.
+ */
+struct FreeContext final {
+    xr::HeadPose head{};
+    xr::HandPose left{};
+    xr::HandPose right{};
+    /** The heading the shoulders face (the head's on foot, the vehicle's on a vehicle). */
+    float bodyYaw{};
+    /** Which hand holds the sword: -1 none, 0 left, 1 right. */
+    int swordHand{-1};
+    /** The sword relative to the game's RIGHT hand bone, as the game holds it (palette space). */
+    bool swordValid{};
+    math::Affine sword{};
+    /** Per hand, how far it is on the handlebar the game's own hand holds (0..1). */
+    std::array<float, 2> bar{};
+    /**
+     * The other hand on the sword's hilt, below the sword hand (0..1, blended): the blade then lies along
+     * the line from it to the sword hand, and it closes round the hilt there.
+     */
+    float twoHand{};
+};
+
+/** @return True when rewrite_free() can pose anything: the rig learned (in first person), VR running. */
+[[nodiscard]] bool free_ready() noexcept;
+
+/**
+ * Poses a third-person arm palette (gloves or gauntlets of the Guardian's own body, made camera-
+ * relative by the caller): each hand on its controller -- the sword hand with the blade along the
+ * fist's axis, a hand on the handlebar where the game put it -- elbows solved, nothing learned.
+ */
+[[nodiscard]] bool rewrite_free(const float* bones, std::size_t boneCount, float* out, const FreeContext& ctx) noexcept;
+
+/** The hand bone (palette matrix, camera-relative) rewrite_free() gives `side` (0 left, 1 right). */
+[[nodiscard]] bool free_hand_bone(const FreeContext& ctx, int side, math::Affine& out) noexcept;
+
+/** The palm centres of a third-person arm palette, as posed (palette space). */
+[[nodiscard]] bool palm_points(const float* bones, std::size_t boneCount, math::V3& left, math::V3& right) noexcept;
+
+/** The bind-space wrist joints and the hand bone indices (for vr_body.cpp). */
+[[nodiscard]] bool hand_bones(int& left, int& right) noexcept;
 
 } // namespace sunrise::client::hooks::vr::arms

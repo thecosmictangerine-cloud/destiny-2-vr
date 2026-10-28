@@ -75,6 +75,12 @@ resolve_state(const state::activity::SessionBinding& binding,
     output.timeBase = binding.timeOrigin;
     output.spawnSetHash =
         state::activity::destination::attachable_spawn_set_hash(selection, fallback.spawnSetHash);
+    // The mission program owns its spawn set. A manual launch pick still wins over it.
+    const std::uint32_t declaredSpawn =
+        state::activity::membership::declared_spawn_set(binding.sessionId);
+    if (declaredSpawn != 0 && !selection.hasSpawnSetOverride) {
+        output.spawnSetHash = declaredSpawn;
+    }
 
     // The extracted layout wins where the packages carry one. The count and the output array must
     // come from the same source. A count from one and states from another is how uniform values
@@ -86,8 +92,12 @@ resolve_state(const state::activity::SessionBinding& binding,
         std::copy(
             layout.bubbleStates.begin(), layout.bubbleStates.end(), output.bubbleStates.begin());
         output.hasSliceSet = true;
-        output.sliceSetIndex =
-            arrival_slice_set(defaults.defaultDestination, selection, name, layout);
+        output.sliceSetIndex = arrival_slice_set(
+            defaults.defaultDestination,
+            selection,
+            name,
+            layout,
+            state::activity::membership::declared_initial_region(binding.sessionId));
         return true;
     }
     output.bubbleCount = fallback.bubbleCount;

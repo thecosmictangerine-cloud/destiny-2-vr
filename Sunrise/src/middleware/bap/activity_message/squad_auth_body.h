@@ -34,18 +34,23 @@ inline constexpr std::size_t kSpawnReferenceBitCount = 55;
 inline constexpr std::size_t kSpawnReferenceCount = 2;
 /** Exact nested field-5 payload: lane selector plus four actor-definition profile values. */
 inline constexpr std::size_t kAuthoredProfileBitCount = 13;
+/** A present `.10` destination ClientRef and a present `.17` 31-bit request revision. */
+inline constexpr std::size_t kDestinationBitCount = 55 + 31;
 /**
  * Exact meaningful bit count for one body carrying this many requested counts.
  * It lives here so the sum has one home. A second copy in the roster encoder drifted from this
  * one and refused every squad body Sunrise sent; that copy is gone.
  */
-[[nodiscard]] constexpr std::size_t exact_body_bit_count(std::size_t counts) noexcept {
+[[nodiscard]] constexpr std::size_t exact_body_bit_count(std::size_t counts,
+                                                         bool destination = false) noexcept {
     return kBaseBitCount + kAuthoredProfileBitCount + kSpawnReferenceBitCount * kSpawnReferenceCount
-           + kRequestedCountBitCount * counts + kNameHashBitCount;
+           + kRequestedCountBitCount * counts + kNameHashBitCount
+           + (destination ? kDestinationBitCount : 0);
 }
 
 /** Buffer one squad body needs at the full requested-count length. */
-inline constexpr std::size_t kMaximumBitCount = exact_body_bit_count(kMaximumRequestedCountLength);
+inline constexpr std::size_t kMaximumBitCount =
+    exact_body_bit_count(kMaximumRequestedCountLength, true);
 inline constexpr std::size_t kMaximumByteCount = (kMaximumBitCount + 7) / 8;
 /** A retained body may carry the objective fields too, up to 1,313 bits. */
 inline constexpr std::size_t kMaximumRetainedBitCount = 1'313;
@@ -69,6 +74,18 @@ struct GenerationGuard final {
     bool hasLast{};
 };
 
+/** The type-1 squad that member actor-spawn actions fill; the client reads it from `.10`. */
+struct Destination final {
+    std::uint32_t registryKey{};
+    std::uint16_t slotIndex{};
+};
+
+/** A type-66 spawn rule of the same object; the client uses it instead of the package rule. */
+struct SpawnRule final {
+    std::uint32_t registryKey{};
+    std::uint16_t slotIndex{};
+};
+
 /** One canonical activity-local squad request. Zero counts select native actor destruction. */
 struct Preset final {
     std::span<const std::int32_t> requestedCounts{};
@@ -77,6 +94,11 @@ struct Preset final {
     std::optional<std::uint32_t> nameHash{};
     /** Actor-definition bytes +56..+59; field 5.0 remains the exact candidate lane zero. */
     std::array<std::int8_t, 4> authoredProfile{};
+    /** Sent as `.10` with `.17` equal to the generation; absent leaves both fields out. */
+    std::optional<Destination> destination{};
+    /** Sent as `.12`, the rule reference the point resolver reads at +0xA0; absent keeps the
+     * package rule. */
+    std::optional<SpawnRule> spawnRule{};
 };
 
 /** Finds the next positive 31-bit spawn generation without wrapping. */

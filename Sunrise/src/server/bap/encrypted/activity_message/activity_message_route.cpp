@@ -442,6 +442,8 @@ bool process(const ActivityClientBinding& binding,
     case IngressAdapter::authorityAbdicate:
         return prepare_authority_abdication(
             binding, rosterDecode, adapter, request, plan, hasTransaction);
+    case IngressAdapter::peerLeave:
+        return prepare_peer_leave(binding, rosterDecode, adapter, request, plan, hasTransaction);
     case IngressAdapter::authorityRequestPurge:
         return prepare_authority_purge(
             binding, rosterDecode, adapter, request, plan, hasTransaction);

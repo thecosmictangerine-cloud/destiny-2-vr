@@ -47,10 +47,10 @@ constexpr std::size_t kMaximumPaddingBitCount = 7;
     std::uint64_t stateWire = 0;
     std::uint64_t token = 0;
     std::uint64_t sliceSetWire = 0;
-    std::uint64_t sliceSetHash = 0;
+    std::uint64_t spawnSetHash = 0;
     TeleportState teleport{};
     if (!reader.read(kStateBitWidth, stateWire) || !reader.read(8, token)
-        || !reader.read(kSliceSetBitWidth, sliceSetWire) || !reader.read(32, sliceSetHash)
+        || !reader.read(kSliceSetBitWidth, sliceSetWire) || !reader.read(32, spawnSetHash)
         || !reader.skip(64)) {
         return false;
     }
@@ -58,7 +58,7 @@ constexpr std::size_t kMaximumPaddingBitCount = 7;
         static_cast<std::int8_t>(static_cast<std::int32_t>(stateWire) - kSignedFieldBias);
     teleport.token = static_cast<std::uint8_t>(token);
     teleport.sliceSetIndex = static_cast<std::int32_t>(sliceSetWire) - kSignedFieldBias;
-    teleport.sliceSetHash = static_cast<std::uint32_t>(sliceSetHash);
+    teleport.spawnSetHash = static_cast<std::uint32_t>(spawnSetHash);
     update.teleport = teleport;
     update.hasTeleport = true;
     return true;

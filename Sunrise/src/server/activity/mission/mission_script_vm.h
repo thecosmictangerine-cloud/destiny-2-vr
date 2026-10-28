@@ -9,6 +9,7 @@
 #include "../../../state/activity_sdk/format.h"
 #include "../host_runtime.h"
 #include "mission_script_catalog_sdk.h"
+#include "mission_script_ghost_sense.h"
 #include "mission_script_manifest_sdk.h"
 #include "mission_script_world_sdk.h"
 
@@ -32,9 +33,9 @@ inline constexpr std::size_t kSquadMemberCapacity = 15;
 /** Script source is bounded before it reaches the parser. */
 inline constexpr std::size_t kSourceByteCapacity = 128U * 1024U;
 /** One callback is stopped after this many approximate VM instructions. */
-inline constexpr std::uint32_t kInstructionBudget = 100'000;
+inline constexpr std::uint32_t kInstructionBudget = 5'000'000;
 /** Generated mission modules are large declarations and execute only while a VM opens. */
-inline constexpr std::uint32_t kInitializationInstructionBudget = 2'000'000;
+inline constexpr std::uint32_t kInitializationInstructionBudget = 100'000'000;
 /** Stable storage holds everything but the arena block, which the open program owns. */
 inline constexpr std::size_t kVmStorageByteCapacity = 512U * 1024U;
 
@@ -88,6 +89,10 @@ struct SlotDefinition final {
     std::uint32_t senseSchema{};
     std::uint32_t authSchema{};
     std::uint32_t flags{};
+    /** FNV-1 of the slot name, the hash the packages key the slot by. */
+    std::uint32_t nameHash{};
+    /** Slice-set hash of the object's bubble in this scenario, or zero when unknown. */
+    std::uint32_t bubbleHash{};
 };
 
 /**
@@ -128,6 +133,35 @@ struct PerformanceStateDefinition final {
     std::uint32_t nameHash{};
     /** Distinct state names every member of the target squad declares. */
     std::uint32_t stateCount{};
+};
+
+using ActorSequenceOwner = state::activity::mission::ActorSequenceOwner;
+
+/** One extracted sequence entry; unsupported native kinds remain readable. */
+struct ActorSequenceDefinition final {
+    std::string_view id{};
+    std::string_view name{};
+    std::string_view symbol{};
+    std::string_view sourcePath{};
+    std::uint32_t catalogRow{};
+    std::uint32_t keyHash{};
+    std::uint32_t kind{};
+    std::uint32_t resourceTag{};
+    std::uint32_t tableIndex{};
+    std::uint32_t ordinal{};
+    std::uint32_t sourceOffset{};
+    bool playable{};
+};
+
+/** These callbacks reread the exact actor owner before exposing or playing a value. */
+struct ActorSequenceApi final {
+    const void* context{};
+    bool (*owner)(const void*, std::uint32_t slotRow, ActorSequenceOwner&) noexcept {};
+    std::size_t (*count)(const void*, const ActorSequenceOwner&) noexcept {};
+    bool (*resolve)(const void*,
+                    const ActorSequenceOwner&,
+                    std::uint32_t ordinal,
+                    ActorSequenceDefinition&) noexcept {};
 };
 
 /** One peer session bound to this destination, as the roster currently holds it. */
@@ -335,9 +369,36 @@ using ResolveActivityBindingLocator = bool (*)(const void* context,
                                                ActivityBindingLocatorDefinition& output) noexcept;
 using DefinitionCount = std::size_t (*)(const void* context) noexcept;
 
+/** Exact authored task group with its objective's native ClientRef. */
+struct CombatObjectiveGroupDefinition final {
+    std::uint32_t slotRow{};
+    std::uint32_t groupIndex{};
+    std::uint32_t registryKey{};
+    std::uint16_t slotIndex{};
+};
+
 /** Native SDK/live projection used by the sandbox; no borrowed pointer is script-visible. */
 struct DefinitionApi final {
     const void* context{};
+    bool (*resolveCombatObjectiveGroup)(const void* context,
+                                        std::uint32_t slotRow,
+                                        std::uint32_t groupIndex,
+                                        CombatObjectiveGroupDefinition& output) noexcept {};
+    bool (*resolveActorAbility)(const void* context,
+                                std::uint32_t slotRow,
+                                std::uint32_t groupHash,
+                                std::uint32_t requestHash) noexcept {};
+    bool (*resolveActorAbilityTarget)(const void* context,
+                                      std::uint32_t slotRow,
+                                      std::uint32_t selectorIndex) noexcept {};
+    bool (*resolveActorProgramSource)(const void* context,
+                                      std::uint32_t slotRow,
+                                      std::uint32_t& squadRow) noexcept {};
+    bool (*resolveSceneSpawnSources)(const void* context,
+                                     std::uint32_t occurrenceRow,
+                                     std::uint32_t slotRow,
+                                     std::span<std::uint32_t> sources,
+                                     std::size_t& count) noexcept {};
     ResolveSquadRow resolveSquadRow{};
     ResolveSquadId resolveSquadId{};
     ResolveSceneRow resolveSceneRow{};
@@ -351,6 +412,7 @@ struct DefinitionApi final {
     ResolveDirectiveElementRow resolveDirectiveElementRow{};
     ResolveDirectiveElement resolveDirectiveElement{};
     ResolvePerformanceState resolvePerformanceState{};
+    ActorSequenceApi actorSequences{};
     ResolveActivityMessageRow resolveActivityMessageRow{};
     ResolveActivityMessageId resolveActivityMessageId{};
     ResolveActivityMessageName resolveActivityMessageName{};
@@ -443,6 +505,10 @@ private:
     dispatch(Vm&, const host::Event&, const host::ClientMessageSnapshot*, std::uint64_t) noexcept;
     friend bool handles_event(const Vm&, host::EventKind) noexcept;
     friend bool initial_state_region(const Vm&, std::int32_t&) noexcept;
+    friend bool initial_state_spawn_set(const Vm&, std::uint32_t&) noexcept;
+    friend bool initial_state_omissions(const Vm&,
+                                        std::span<state::activity::mission::MissionSeedOmission>,
+                                        std::size_t&) noexcept;
     friend bool pending_intent(const Vm&, Intent&) noexcept;
     friend bool snapshot_intents(const Vm&, std::vector<Intent>&) noexcept;
     friend bool snapshot_durable_state(const Vm&,
@@ -489,6 +555,20 @@ rebind(Vm& vm, const ProgramIdentity& identity, const DefinitionApi& definitions
  * dropped, which is the same bound the roster itself carries.
  */
 void publish_peers(Vm& vm, std::span<const PeerSession> peers) noexcept;
+/** Publishes the durable native attempt before any script callback reads it. */
+void publish_attempt(Vm& vm, state::activity::mission::AttemptState attempt) noexcept;
+/** Copies the latest native device requests without exposing their sequences to Lua. */
+[[nodiscard]] bool
+publish_device_requests(Vm& vm,
+                        std::span<const state::activity::mission::DeviceRequestReport> requests,
+                        std::uint64_t currentActivityClientGeneration) noexcept;
+
+/** Copies the retained Ghost-link levels so a reloaded program can re-read them. */
+void publish_ghost_levels(Vm& vm, std::span<const GhostLinkRow> levels) noexcept;
+
+/** Copies durable native population facts before any callback reads a cohort. */
+[[nodiscard]] bool publish_populations(
+    Vm& vm, std::span<const state::activity::mission::SquadPopulation> populations) noexcept;
 /** Runs the optional on_start(context, state) transaction. */
 [[nodiscard]] CallStatus start(Vm& vm, std::uint64_t now = 0) noexcept;
 /**
@@ -505,6 +585,13 @@ void publish_peers(Vm& vm, std::span<const PeerSession> peers) noexcept;
 [[nodiscard]] bool handles_event(const Vm& vm, host::EventKind kind) noexcept;
 /** Reads the optional effective region captured from program.initial_state.region_index. */
 [[nodiscard]] bool initial_state_region(const Vm& vm, std::int32_t& output) noexcept;
+/** Reads the optional spawn set captured from program.initial_state.spawn_set_hash. */
+[[nodiscard]] bool initial_state_spawn_set(const Vm& vm, std::uint32_t& output) noexcept;
+/** Copies the objects program.initial_state.omit keeps out of every seed; count may be zero. */
+[[nodiscard]] bool
+initial_state_omissions(const Vm& vm,
+                        std::span<state::activity::mission::MissionSeedOmission> output,
+                        std::size_t& count) noexcept;
 /** Copies the oldest committed action without consuming it. */
 [[nodiscard]] bool pending_intent(const Vm& vm, Intent& output) noexcept;
 /** Copies the complete ordered outbox without consuming an action. */

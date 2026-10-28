@@ -438,6 +438,66 @@ bool render_mission(const Source& source,
     squadConstants.append("}\n");
     sceneConstants.append("}\n");
     taskConstants.append("}\n");
+    std::string taskGroupConstants = "mission.TaskGroup = {\n";
+    for (const std::uint32_t slot : slots) {
+        const auto found = index.combatGroupsBySlot.find(slot);
+        const auto key = slotKeyByRow.find(slot);
+        if (found == index.combatGroupsBySlot.end() || key == slotKeyByRow.end()) {
+            continue;
+        }
+        taskGroupConstants.append("    ");
+        taskGroupConstants.append(key->second);
+        taskGroupConstants.append(" = {\n");
+        for (const std::uint32_t row : found->second) {
+            const format::CombatObjectiveGroup& group = source.combatObjectiveGroups[row];
+            taskGroupConstants.append("        GROUP_");
+            append_uint(taskGroupConstants, group.groupIndex);
+            taskGroupConstants.append(" = { slot_row = ");
+            append_uint(taskGroupConstants, group.slotIndex);
+            taskGroupConstants.append(", group_index = ");
+            append_uint(taskGroupConstants, group.groupIndex);
+            taskGroupConstants.append(" },\n");
+        }
+        taskGroupConstants.append("    },\n");
+    }
+    taskGroupConstants.append("}\n");
+    std::string abilityConstants = "mission.ActorAbility = {\n";
+    for (const std::uint32_t slot : slots) {
+        const auto found = index.abilitiesBySlot.find(slot);
+        const auto key = slotKeyByRow.find(slot);
+        if (found == index.abilitiesBySlot.end() || key == slotKeyByRow.end()) {
+            continue;
+        }
+        abilityConstants.append("    ").append(key->second).append(" = {\n");
+        std::uint32_t previousGroup = 0;
+        for (const std::uint32_t row : found->second) {
+            const format::ActorAbility& ability = source.actorAbilities[row];
+            std::array<char, 32> symbol{};
+            if (ability.groupHash != previousGroup) {
+                if (previousGroup != 0) {
+                    abilityConstants.append("        },\n");
+                }
+                std::snprintf(symbol.data(), symbol.size(), "GROUP_%08X", ability.groupHash);
+                abilityConstants.append("        ").append(symbol.data()).append(" = {\n");
+                previousGroup = ability.groupHash;
+            }
+            std::snprintf(symbol.data(), symbol.size(), "KEY_%08X", ability.requestHash);
+            abilityConstants.append("            ")
+                .append(symbol.data())
+                .append(" = { slot_row = ");
+            append_uint(abilityConstants, ability.slotIndex);
+            abilityConstants.append(", group_hash = ");
+            append_hex(abilityConstants, ability.groupHash);
+            abilityConstants.append(", request_hash = ");
+            append_hex(abilityConstants, ability.requestHash);
+            abilityConstants.append(" },\n");
+        }
+        if (previousGroup != 0) {
+            abilityConstants.append("        },\n");
+        }
+        abilityConstants.append("    },\n");
+    }
+    abilityConstants.append("}\n");
     std::string dialogueCueConstants = "mission.DialogueCue = {\n";
     std::string dialogueCueTextConstants = "mission.DialogueCueVariants = {\n";
     std::string dialogueDefinitionConstants = "mission.DialogueDefinition = {\n";
@@ -731,6 +791,8 @@ bool render_mission(const Source& source,
     output.append(squadConstants);
     output.append(sceneConstants);
     output.append(taskConstants);
+    output.append(taskGroupConstants);
+    output.append(abilityConstants);
     output.append(dialogueCueConstants);
     output.append(dialogueCueTextConstants);
     output.append(dialogueDefinitionConstants);

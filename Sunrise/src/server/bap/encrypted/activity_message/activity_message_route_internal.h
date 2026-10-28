@@ -100,6 +100,23 @@ diagnostic_status(const receipts::Framed& framed, bool incident) noexcept;
                                                   bool& hasTransaction) noexcept;
 
 /**
+ * Stages the leave delta activity msg 15 asks for.
+ * @param binding Exact ActivityClient generation owned by this link.
+ * @param rosterDecode Last complete msg-5 identity map delivered on this same link.
+ * @param adapter Ingress adapter the communication route named for this message type.
+ * @param request Validated owned svc8 envelope.
+ * @param plan Cleared, then receives the leave notification.
+ * @param hasTransaction Receives true only when a roster was published on this link.
+ * @return Always true: the body is framed before any answer decision.
+ */
+[[nodiscard]] bool prepare_peer_leave(const ActivityClientBinding& binding,
+                                      const RosterDecodeMap& rosterDecode,
+                                      IngressAdapter adapter,
+                                      const service::Request& request,
+                                      ActivityPlan& plan,
+                                      bool& hasTransaction) noexcept;
+
+/**
  * Retains one exact msg-27 purge request with its complete mask and reason.
  * @param binding Exact ActivityClient generation owned by this link.
  * @param rosterDecode Last complete msg-5 identity map delivered on this same link.

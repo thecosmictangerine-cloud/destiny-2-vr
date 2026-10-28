@@ -14,6 +14,18 @@ struct Span final {
     std::size_t end{};
 };
 
+/** One cue definition's delayed-request expiration window, in seconds. */
+struct Definition final {
+    std::uint32_t hash{};
+    float authoredWindowSeconds{};
+
+    bool operator==(const Definition&) const = default;
+};
+
+/** Reads every authored cue definition in bank order, including empty windows. */
+[[nodiscard]] bool definitions(std::span<const std::byte> bytes,
+                               std::vector<Definition>& output) noexcept;
+
 /** Builds a hash-sorted index from the native 16-byte dialogue group rows. */
 [[nodiscard]] bool build(std::span<const std::byte> bytes,
                          std::size_t groupRows,

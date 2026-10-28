@@ -104,6 +104,8 @@ struct Snapshot final {
     std::vector<SquadEdge> squadEdges{};
     std::vector<TaskTarget> taskTargets{};
     std::vector<DialogueCueText> dialogueCueTexts{};
+    std::vector<format::DialogueCue> dialogueCues{};
+    std::vector<format::CombatObjectiveGroup> combatObjectiveGroups{};
     std::vector<DirectiveElement> directiveElements{};
     bool complete{};
 };

@@ -12,6 +12,7 @@
 #include "../../../core/ui/busy/busy.h"
 #include "../../../state/activity_sdk/internal.h"
 #include "../../../state/activity_sdk/runtime.h"
+#include "activity_sdk_decode_plans.h"
 #include "activity_sdk_generation_worker_internal.h"
 #include "activity_sdk_live_publication.h"
 #include "activity_sdk_native_pack_pipeline.h"
@@ -232,6 +233,74 @@ void report_publication_progress(const PackProgressContext& progress,
     return true;
 }
 
+[[nodiscard]] bool native_cancel(void*) noexcept;
+
+/** Logs one finished decoder cache build with its counts. */
+void log_decoder_cache(decode_plans::Status status,
+                       const decode_plans::Result& result,
+                       ULONGLONG started) noexcept {
+    std::array<char, 224> line{};
+    const int written =
+        std::snprintf(line.data(),
+                      line.size(),
+                      "ev=activity_sdk_decoder_cache result=%s slots=%u pairs=%u plans=%u "
+                      "active=%u errors=%u entries=%u schemas=%u fields=%u ms=%llu",
+                      decode_plans::status_name(status),
+                      result.slots,
+                      result.pairs,
+                      result.plans,
+                      result.active,
+                      result.errors,
+                      result.entries,
+                      result.schemas,
+                      result.fields,
+                      static_cast<unsigned long long>(GetTickCount64() - started));
+    if (written > 0) {
+        core::log::write(
+            core::log::Channel::client,
+            status == decode_plans::Status::ready ? core::log::Level::info
+                                                  : core::log::Level::error,
+            {line.data(), (std::min)(static_cast<std::size_t>(written), line.size() - 1U)});
+    }
+}
+
+/**
+ * Compiles the decoder cache pair beside the final pack for the staged catalog's identity.
+ * The entity transport loads nothing without it, so a refusal fails the pass.
+ * @return False with `failureDetail` set when the cache was not written.
+ */
+[[nodiscard]] bool build_decoder_cache(const Work& work,
+                                       const package_reader::Source& source,
+                                       const state::activity_sdk::Catalog& catalog,
+                                       const char*& failureDetail) noexcept {
+    const ULONGLONG started = GetTickCount64();
+    decode_plans::Result result{};
+    decode_plans::Status status = decode_plans::Status::invalidInput;
+    try {
+        const std::size_t separator = work.packPath.find_last_of(L'\\');
+        const std::wstring cachePath =
+            (separator == std::wstring::npos ? std::wstring{} : work.packPath.substr(0, separator))
+            + L"\\rsat_decode_plans.cache";
+        decode_plans::Request request{};
+        request.executablePath = work.executablePath;
+        request.executableModule = work.executableModule;
+        request.source = &source;
+        request.descriptors = catalog.sobject_rsat_descriptors();
+        request.sdkBuildSha256 = catalog.sdk_build_sha256();
+        request.cachePath = cachePath;
+        request.cancel = &native_cancel;
+        status = decode_plans::build(request, result);
+    } catch (...) {
+        status = decode_plans::Status::allocation;
+    }
+    log_decoder_cache(status, result, started);
+    if (status != decode_plans::Status::ready) {
+        failureDetail = "decoder_cache_failed";
+        return false;
+    }
+    return true;
+}
+
 /** Adapts the selected live or offline worker cancellation source to native pack stages. */
 [[nodiscard]] bool native_cancel(void*) noexcept {
     return cancel_requested();
@@ -308,6 +377,10 @@ bool publish_estate(Work& work,
         complete = false;
         failureDetail = state::activity_sdk::status_name(stagedCatalogStatus);
         log_catalog_refusal(failureDetail);
+    }
+    if (complete) {
+        report_publication_progress(progress, "building decoder cache");
+        complete = build_decoder_cache(work, source, *stagedCatalog, failureDetail);
     }
     stagedCatalog.reset();
     if (complete) {

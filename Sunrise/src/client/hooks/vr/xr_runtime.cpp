@@ -22,6 +22,7 @@
 
 #include <d3d11.h>
 #include <d3d11_1.h>
+#include <d3d11_4.h>
 #include <d3dcompiler.h>
 
 #define XR_USE_GRAPHICS_API_D3D11
@@ -39,7 +40,13 @@
 #include <string>
 
 #include "../../../core/logging/log.h"
+#include "vr_compositor.h"
+#include "vr_debug.h"
+#include "vr_display.h"
+#include "vr_frames.h"
 #include "vr_gpu.h"
+#include "vr_screen.h"
+#include "vr_settings.h"
 
 namespace sunrise::client::hooks::vr::xr {
 namespace {
@@ -245,12 +252,141 @@ XrInstance g_instance{XR_NULL_HANDLE};
 XrSystemId g_system{XR_NULL_SYSTEM_ID};
 XrSession g_session{XR_NULL_HANDLE};
 XrSpace g_space{XR_NULL_HANDLE};
-XrSessionState g_sessionState{XR_SESSION_STATE_UNKNOWN};
-bool g_sessionRunning{false};
+/** The head's own space: the fade that brings the world back after a screen is drawn in it. */
+XrSpace g_viewSpace{XR_NULL_HANDLE};
+std::atomic<XrSessionState> g_sessionState{XR_SESSION_STATE_UNKNOWN};
+/** Read on every thread; written on the frame thread (begin/end session) or the present thread (teardown). */
+std::atomic_bool g_sessionRunning{false};
 bool g_frameOpen{false};
-bool g_attempted{false};
-Status g_status{Status::off};
+std::atomic<Status> g_status{Status::off};
+
+/**
+ * Bringing the runtime up happens on a thread of its own: Meta's xrCreateInstance took 6.1 s over
+ * Air Link in the sister project, and a missing headset has to be retried without stalling the game.
+ * The present thread starts it, polls it, and picks the result up (initialize()).
+ */
+enum class InitPhase : int { idle, working, done };
+std::atomic<int> g_initPhase{static_cast<int>(InitPhase::idle)};
+std::atomic_bool g_initOk{false};
+HANDLE g_initThread{};
+ID3D11Device* g_initDevice{};
+/** When the next attempt may start (GetTickCount64); 0 = at once. */
+ULONGLONG g_nextAttemptMs{0};
+std::uint32_t g_attempts{0};
+/**
+ * Whether the frame thread may feed the headset itself while the game is quiet. Its frames call
+ * xrBeginFrame/xrEndFrame on another thread than the game's, with no image acquired or released --
+ * Meta's runtime does its D3D11 work at release, on the game's thread, so that is safe there (and on
+ * the mock); SteamVR uses the game's immediate context inside xrEndFrame (dishonored-vr), and this
+ * game cannot be given D3D11's multithread protection: Destiny keeps its own copies of the context's
+ * function pointers, so switched on early the protection blinds the GPU hooks (30 draws a period
+ * instead of 40 000), switched on late it protects nothing. `keepalive on|off|auto` in SVR_Settings.txt.
+ */
+bool g_keepAliveAllowed{false};
+
+/**
+ * Raised where the runtime takes the session or the instance away (LOSS_PENDING, INSTANCE_LOSS_PENDING,
+ * or a stopped session not offered back): the present thread tears everything down and starts over.
+ */
+std::atomic_bool g_restartRequested{false};
+/** EXITING: the runtime asked the game to leave VR. It stays flat until F9 is switched off and on. */
+std::atomic_bool g_exitHold{false};
+/** The runtime moved LOCAL (the player held the Meta button): our origin follows, in the room and in yaw. */
+std::atomic_bool g_runtimeRecentre{false};
+std::atomic<std::uint32_t> g_runtimeRecentres{0};
+/** Which runtime call the present thread is in, for the frame thread's report of a quiet game. */
+std::atomic<const char*> g_presentCall{nullptr};
+
+[[nodiscard]] double now_seconds() noexcept {
+    static LARGE_INTEGER frequency{};
+    if (frequency.QuadPart == 0) {
+        QueryPerformanceFrequency(&frequency);
+    }
+    LARGE_INTEGER counter{};
+    QueryPerformanceCounter(&counter);
+    return static_cast<double>(counter.QuadPart) / static_cast<double>(frequency.QuadPart);
+}
+
+/** The keep-alive's copy of the last frame's layers: the swapchains they name keep their last released image. */
+constexpr std::size_t kMaxQuads = 4;
+struct SavedLayers final {
+    bool haveProjection{};
+    XrCompositionLayerProjection projection{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
+    std::array<XrCompositionLayerProjectionView, kViewCount> views{};
+    std::array<XrCompositionLayerQuad, kMaxQuads> quads{};
+    std::size_t quadCount{};
+};
+
+/**
+ * The OpenXR frame thread (dishonored-vr HANDOFF part 51, measured there on a Quest 3 over Air Link:
+ * Meta held xrWaitFrame for 33 s on the render thread and froze the PC). xrWaitFrame, the event
+ * queue and begin/end session live here; the present thread asks for a frame and waits for it with
+ * a bound, so the game never waits on the runtime longer than that. When the game stops presenting
+ * (a load, a hitch, a hang of its own) the thread keeps the headset fed with the last frame's
+ * layers, held where they were in the room, instead of leaving it on an hourglass.
+ */
+struct Pump final {
+    SRWLOCK lock{SRWLOCK_INIT};
+    CONDITION_VARIABLE changed{CONDITION_VARIABLE_INIT};
+    HANDLE thread{};
+    bool quit{};
+    bool request{};
+    bool waited{};
+    bool waiting{};
+    bool mainOpen{};
+    bool keepAliveOpen{};
+    bool ending{};
+    bool endPending{};
+    bool lastTimedOut{};
+    XrFrameState state{XR_TYPE_FRAME_STATE};
+    double waitedAt{};
+    double lastMainBegin{};
+    double lastMainEnd{};
+    double lastKeepAlive{};
+    double period{1.0 / 72.0};
+    double timedOutSince{};
+    SavedLayers layers{};
+    bool inRun{};
+    double runStart{};
+    std::uint64_t runFrames{};
+    std::uint64_t keepAliveRuns{};
+    std::uint64_t keepAlives{};
+    std::uint64_t waits{};
+    std::uint64_t mainTimeouts{};
+    std::uint64_t waitFails{};
+    double longestWait{};
+    double longestRun{};
+    bool wasRunning{};
+    double idleSince{};
+    double nextKick{};
+    std::uint64_t kicks{};
+    double lastQuietReport{};
+};
+Pump g_pump{};
+/** The present thread waits at most this long for the runtime to release a frame (2 ms once it has timed out). */
+constexpr DWORD kWaitBoundMs = 50;
+/** The game quiet this long and the frame thread feeds the headset itself. */
+constexpr double kQuietSeconds = 0.20;
+/** A running session stopped and not offered back this long: a new session (Meta only, measured there). */
+constexpr double kKickSeconds = 5.0;
 XrTime g_predictedDisplayTime{};
+XrDuration g_displayPeriod{};
+/**
+ * The instant the head and hands are located for: the frame's predicted display time plus the LEAD,
+ * the measured time between that prediction and the display time the image drawn from them is really
+ * submitted for. The engine draws an image a frame or so after the camera hook takes its pose (the
+ * ledger names which record each image was drawn from), so a pose predicted for "this frame" is
+ * shown a frame late. A runtime that honours the declared pose reprojects that away; one that takes
+ * every image as drawn for its display time (Meta's PC runtime is reported to ignore declared poses)
+ * shows it as swim -- about a degree at 70 deg/s. Predicting for the instant the image will really be
+ * shown is right for both: the declaration stays truthful, and there is nothing left to reproject.
+ */
+XrTime g_locateTime{};
+std::atomic<std::int64_t> g_leadNs{0};
+/** -1: measured (the default); otherwise a fixed lead in nanoseconds (`lead <ms>`, `lead off` = 0). */
+std::atomic<std::int64_t> g_leadFixedNs{-1};
+/** The last measured shortfall (submitted display time minus the time the image was drawn for). */
+std::atomic<std::int64_t> g_leadErrorNs{0};
 std::array<char, 64> g_runtimeName{};
 
 /** Units the game moves for one metre of head travel. One is the starting guess. */
@@ -277,7 +413,8 @@ InputState g_input{};
 SRWLOCK g_poseLock{SRWLOCK_INIT};
 std::uint64_t g_frameIndex{};
 
-Presentation g_presentation{};
+/** Index 0 is the mono image and the left eye's in stereo; index 1 the right eye's. */
+std::array<Presentation, kViewCount> g_presentations{};
 Actions g_actions{};
 
 /** Views located this frame: the pose the NEXT rendered frame will be drawn from. */
@@ -293,10 +430,80 @@ std::atomic<float> g_renderedFov{0.0F};
 std::atomic<float> g_renderedAspect{0.0F};
 /** The vertical half angle the layer last declared, for the log. */
 std::atomic<float> g_declaredHalfVertical{0.0F};
+/** The tangents of the last image submitted: what a snapshot of it spans (the screen's backdrop). */
+float g_submittedTanX = 0.0F;
+float g_submittedTanY = 0.0F;
 /** The eye the image is rendered from (set_render_eye), and the one the views in flight used. */
 std::atomic<int> g_renderEye{0};
 int g_pendingEye{0};
 int g_renderedEye{0};
+/** Publication serials (HeadPose::frame) of the pending and the rendered views, for the ledger. */
+std::uint64_t g_pendingSerial{0};
+std::uint64_t g_renderedSerial{0};
+
+/** The eyes' geometry for eye_geometry(): written on the present thread, read from any. */
+SRWLOCK g_geometryLock{SRWLOCK_INIT};
+EyeGeometry g_geometry{};
+
+/**
+ * The frame ledger (docs/DISPLAY.md). One record per camera write: which publication the camera
+ * used, which eye it rendered from, the whole sample (head with that eye's offset, both hands, the
+ * views) and the camera it wrote. Every consumer that turns the pose into pixels takes its sample
+ * from here, so the camera, the gun, the arms and the layer can never disagree about a frame:
+ *
+ *  - the camera hook appends the record (camera_frame + commit_camera);
+ *  - the weapon, later in the same update on the camera thread, reads the latched one;
+ *  - the GPU names the record a frame was really drawn with, by the camera its world view carries
+ *    (note_world_camera); the arms' rewrite and the layer read THAT one.
+ *
+ * Positions are kept as written, so the match is exact rather than nearest: the engine copies the
+ * block's camera into the view constants.
+ */
+struct Publication final {
+    std::uint64_t serial{};
+    /** The instant the views and hands were located for (g_locateTime). */
+    XrTime located{};
+    std::array<XrView, kViewCount> views{};
+    HeadPose head{};
+    std::array<HandPose, 2> hands{};
+    bool valid{};
+};
+struct DrawRecord final {
+    std::uint64_t serial{};
+    /** Which eye the camera rendered from: 0 the midpoint, 1 left, 2 right. */
+    int eye{};
+    /** True for a frame of alternating-eye stereo, false for a mono one. */
+    bool stereo{};
+    /** The instant its poses were located for. */
+    XrTime located{};
+    std::array<XrView, kViewCount> views{};
+    HeadPose head{};
+    std::array<HandPose, 2> hands{};
+    std::array<float, 3> cameraPosition{};
+    std::array<float, 3> cameraForward{};
+    std::uint64_t sequence{};
+    bool committed{};
+};
+constexpr std::size_t kPublicationRing = 8;
+constexpr std::size_t kDrawRing = 16;
+SRWLOCK g_ledgerLock{SRWLOCK_INIT};
+std::array<Publication, kPublicationRing> g_publications{};
+std::array<DrawRecord, kDrawRing> g_draws{};
+std::uint64_t g_drawSequence{0};
+/** The record the camera hook latched for the frame it is building (camera thread). */
+DrawRecord g_cameraDraw{};
+bool g_haveCameraDraw{false};
+/** The record the GPU last saw drawn (render thread writes, present thread reads). */
+DrawRecord g_drawn{};
+bool g_haveDrawn{false};
+std::uint64_t g_drawnMatches{0};
+std::uint64_t g_drawnMisses{0};
+/** The eye the last stereo camera frame used, so the next one takes the other. */
+int g_lastStereoEye{2};
+/** 0 mono, 1 alternating eyes. */
+std::atomic<int> g_stereoMode{0};
+/** Presented frames whose eye outside the UI canvas was filled from the scene (present thread). */
+std::uint64_t g_filledFrames{0};
 
 /** Emits one preformatted line on the client channel. */
 void log_line(const char* text) noexcept {
@@ -325,13 +532,52 @@ template <typename... Args> void log_fmt(const char* format, Args... args) noexc
  * @param output Receives the path.
  * @return True when a path was found.
  */
+/**
+ * Which runtime: `runtime` in SVR_Settings.txt (vr_settings.h). `auto`, the default: XR_RUNTIME_JSON
+ * when set (the mock, a launcher), else Meta's runtime when it is installed -- the Quest over Link,
+ * which on this PC is NOT the system's active runtime (SteamVR is), and a player should not have to
+ * know that -- else the system's active runtime. `meta`, `steamvr`, `system` or a manifest's path force one.
+ */
 [[nodiscard]] bool manifest_path(std::wstring& output) noexcept {
     std::array<wchar_t, MAX_PATH> buffer{};
+    const char* choice = settings::value("runtime", "auto");
+    const bool automatic = std::strcmp(choice, "auto") == 0;
     const DWORD length =
         GetEnvironmentVariableW(L"XR_RUNTIME_JSON", buffer.data(), static_cast<DWORD>(buffer.size()));
-    if (length > 0 && length < buffer.size()) {
+    if (automatic && length > 0 && length < buffer.size()) {
         output.assign(buffer.data(), length);
+        log_fmt("ev=vr.xr runtime_choice=env path=%ls", output.c_str());
         return true;
+    }
+    const auto exists = [](const wchar_t* path) noexcept { return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES; };
+    if (automatic || std::strcmp(choice, "meta") == 0) {
+        for (const wchar_t* meta : {L"C:\\Program Files\\Meta Horizon\\Support\\oculus-runtime\\oculus_openxr_64.json",
+                                    L"C:\\Program Files\\Oculus\\Support\\oculus-runtime\\oculus_openxr_64.json"}) {
+            if (exists(meta)) {
+                output = meta;
+                log_fmt("ev=vr.xr runtime_choice=meta path=%ls", meta);
+                return true;
+            }
+        }
+    }
+    if (std::strcmp(choice, "steamvr") == 0) {
+        for (const wchar_t* steam : {L"C:\\Program Files (x86)\\Steam\\steamapps\\common\\SteamVR\\steamxr_win64.json"}) {
+            if (exists(steam)) {
+                output = steam;
+                log_fmt("ev=vr.xr runtime_choice=steamvr path=%ls", steam);
+                return true;
+            }
+        }
+    }
+    if (!automatic && std::strcmp(choice, "meta") != 0 && std::strcmp(choice, "steamvr") != 0
+        && std::strcmp(choice, "system") != 0) {
+        const int wide = MultiByteToWideChar(CP_UTF8, 0, choice, -1, buffer.data(), static_cast<int>(buffer.size()));
+        if (wide > 1 && exists(buffer.data())) {
+            output.assign(buffer.data());
+            log_fmt("ev=vr.xr runtime_choice=path path=%ls", output.c_str());
+            return true;
+        }
+        log_fmt("ev=vr.xr runtime_choice=invalid value=%s fallback=system", choice);
     }
     HKEY key{};
     if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Khronos\\OpenXR\\1", 0, KEY_READ, &key)
@@ -627,11 +873,157 @@ using LdrUnregisterDllNotificationFn = LONG(NTAPI*)(void*);
 using LdrLockLoaderLockFn = LONG(NTAPI*)(ULONG, ULONG*, ULONG_PTR*);
 using LdrUnlockLoaderLockFn = LONG(NTAPI*)(ULONG, ULONG_PTR);
 
-/** Stands in for a neutralised notification callback. */
-void CALLBACK ignore_notification(ULONG, const void*, void*) noexcept {}
+/** What the loader hands a notification callback (LDR_DLL_NOTIFICATION_DATA; load and unload share it). */
+struct LdrNotificationData final {
+    ULONG flags;
+    const UNICODE_STRING* fullName;
+    const UNICODE_STRING* baseName;
+    void* base;
+    ULONG size;
+};
+using LdrNotificationFn = void(CALLBACK*)(ULONG, const LdrNotificationData*, void*);
+
+/**
+ * The game's callback is stood in front of, and by default still silenced: `noop` is what every
+ * headset session so far ran with. `filter` (`ldr filter` in SVR_Debug.txt) hands the game every
+ * module but the runtime's own -- tried on 2026-10-17 as the suspect for the destination-load hang,
+ * and cleared (the hang is one of our engine detours, docs/PLAYABLE.md); it stays an option because
+ * it cannot be tested on the mock whether Meta's runtime maps system modules from its own threads
+ * that the game would then refuse. Either way every module mapped is logged (`ev=vr.xr dll`).
+ */
+enum class LoaderMode : int { filter, noop };
+std::atomic<int> g_loaderMode{static_cast<int>(LoaderMode::noop)};
+std::atomic<LdrNotificationFn> g_gameNotification{nullptr};
+/** Loads on this thread while it is inside our own runtime calls: the runtime's, whatever they pull in. */
+thread_local int t_ownLoads = 0;
+/** The runtime library's directory, lower case: anything mapped from under it is the runtime's. */
+std::array<wchar_t, MAX_PATH> g_runtimeDirectory{};
+std::size_t g_runtimeDirectoryLength = 0;
+
+/** What the filter saw, for the log; written under the loader lock, read on the present thread. */
+struct LoaderRecord final {
+    ULONG reason{};
+    bool ours{};
+    bool forwarded{};
+    std::array<char, 120> name{};
+};
+constexpr std::uint32_t kLoaderRing = 64;
+std::array<LoaderRecord, kLoaderRing> g_loaderRing{};
+std::atomic<std::uint32_t> g_loaderWritten{0};
+std::uint32_t g_loaderRead = 0;
+
+struct OwnLoads final {
+    OwnLoads() noexcept { ++t_ownLoads; }
+    ~OwnLoads() { --t_ownLoads; }
+    OwnLoads(const OwnLoads&) = delete;
+    OwnLoads& operator=(const OwnLoads&) = delete;
+};
+
+[[nodiscard]] bool under_runtime_directory(const UNICODE_STRING* path) noexcept {
+    if (path == nullptr || path->Buffer == nullptr || g_runtimeDirectoryLength == 0) {
+        return false;
+    }
+    const std::size_t length = path->Length / sizeof(wchar_t);
+    if (length < g_runtimeDirectoryLength) {
+        return false;
+    }
+    for (std::size_t index = 0; index < g_runtimeDirectoryLength; ++index) {
+        wchar_t c = path->Buffer[index];
+        c = c == L'/' ? L'\\' : (c >= L'A' && c <= L'Z' ? static_cast<wchar_t>(c - L'A' + L'a') : c);
+        if (c != g_runtimeDirectory[index]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** Stands in front of the game's notification callback. Runs under the loader lock: no allocation, no loads. */
+void CALLBACK filter_notification(ULONG reason, const LdrNotificationData* data, void* context) noexcept {
+    const bool ours = t_ownLoads > 0 || (data != nullptr && under_runtime_directory(data->fullName));
+    const LdrNotificationFn game = g_gameNotification.load(std::memory_order_acquire);
+    const bool forward = !ours && game != nullptr
+                         && g_loaderMode.load(std::memory_order_relaxed) == static_cast<int>(LoaderMode::filter);
+    const std::uint32_t slot = g_loaderWritten.load(std::memory_order_relaxed);
+    LoaderRecord& record = g_loaderRing[slot % kLoaderRing];
+    record.reason = reason;
+    record.ours = ours;
+    record.forwarded = forward;
+    std::size_t used = 0;
+    const UNICODE_STRING* name = data != nullptr ? data->fullName : nullptr;
+    if (name != nullptr && name->Buffer != nullptr) {
+        const std::size_t length = name->Length / sizeof(wchar_t);
+        // The tail of the path names the module; the head is mostly the same few directories.
+        const std::size_t first = length > record.name.size() - 1 ? length - (record.name.size() - 1) : 0;
+        for (std::size_t index = first; index < length; ++index) {
+            const wchar_t c = name->Buffer[index];
+            record.name[used++] = c > 32 && c < 127 ? static_cast<char>(c) : '_';
+        }
+    }
+    record.name[used] = '\0';
+    g_loaderWritten.store(slot + 1, std::memory_order_release);
+    if (forward) {
+        game(reason, data, context);
+    }
+}
 
 /** Registered only to find the list; never expected to run. */
 void CALLBACK placeholder_notification(ULONG, const void*, void*) noexcept {}
+
+/** Reads `ldr noop|filter` from SVR_Debug.txt beside the game, once per runtime load. */
+void read_loader_mode() noexcept {
+    std::array<wchar_t, MAX_PATH> path{};
+    const DWORD length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
+    wchar_t* const slash = length != 0 && length < path.size() ? std::wcsrchr(path.data(), L'\\') : nullptr;
+    if (slash == nullptr) {
+        return;
+    }
+    const std::size_t dirLength = static_cast<std::size_t>(slash + 1 - path.data());
+    if (wcscpy_s(slash + 1, path.size() - dirLength, L"SVR_Debug.txt") != 0) {
+        return;
+    }
+    const std::string text = read_file(path.data());
+    const std::size_t at = text.find("ldr ");
+    if (at == std::string::npos) {
+        return;
+    }
+    const bool noop = text.compare(at + 4, 6, "filter") != 0;
+    g_loaderMode.store(static_cast<int>(noop ? LoaderMode::noop : LoaderMode::filter), std::memory_order_relaxed);
+    log_fmt("ev=vr.xr ldr_mode=%s", noop ? "noop" : "filter");
+}
+
+/**
+ * Remembers what the filter treats as the runtime's: its library's directory, lower case with
+ * backslashes -- or, when that directory also holds the game (the mock is installed beside it), the
+ * library's own path alone. The game maps modules of its own from there in the middle of a load
+ * (dbghelp.dll), and a directory match took those from it.
+ */
+void note_runtime_directory(const std::wstring& library) noexcept {
+    const auto lower = [](wchar_t c) noexcept {
+        return c == L'/' ? L'\\' : (c >= L'A' && c <= L'Z' ? static_cast<wchar_t>(c - L'A' + L'a') : c);
+    };
+    g_runtimeDirectoryLength = 0;
+    const std::size_t slash = library.find_last_of(L"\\/");
+    std::size_t length = slash == std::wstring::npos ? 0 : slash + 1;
+    std::array<wchar_t, MAX_PATH> exe{};
+    const DWORD exeLength = GetModuleFileNameW(nullptr, exe.data(), static_cast<DWORD>(exe.size()));
+    const wchar_t* const exeSlash = exeLength != 0 ? std::wcsrchr(exe.data(), L'\\') : nullptr;
+    const std::size_t exeDir = exeSlash != nullptr ? static_cast<std::size_t>(exeSlash + 1 - exe.data()) : 0;
+    bool shared = exeDir != 0 && exeDir == length;
+    for (std::size_t index = 0; shared && index < length; ++index) {
+        shared = lower(exe[index]) == lower(library[index]);
+    }
+    if (shared) {
+        length = library.size();
+    }
+    if (length == 0 || length >= g_runtimeDirectory.size()) {
+        return;
+    }
+    for (std::size_t index = 0; index < length; ++index) {
+        g_runtimeDirectory[index] = lower(library[index]);
+    }
+    g_runtimeDirectoryLength = length;
+    log_fmt("ev=vr.xr ldr_filter runtime_match=%s", shared ? "file" : "directory");
+}
 
 /** @return True when an address lies inside a module's mapped image. */
 [[nodiscard]] bool inside_module(const void* address, HMODULE module) noexcept {
@@ -701,11 +1093,14 @@ void CALLBACK placeholder_notification(ULONG, const void*, void*) noexcept {}
         ++seen;
         std::array<char, 128> where{};
         describe_address(node->callback, where.data(), where.size());
-        const bool foreign = !inside_module(node->callback, ntdll) && !inside_module(node->callback, self)
-                             && node->callback != reinterpret_cast<void*>(&ignore_notification);
+        const bool foreign = !inside_module(node->callback, ntdll) && !inside_module(node->callback, self);
         log_fmt("ev=vr.xr ldr_notify callback=%s foreign=%d", where.data(), foreign ? 1 : 0);
         if (foreign) {
-            node->callback = reinterpret_cast<void*>(&ignore_notification);
+            // One foreign callback is known (the game's); a second would be forwarded to nobody.
+            if (g_gameNotification.load(std::memory_order_relaxed) == nullptr) {
+                g_gameNotification.store(reinterpret_cast<LdrNotificationFn>(node->callback), std::memory_order_release);
+            }
+            node->callback = reinterpret_cast<void*>(&filter_notification);
             ++neutralised;
         }
     }
@@ -795,9 +1190,15 @@ void diagnose_load_failure(const std::wstring& runtimePath) noexcept {
         }
     }
     log_fmt("ev=vr.xr load path=%ls", wide.c_str());
+    read_loader_mode();
+    note_runtime_directory(wide);
     // The runtime's own DllMain, and every DLL it pulls in, must get the real loader.
-    (void)restore_export(L"kernelbase.dll", "LoadLibraryExW");
-    (void)restore_export(L"kernel32.dll", "GetProcAddress");
+    if (debug::has("exports keep")) {
+        log_line("ev=vr.xr unhook skipped=exports reason=debug");
+    } else {
+        (void)restore_export(L"kernelbase.dll", "LoadLibraryExW");
+        (void)restore_export(L"kernel32.dll", "GetProcAddress");
+    }
     (void)neutralise_dll_notifications();
     g_runtimeModule = load_watched(wide.c_str(), "runtime");
     if (g_runtimeModule == nullptr) {
@@ -1188,8 +1589,7 @@ void sync_actions() noexcept {
 }
 
 /** Frees everything Presentation owns. The swapchain images belong to the runtime. */
-void destroy_presentation() noexcept {
-    Presentation& p = g_presentation;
+void destroy_presentation(Presentation& p) noexcept {
     for (auto& target : p.targets) {
         release_com(target);
     }
@@ -1240,8 +1640,7 @@ void destroy_presentation() noexcept {
 }
 
 /** Builds the blit pass: shaders, sampler, a staging copy of the back buffer and one RTV per image. */
-[[nodiscard]] bool prepare_blit(ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
-    Presentation& p = g_presentation;
+[[nodiscard]] bool prepare_blit(Presentation& p, ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
     ID3DBlob* vertexBlob = nullptr;
     ID3DBlob* pixelBlob = nullptr;
     ID3DBlob* errors = nullptr;
@@ -1349,8 +1748,7 @@ void destroy_presentation() noexcept {
  * take the back buffer's bits into. An sRGB-typed target is preferred: the desktop image is
  * sRGB-encoded, and that type tells the compositor so.
  */
-[[nodiscard]] bool ensure_presentation(ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
-    Presentation& p = g_presentation;
+[[nodiscard]] bool ensure_presentation(Presentation& p, ID3D11Device* device, const D3D11_TEXTURE2D_DESC& source) noexcept {
     if (p.failed) {
         return false;
     }
@@ -1358,7 +1756,7 @@ void destroy_presentation() noexcept {
         && p.sourceFormat == source.Format) {
         return true;
     }
-    destroy_presentation();
+    destroy_presentation(p);
     if (source.SampleDesc.Count > 1) {
         log_line("ev=vr.xr swapchain result=fail reason=msaa_back_buffer");
         p.failed = true;
@@ -1431,7 +1829,7 @@ void destroy_presentation() noexcept {
             != XR_SUCCESS
         || imageCount == 0 || imageCount > kMaxSwapchainImages) {
         log_line("ev=vr.xr swapchain result=fail reason=images");
-        destroy_presentation();
+        destroy_presentation(p);
         p.failed = true;
         return false;
     }
@@ -1444,8 +1842,8 @@ void destroy_presentation() noexcept {
     p.sourceFormat = source.Format;
     p.format = chosen;
     p.copyDirect = direct;
-    if (!direct && !prepare_blit(device, source)) {
-        destroy_presentation();
+    if (!direct && !prepare_blit(p, device, source)) {
+        destroy_presentation(p);
         p.failed = true;
         return false;
     }
@@ -1460,8 +1858,7 @@ void destroy_presentation() noexcept {
 }
 
 /** Draws the back buffer copy into one swapchain image inside a swapped-in context state. */
-[[nodiscard]] bool blit(ID3D11DeviceContext* context, ID3D11Texture2D* backBuffer, std::uint32_t index) noexcept {
-    Presentation& p = g_presentation;
+[[nodiscard]] bool blit(Presentation& p, ID3D11DeviceContext* context, ID3D11Texture2D* backBuffer, std::uint32_t index) noexcept {
     ID3D11DeviceContext1* context1 = nullptr;
     if (FAILED(context->QueryInterface(__uuidof(ID3D11DeviceContext1),
                                        reinterpret_cast<void**>(&context1)))
@@ -1494,6 +1891,180 @@ void destroy_presentation() noexcept {
     return true;
 }
 
+[[nodiscard]] XrVector3f rotate(const XrQuaternionf& q, const XrVector3f& v) noexcept;
+
+/** @return a * b. */
+[[nodiscard]] XrQuaternionf multiply(const XrQuaternionf& a, const XrQuaternionf& b) noexcept {
+    return XrQuaternionf{a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y, a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+                         a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w, a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z};
+}
+
+/**
+ * A pose turned about the reference space's vertical by `radians`, positive to the left -- the
+ * game's positive yaw, which OpenXR's +Y rotation also is. Position turns about the space's origin.
+ */
+[[nodiscard]] XrPosef turned_about_up(const XrPosef& pose, float radians) noexcept {
+    if (radians == 0.0F || !std::isfinite(radians)) {
+        return pose;
+    }
+    const XrQuaternionf turn{0.0F, std::sin(radians * 0.5F), 0.0F, std::cos(radians * 0.5F)};
+    XrPosef out{};
+    out.orientation = multiply(turn, pose.orientation);
+    out.position = rotate(turn, pose.position);
+    return out;
+}
+
+/** Where the image being presented came from. */
+struct FrameSource final {
+    std::array<XrView, kViewCount> views{};
+    /** 0 the midpoint, 1 left, 2 right. */
+    int eye{};
+    float fold{};
+    bool stereo{};
+    /** False when no world view has been drawn since the last present (a menu, a load). */
+    bool fresh{};
+    std::uint64_t sequence{};
+    /** The publication the image was drawn from. */
+    std::uint64_t serial{};
+    /** True when the GPU named the record; false for the old assumption (last present's views). */
+    bool ledger{};
+    /** The instant the record's poses were located for. */
+    XrTime located{};
+};
+FrameSource g_lastSource{};
+
+/** One eye's share of the rendered image: the pixels it covers and the FOV those pixels span. */
+struct EyeCrop final {
+    XrRect2Di rect{};
+    XrFovf fov{};
+};
+
+/** What one eye's view declares while it holds an image, in alternating stereo. */
+struct Shown final {
+    bool valid{};
+    XrPosef pose{};
+    EyeCrop crop{};
+    float fold{};
+    std::uint32_t width{};
+    std::uint32_t height{};
+};
+std::array<Shown, kViewCount> g_shown{};
+/** An eye FOV the rendered image did not contain, reported once (the crop clamps it). */
+bool g_cropClampReported = false;
+std::atomic_bool g_perEyeCrop{true};
+/** The declaration probe (set_declaration_probe): radians about up, and the tangent scale. */
+std::atomic<float> g_probeYaw{0.0F};
+std::atomic<float> g_probeFovScale{1.0F};
+
+/**
+ * @return The part of the rendered image that one eye's own FOV covers, and that FOV as the pixels
+ *         really span it.
+ *
+ * The engine renders one SYMMETRIC frustum (tangents -tanX..tanX, -tanY..tanY) that contains both
+ * eyes, while each eye's own FOV is asymmetric (a Quest 3's left eye is -54..+40 deg). Declaring the
+ * whole image with the symmetric FOV is what the OpenXR spec allows, and what our mock and SteamVR
+ * honour -- but Meta's PC runtime is reported to ignore a projection view's declared FOV and map the
+ * sub-image rect onto the eye's OWN FOV (Khronos forum 110078; OpenXR-Layer-crop-fov #36). On a
+ * Quest 3 that stretched the full image over -54..+40 in one eye and -40..+54 in the other: the
+ * centre ~15 deg apart in opposite directions, double vision at every depth (2026-10-16 session).
+ *
+ * So each view gets exactly the rect its eye covers, declared with the FOV of that rect. A runtime
+ * that honours the declaration and one that substitutes the eye's FOV then do the same thing, to
+ * within the rounding of the rect to whole pixels (half a pixel per edge, recomputed into the
+ * declared FOV so an honouring runtime is exact).
+ */
+[[nodiscard]] EyeCrop eye_crop(const XrFovf& eye, float tanX, float tanY, std::uint32_t width,
+                               std::uint32_t height) noexcept {
+    EyeCrop crop{};
+    const float w = static_cast<float>(width);
+    const float h = static_cast<float>(height);
+    const bool usable = tanX > 0.0F && tanY > 0.0F && width != 0 && height != 0 && eye.angleRight > eye.angleLeft
+                        && eye.angleUp > eye.angleDown;
+    if (!usable) {
+        // No eye FOV to crop to: the whole image, declared as rendered.
+        crop.rect = XrRect2Di{XrOffset2Di{0, 0},
+                              XrExtent2Di{static_cast<std::int32_t>(width), static_cast<std::int32_t>(height)}};
+        crop.fov = XrFovf{-std::atan(tanX), std::atan(tanX), std::atan(tanY), -std::atan(tanY)};
+        return crop;
+    }
+    // Image x grows with the tangent from -tanX at 0 to +tanX at w; image y grows DOWN, from +tanY.
+    const auto column = [&](float tangent) { return (tangent + tanX) / (2.0F * tanX) * w; };
+    const auto row = [&](float tangent) { return (tanY - tangent) / (2.0F * tanY) * h; };
+    const float wantLeft = column(std::tan(eye.angleLeft));
+    const float wantRight = column(std::tan(eye.angleRight));
+    const float wantTop = row(std::tan(eye.angleUp));
+    const float wantBottom = row(std::tan(eye.angleDown));
+    const auto clampRound = [](float v, float limit) {
+        return static_cast<std::int32_t>(std::lround((std::min)((std::max)(v, 0.0F), limit)));
+    };
+    const std::int32_t x0 = clampRound(wantLeft, w);
+    const std::int32_t x1 = (std::max)(clampRound(wantRight, w), x0 + 1);
+    const std::int32_t y0 = clampRound(wantTop, h);
+    const std::int32_t y1 = (std::max)(clampRound(wantBottom, h), y0 + 1);
+    if ((wantLeft < -0.5F || wantRight > w + 0.5F || wantTop < -0.5F || wantBottom > h + 0.5F) && !g_cropClampReported) {
+        // The image does not hold the whole eye: that eye gets a narrower declared FOV (an honouring
+        // runtime shows black beyond it, a substituting one stretches by the missing fraction).
+        g_cropClampReported = true;
+        log_fmt("ev=vr.xr crop clamped want=%.1f,%.1f,%.1f,%.1f image=%ux%u", wantLeft, wantRight, wantTop,
+                wantBottom, width, height);
+    }
+    crop.rect = XrRect2Di{XrOffset2Di{x0, y0}, XrExtent2Di{x1 - x0, y1 - y0}};
+    const auto tangentAtColumn = [&](std::int32_t x) { return -tanX + 2.0F * tanX * static_cast<float>(x) / w; };
+    const auto tangentAtRow = [&](std::int32_t y) { return tanY - 2.0F * tanY * static_cast<float>(y) / h; };
+    crop.fov = XrFovf{std::atan(tangentAtColumn(x0)), std::atan(tangentAtColumn(x1)), std::atan(tangentAtRow(y0)),
+                      std::atan(tangentAtRow(y1))};
+    return crop;
+}
+
+/**
+ * The record the GPU last saw drawn -- on the single immediate context, the frame being presented.
+ * Before the ledger has a match, the old assumption: the views located at the previous present.
+ */
+[[nodiscard]] FrameSource presented_source() noexcept {
+    FrameSource source{};
+    AcquireSRWLockShared(&g_ledgerLock);
+    const bool have = g_haveDrawn && g_drawn.views[0].type == XR_TYPE_VIEW;
+    if (have) {
+        source.views = g_drawn.views;
+        source.eye = g_drawn.eye;
+        source.fold = g_drawn.head.fold;
+        source.stereo = g_drawn.stereo;
+        source.sequence = g_drawn.sequence;
+        source.serial = g_drawn.serial;
+        source.ledger = true;
+        source.located = g_drawn.located;
+    }
+    ReleaseSRWLockShared(&g_ledgerLock);
+    if (!have) {
+        source.views = g_renderedViews;
+        source.eye = g_renderedEye;
+        source.serial = g_renderedSerial;
+        source.fresh = true;
+        return source;
+    }
+    source.fresh = source.sequence != g_lastSource.sequence;
+    return source;
+}
+
+/**
+ * Learns the lead (g_locateTime) from the image about to be submitted: it is shown at this frame's
+ * predicted display time, and was drawn from poses located for `source.located`. The difference is
+ * what the lead still lacks. Only images the GPU named and that are new count (a repeated image says
+ * nothing about the pipeline); each correction is a fifth of the error and at most a display period,
+ * so a single hitch cannot throw it; the lead stays within 0..3 periods.
+ */
+void update_lead(const FrameSource& source) noexcept {
+    if (!source.ledger || !source.fresh || source.located == 0 || g_displayPeriod <= 0) {
+        return;
+    }
+    const std::int64_t error = g_predictedDisplayTime - source.located;
+    g_leadErrorNs.store(error, std::memory_order_relaxed);
+    const std::int64_t period = g_displayPeriod;
+    const std::int64_t step = (std::max)(-period, (std::min)(period, error / 5));
+    const std::int64_t lead = (std::max)(std::int64_t{0}, (std::min)(3 * period, g_leadNs.load(std::memory_order_relaxed) + step));
+    g_leadNs.store(lead, std::memory_order_relaxed);
+}
+
 /**
  * Copies the presented back buffer into the runtime swapchain and fills the projection views.
  * @return True when an image was acquired, filled and released, so a layer may reference it.
@@ -1514,8 +2085,12 @@ void destroy_presentation() noexcept {
         device->GetImmediateContext(&context);
     }
     bool submitted = false;
-    if (device != nullptr && context != nullptr && ensure_presentation(device, description)) {
-        Presentation& p = g_presentation;
+    // Which frame this image is, and so which eye it belongs to and what pose it was drawn from.
+    const FrameSource source = presented_source();
+    const bool stereoFrame = source.stereo && source.fresh && (source.eye == 1 || source.eye == 2);
+    const std::size_t target = stereoFrame ? static_cast<std::size_t>(source.eye - 1) : 0;
+    if (device != nullptr && context != nullptr && ensure_presentation(g_presentations[target], device, description)) {
+        Presentation& p = g_presentations[target];
         std::uint32_t index = 0;
         XrSwapchainImageAcquireInfo acquire{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
         if (g_api.acquireSwapchainImage(p.swapchain, &acquire, &index) == XR_SUCCESS
@@ -1524,10 +2099,33 @@ void destroy_presentation() noexcept {
             wait.timeout = kImageWaitNanoseconds;
             if (g_api.waitSwapchainImage(p.swapchain, &wait) == XR_SUCCESS) {
                 if (p.copyDirect) {
-                    context->CopyResource(p.images[index], backBuffer);
+                    // The UI keeps its canvas 16:10 at the narrowest, so an eye-shaped back buffer holds
+                    // the world cropped to a centred band (with the HUD on it). The band's own input --
+                    // the whole frame -- fills the eye; the back buffer's band goes on top, HUD and all.
+                    unsigned top = 0;
+                    unsigned bottom = 0;
+                    ID3D11Texture2D* scene = display::canvas_band(description.Width, description.Height, top, bottom)
+                                                 ? gpu::scene_texture()
+                                                 : nullptr;
+                    D3D11_TEXTURE2D_DESC sceneDesc{};
+                    if (scene != nullptr) {
+                        scene->GetDesc(&sceneDesc);
+                    }
+                    if (scene != nullptr && sceneDesc.Width == description.Width && sceneDesc.Height == description.Height
+                        && sceneDesc.SampleDesc.Count == 1 && is_rgba8_family(sceneDesc.Format)) {
+                        context->CopySubresourceRegion(p.images[index], 0, 0, 0, 0, scene, 0, nullptr);
+                        const D3D11_BOX band{0, top, 0, description.Width, bottom, 1};
+                        context->CopySubresourceRegion(p.images[index], 0, 0, top, 0, backBuffer, 0, &band);
+                        ++g_filledFrames;
+                    } else {
+                        context->CopyResource(p.images[index], backBuffer);
+                    }
+                    if (scene != nullptr) {
+                        scene->Release();
+                    }
                     submitted = true;
                 } else {
-                    submitted = blit(context, backBuffer, index);
+                    submitted = blit(p, context, backBuffer, index);
                 }
             }
             XrSwapchainImageReleaseInfo release{XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
@@ -1559,18 +2157,80 @@ void destroy_presentation() noexcept {
                 halfVertical = std::atan(std::tan(halfHorizontal) / aspect);
             }
             g_declaredHalfVertical.store(halfVertical, std::memory_order_relaxed);
-            const XrPosef centre = render_pose(g_renderedViews, g_renderedEye);
-            for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
-                XrCompositionLayerProjectionView& view = views[eye];
+            const float tanX = std::tan(halfHorizontal);
+            const float tanY = std::tan(halfVertical);
+            g_submittedTanX = tanX;
+            g_submittedTanY = tanY;
+            // Each eye's share of this image (eye_crop): its own FOV, as located for the frame the
+            // image was drawn from.
+            const bool perEye = g_perEyeCrop.load(std::memory_order_relaxed);
+            const auto crop = [&](std::size_t eye) {
+                return eye_crop(perEye ? source.views[eye].fov : XrFovf{}, tanX, tanY, p.width, p.height);
+            };
+            const float probeYaw = g_probeYaw.load(std::memory_order_relaxed);
+            const float probeScale = g_probeFovScale.load(std::memory_order_relaxed);
+            // The pose the image was really drawn from: the eye the camera took, the orientation
+            // shared by both eyes. In mono that is one pose for both views, which is what keeps a
+            // flat image fusable at infinity (see cyclopean()).
+            const XrPosef drawn = render_pose(source.views, source.eye);
+            const auto fill = [&](XrCompositionLayerProjectionView& view, const Presentation& from,
+                                  const XrPosef& pose, const EyeCrop& share) {
                 view = XrCompositionLayerProjectionView{XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW};
-                view.pose = centre;
-                view.fov = XrFovf{-halfHorizontal, halfHorizontal, halfVertical, -halfVertical};
-                view.subImage.swapchain = p.swapchain;
-                view.subImage.imageRect.offset = XrOffset2Di{0, 0};
-                view.subImage.imageRect.extent =
-                    XrExtent2Di{static_cast<std::int32_t>(p.width), static_cast<std::int32_t>(p.height)};
+                view.pose = probeYaw != 0.0F ? turned_about_up(pose, probeYaw) : pose;
+                view.fov = share.fov;
+                if (probeScale != 1.0F) {
+                    const auto scaled = [&](float angle) { return std::atan(std::tan(angle) * probeScale); };
+                    view.fov = XrFovf{scaled(view.fov.angleLeft), scaled(view.fov.angleRight), scaled(view.fov.angleUp),
+                                      scaled(view.fov.angleDown)};
+                }
+                view.subImage.swapchain = from.swapchain;
+                view.subImage.imageRect = share.rect;
                 view.subImage.imageArrayIndex = 0;
+            };
+            if ((g_frameIndex % kSubmitReportPeriod) == 0) {
+                const EyeCrop left = crop(0);
+                const EyeCrop right = crop(1);
+                log_fmt("ev=vr.xr crop image=%ux%u tan=%.4f,%.4f L=%d,%d,%d,%d fov=%.4f,%.4f,%.4f,%.4f "
+                        "R=%d,%d,%d,%d fov=%.4f,%.4f,%.4f,%.4f",
+                        p.width, p.height, tanX, tanY, left.rect.offset.x, left.rect.offset.y, left.rect.extent.width,
+                        left.rect.extent.height, left.fov.angleLeft, left.fov.angleRight, left.fov.angleUp,
+                        left.fov.angleDown, right.rect.offset.x, right.rect.offset.y, right.rect.extent.width,
+                        right.rect.extent.height, right.fov.angleLeft, right.fov.angleRight, right.fov.angleUp,
+                        right.fov.angleDown);
             }
+            if (!stereoFrame) {
+                for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
+                    fill(views[eye], p, drawn, crop(eye));
+                }
+                // A mono frame in the middle of stereo (a menu, a load, the first frame) leaves no
+                // held image worth showing beside the next fresh one.
+                g_shown = {};
+            } else {
+                Shown& fresh = g_shown[target];
+                fresh.valid = true;
+                fresh.pose = drawn;
+                fresh.crop = crop(target);
+                fresh.fold = source.fold;
+                fresh.width = p.width;
+                fresh.height = p.height;
+                const std::size_t other = 1 - target;
+                fill(views[target], p, drawn, fresh.crop);
+                const Presentation& held = g_presentations[other];
+                if (g_shown[other].valid && held.swapchain != XR_NULL_HANDLE && held.width == p.width
+                    && held.height == p.height) {
+                    // The other eye keeps the image it was given a frame ago, declared where it was
+                    // drawn -- turned by whatever artificial turn happened since, which moved the
+                    // world against the room. Without that, a smooth turn of 120 deg/s would put a
+                    // degree of false disparity between the eyes every frame.
+                    const float turned = g_shown[other].fold - source.fold;
+                    fill(views[other], held, turned_about_up(g_shown[other].pose, turned), g_shown[other].crop);
+                } else {
+                    // Nothing held yet: this eye's image for both, once, each eye's own share of it.
+                    fill(views[other], p, drawn, crop(other));
+                }
+            }
+            g_lastSource = source;
+            update_lead(source);
         }
     }
     release_com(context);
@@ -1699,7 +2359,9 @@ void to_game_pose(const XrPosef& pose, float sine, float cosine, HandPose& out) 
         return false;
     }
     XrSpaceLocation location{XR_TYPE_SPACE_LOCATION};
-    if (g_api.locateSpace(space, g_space, g_predictedDisplayTime, &location) != XR_SUCCESS) {
+    // The same instant as the head (begin_frame): the hands drawn in an image are where they will be
+    // when that image is shown, like the head it is drawn from.
+    if (g_api.locateSpace(space, g_space, g_locateTime, &location) != XR_SUCCESS) {
         return false;
     }
     // Both bits are required: an orientation-only location would put the weapon at the origin,
@@ -1766,12 +2428,120 @@ std::array<HandRaw, 2> g_handRaw{};
     HandPose palmOnly{};
     to_game_pose(raw.palm, sine, cosine, palmOnly);
     hand.palm = palmOnly.offset;
+    // ...but the grip's own axes are kept apart, for what is held in a fist rather than pointed.
+    hand.gripForward = raw.havePalm ? palmOnly.forward : hand.forward;
+    hand.gripUp = raw.havePalm ? palmOnly.up : hand.up;
     hand.frame = g_frameIndex;
     hand.valid = true;
     return hand;
 }
 
-/** Drains the event queue, driving the session through its state machine. */
+[[nodiscard]] const char* state_name(XrSessionState state) noexcept {
+    switch (state) {
+    case XR_SESSION_STATE_IDLE: return "idle";
+    case XR_SESSION_STATE_READY: return "ready";
+    case XR_SESSION_STATE_SYNCHRONIZED: return "synchronized";
+    case XR_SESSION_STATE_VISIBLE: return "visible";
+    case XR_SESSION_STATE_FOCUSED: return "focused";
+    case XR_SESSION_STATE_STOPPING: return "stopping";
+    case XR_SESSION_STATE_LOSS_PENDING: return "loss_pending";
+    case XR_SESSION_STATE_EXITING: return "exiting";
+    default: return "unknown";
+    }
+}
+
+/** RAII for the pump's lock. */
+struct PumpLock final {
+    PumpLock() noexcept { AcquireSRWLockExclusive(&g_pump.lock); }
+    ~PumpLock() { ReleaseSRWLockExclusive(&g_pump.lock); }
+    PumpLock(const PumpLock&) = delete;
+    PumpLock& operator=(const PumpLock&) = delete;
+};
+
+/** Waits on the pump's condition for at most `ms`; the lock must be held (exclusive). */
+void pump_wait(DWORD ms) noexcept {
+    SleepConditionVariableSRW(&g_pump.changed, &g_pump.lock, ms, 0);
+}
+
+/**
+ * STOPPING: the session is ended once no frame is open -- neither the game's nor a keep-alive's --
+ * from whichever thread drains the events. Runs unlocked.
+ */
+void end_session_when_free() noexcept {
+    {
+        PumpLock held;
+        if (g_pump.mainOpen || g_pump.keepAliveOpen) {
+            g_pump.endPending = true;
+            return;
+        }
+        g_pump.endPending = false;
+        g_pump.ending = true;
+        g_pump.waited = false;
+        g_pump.request = false;
+        g_sessionRunning = false;
+        WakeAllConditionVariable(&g_pump.changed);
+    }
+    g_api.endSession(g_session);
+    log_line("ev=vr.xr session state=stopped");
+    PumpLock held;
+    g_pump.ending = false;
+    WakeAllConditionVariable(&g_pump.changed);
+}
+
+/** One session state change: the state machine, and what a change means for the rest of the module. */
+void on_session_state(XrSessionState state) noexcept {
+    g_sessionState = state;
+    log_fmt("ev=vr.xr session_state=%s", state_name(state));
+    {
+        PumpLock held;
+        if (state == XR_SESSION_STATE_FOCUSED || state == XR_SESSION_STATE_VISIBLE) {
+            g_pump.wasRunning = true;
+        } else if (state == XR_SESSION_STATE_IDLE && g_pump.wasRunning) {
+            g_pump.wasRunning = false;
+            g_pump.idleSince = now_seconds();
+        } else if (state == XR_SESSION_STATE_READY) {
+            g_pump.idleSince = 0.0;
+        }
+    }
+    switch (state) {
+    case XR_SESSION_STATE_READY:
+        if (!g_sessionRunning) {
+            XrSessionBeginInfo begin{XR_TYPE_SESSION_BEGIN_INFO};
+            begin.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+            const XrResult result = g_api.beginSession(g_session, &begin);
+            if (result == XR_SUCCESS) {
+                PumpLock held;
+                g_sessionRunning = true;
+                g_pump.endPending = false;
+                log_line("ev=vr.xr session state=running");
+            } else {
+                log_fmt("ev=vr.xr session begin result=%d", static_cast<int>(result));
+            }
+        }
+        break;
+    case XR_SESSION_STATE_STOPPING:
+        // Normal: the headset came off, or the runtime's own menu took over. Begin again on READY.
+        if (g_sessionRunning) {
+            end_session_when_free();
+        }
+        break;
+    case XR_SESSION_STATE_LOSS_PENDING:
+        // The headset is gone (Link cable, Air Link, the runtime closed): start over when it is back.
+        log_line("ev=vr.xr lost reason=session_loss action=restart");
+        g_restartRequested = true;
+        break;
+    case XR_SESSION_STATE_EXITING:
+        // Closed from the headset's own menu: leave VR, and do not reopen it by ourselves -- that is
+        // what would put it straight back. F9 off and on again brings it back.
+        log_line("ev=vr.xr exiting action=flat_until_f9");
+        g_exitHold = true;
+        g_restartRequested = true;
+        break;
+    default: break;
+    }
+}
+
+/** Drains the event queue, driving the session through its state machine. On the frame thread. */
 void pump_events() noexcept {
     for (;;) {
         XrEventDataBuffer event{};
@@ -1780,23 +2550,297 @@ void pump_events() noexcept {
         if (result != XR_SUCCESS) {
             return;
         }
-        if (event.type != XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED) {
+        switch (event.type) {
+        case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
+            on_session_state(reinterpret_cast<const XrEventDataSessionStateChanged*>(&event)->state);
+            break;
+        case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING: {
+            const auto* change = reinterpret_cast<const XrEventDataReferenceSpaceChangePending*>(&event);
+            if (change->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL) {
+                // The player recentred from the runtime's own menu: LOCAL now starts where the head
+                // is. Ours follows, origin and yaw, so the view does not jump by the old offset.
+                g_runtimeRecentre = true;
+                g_runtimeRecentres.fetch_add(1, std::memory_order_relaxed);
+            }
+            log_fmt("ev=vr.xr reference_change space=%d", static_cast<int>(change->referenceSpaceType));
+            break;
+        }
+        case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING:
+            log_line("ev=vr.xr lost reason=instance_loss action=restart");
+            g_restartRequested = true;
+            break;
+        case XR_TYPE_EVENT_DATA_EVENTS_LOST:
+            log_line("ev=vr.xr events_lost");
+            break;
+        default: break;
+        }
+    }
+}
+
+/** A Meta runtime (or the mock) gives a stopped session back late; a new one is READY at once. */
+[[nodiscard]] bool kick_applies() noexcept {
+    std::array<char, 64> name{};
+    for (std::size_t i = 0; i + 1 < name.size() && g_runtimeName[i] != '\0'; ++i) {
+        const char c = g_runtimeName[i];
+        name[i] = c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c;
+    }
+    return std::strstr(name.data(), "oculus") != nullptr || std::strstr(name.data(), "meta") != nullptr
+           || std::strstr(name.data(), "mock") != nullptr;
+}
+
+/**
+ * One frame for the headset with the last frame's layers, at the time this wait was for: the last
+ * picture held where it was in the room (the compositor reprojects it for the head as it is now).
+ * Frame thread, unlocked, with keepAliveOpen set. The device's lock is held around the frame calls:
+ * a runtime may use the game's immediate context in them, and the game may be using it right now.
+ */
+void keep_alive_frame(const XrFrameState& state) noexcept {
+    SavedLayers saved{};
+    {
+        PumpLock held;
+        saved = g_pump.layers;
+        if (!g_pump.inRun) {
+            g_pump.inRun = true;
+            g_pump.runStart = now_seconds();
+            g_pump.runFrames = 0;
+            ++g_pump.keepAliveRuns;
+            if (g_pump.keepAliveRuns <= 30) {
+                const double last = (std::max)(g_pump.lastMainEnd, g_pump.lastMainBegin);
+                log_fmt("ev=vr.xr keepalive start quiet=%.2f layers=%d quads=%zu", now_seconds() - last,
+                        saved.haveProjection ? 1 : 0, saved.quadCount);
+            }
+        }
+        ++g_pump.runFrames;
+    }
+    saved.projection.views = saved.views.data();
+    std::array<const XrCompositionLayerBaseHeader*, 1 + kMaxQuads> layers{};
+    std::uint32_t count = 0;
+    if (state.shouldRender != XR_FALSE) {
+        if (saved.haveProjection) {
+            layers[count++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&saved.projection);
+        }
+        for (std::size_t q = 0; q < saved.quadCount; ++q) {
+            layers[count++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&saved.quads[q]);
+        }
+    }
+    XrFrameBeginInfo beginInfo{XR_TYPE_FRAME_BEGIN_INFO};
+    XrResult result = g_api.beginFrame(g_session, &beginInfo);
+    if (XR_SUCCEEDED(result)) {
+        XrFrameEndInfo endInfo{XR_TYPE_FRAME_END_INFO};
+        endInfo.displayTime = state.predictedDisplayTime;
+        endInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+        endInfo.layerCount = count;
+        endInfo.layers = count != 0 ? layers.data() : nullptr;
+        result = g_api.endFrame(g_session, &endInfo);
+    }
+    PumpLock held;
+    g_pump.lastKeepAlive = now_seconds();
+    if (state.predictedDisplayPeriod > 1'000'000 && state.predictedDisplayPeriod < 100'000'000) {
+        g_pump.period = static_cast<double>(state.predictedDisplayPeriod) * 1e-9;
+    }
+    if (XR_SUCCEEDED(result)) {
+        ++g_pump.keepAlives;
+    } else if (g_pump.waitFails++ < 8) {
+        log_fmt("ev=vr.xr keepalive result=%d", static_cast<int>(result));
+    }
+}
+
+DWORD WINAPI pump_thread(void*) noexcept {
+    for (;;) {
+        {
+            PumpLock held;
+            if (g_pump.quit) {
+                break;
+            }
+        }
+        pump_events();
+        AcquireSRWLockExclusive(&g_pump.lock);
+        if (g_pump.quit) {
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            break;
+        }
+        if (g_pump.endPending && !g_pump.mainOpen && !g_pump.keepAliveOpen) {
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            end_session_when_free();
             continue;
         }
-        const auto* changed = reinterpret_cast<const XrEventDataSessionStateChanged*>(&event);
-        g_sessionState = changed->state;
-        if (g_sessionState == XR_SESSION_STATE_READY && !g_sessionRunning) {
-            XrSessionBeginInfo begin{XR_TYPE_SESSION_BEGIN_INFO};
-            begin.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-            if (g_api.beginSession(g_session, &begin) == XR_SUCCESS) {
-                g_sessionRunning = true;
-                log_line("ev=vr.xr session state=running");
+        const double now = now_seconds();
+        const double lastMain = (std::max)(g_pump.lastMainEnd, g_pump.lastMainBegin);
+        if (lastMain > 0.0 && now - lastMain > 2.0 && now - g_pump.lastQuietReport > 10.0) {
+            // The watchdog's line: the game has not presented for a while. What it was last doing
+            // with the runtime tells a stall of ours from one of its own.
+            g_pump.lastQuietReport = now;
+            const char* call = g_presentCall.load(std::memory_order_relaxed);
+            log_fmt("ev=vr.xr game_quiet s=%.1f main_open=%d present_call=%s session=%s keepalives=%llu", now - lastMain,
+                    g_pump.mainOpen ? 1 : 0, call != nullptr ? call : "none", state_name(g_sessionState.load()),
+                    static_cast<unsigned long long>(g_pump.keepAlives));
+        }
+        if (!g_sessionRunning) {
+            g_pump.waited = false;
+            g_pump.request = false;
+            WakeAllConditionVariable(&g_pump.changed);
+            if (g_pump.idleSince > 0.0 && !g_exitHold && now - g_pump.idleSince > kKickSeconds && now >= g_pump.nextKick) {
+                g_pump.idleSince = 0.0;
+                if (kick_applies()) {
+                    // Measured on a Quest 3 over Air Link (dishonored-vr): a stopped session came back
+                    // 23-169 s later, while a NEW session was READY at once.
+                    g_pump.nextKick = now + 20.0;
+                    ++g_pump.kicks;
+                    log_line("ev=vr.xr session not_offered_back action=new_session");
+                    g_restartRequested = true;
+                } else {
+                    log_fmt("ev=vr.xr session not_offered_back runtime=%s action=wait", g_runtimeName.data());
+                }
             }
-        } else if (g_sessionState == XR_SESSION_STATE_STOPPING && g_sessionRunning) {
-            // Normal: the game window lost focus, or the headset came off. Begin again on READY.
-            g_api.endSession(g_session);
-            g_sessionRunning = false;
-            log_line("ev=vr.xr session state=stopped");
+            pump_wait(20);
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            continue;
+        }
+        const bool gameQuiet = g_keepAliveAllowed && !g_pump.mainOpen && lastMain > 0.0 && now - lastMain > kQuietSeconds;
+        if (g_pump.waited) {
+            // A frame the game asked for and has not taken (its wait gave up): to the headset after a while.
+            if (gameQuiet && now - g_pump.waitedAt > kQuietSeconds) {
+                const XrFrameState state = g_pump.state;
+                g_pump.waited = false;
+                g_pump.keepAliveOpen = true;
+                ReleaseSRWLockExclusive(&g_pump.lock);
+                keep_alive_frame(state);
+                PumpLock held;
+                g_pump.keepAliveOpen = false;
+                WakeAllConditionVariable(&g_pump.changed);
+                continue;
+            }
+            pump_wait(10);
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            continue;
+        }
+        if (gameQuiet && !g_pump.request && now - g_pump.lastKeepAlive < g_pump.period * 0.9) {
+            // At most one keep-alive frame per display period, whatever the runtime's wait does.
+            const double left = g_pump.period * 0.9 - (now - g_pump.lastKeepAlive);
+            pump_wait(static_cast<DWORD>(left * 1000.0) + 1);
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            continue;
+        }
+        if (g_pump.request || gameQuiet) {
+            const bool forGame = g_pump.request;
+            g_pump.request = false;
+            g_pump.waiting = true;
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            XrFrameWaitInfo waitInfo{XR_TYPE_FRAME_WAIT_INFO};
+            XrFrameState state{XR_TYPE_FRAME_STATE};
+            const double t0 = now_seconds();
+            const XrResult result = g_api.waitFrame(g_session, &waitInfo, &state);
+            const double t1 = now_seconds();
+            AcquireSRWLockExclusive(&g_pump.lock);
+            g_pump.waiting = false;
+            ++g_pump.waits;
+            g_pump.longestWait = (std::max)(g_pump.longestWait, t1 - t0);
+            if (t1 - t0 > 1.0) {
+                log_fmt("ev=vr.xr wait_frame s=%.2f note=runtime_held_frame", t1 - t0);
+            }
+            if (XR_FAILED(result) || result == XR_SESSION_LOSS_PENDING) {
+                if (g_pump.waitFails++ < 8) {
+                    log_fmt("ev=vr.xr wait_frame result=%d", static_cast<int>(result));
+                }
+                pump_wait(5);
+                ReleaseSRWLockExclusive(&g_pump.lock);
+                continue;
+            }
+            if (g_pump.quit || !g_sessionRunning || g_pump.ending) {
+                ReleaseSRWLockExclusive(&g_pump.lock);
+                continue;
+            }
+            const double lastMain2 = (std::max)(g_pump.lastMainEnd, g_pump.lastMainBegin);
+            const bool stillQuiet = g_keepAliveAllowed && !g_pump.mainOpen && lastMain2 > 0.0 && t1 - lastMain2 > kQuietSeconds;
+            if (forGame || g_pump.request || !stillQuiet) {
+                g_pump.state = state;
+                g_pump.waited = true;
+                g_pump.waitedAt = t1;
+                g_pump.request = false;
+                WakeAllConditionVariable(&g_pump.changed);
+                ReleaseSRWLockExclusive(&g_pump.lock);
+            } else {
+                g_pump.keepAliveOpen = true;
+                ReleaseSRWLockExclusive(&g_pump.lock);
+                keep_alive_frame(state);
+                PumpLock held;
+                g_pump.keepAliveOpen = false;
+                WakeAllConditionVariable(&g_pump.changed);
+            }
+            continue;
+        }
+        pump_wait(10);
+        ReleaseSRWLockExclusive(&g_pump.lock);
+    }
+    return 0;
+}
+
+/** Starts the frame thread; without it the old way (xrWaitFrame on the present thread) still works. */
+void start_pump() noexcept {
+    if (g_pump.thread != nullptr) {
+        return;
+    }
+    // No thread is running, so nothing holds the lock: the state starts over, lock and all.
+    const double period = g_pump.period;
+    g_pump = Pump{};
+    g_pump.period = period;
+    DWORD id = 0;
+    g_pump.thread = CreateThread(nullptr, 0, &pump_thread, nullptr, 0, &id);
+    if (g_pump.thread == nullptr) {
+        log_fmt("ev=vr.xr pump result=fail error=%lu fallback=present_thread", GetLastError());
+        return;
+    }
+    // It paces the frames, as the render thread did.
+    SetThreadPriority(g_pump.thread, THREAD_PRIORITY_ABOVE_NORMAL);
+    log_fmt("ev=vr.xr pump result=ok thread=%lu bound_ms=%lu quiet_ms=%d", id, kWaitBoundMs,
+            static_cast<int>(kQuietSeconds * 1000.0));
+}
+
+/** Asks the frame thread to stop and waits up to `ms`. False while it is still inside a runtime call. */
+[[nodiscard]] bool stop_pump(DWORD ms) noexcept {
+    if (g_pump.thread == nullptr) {
+        return true;
+    }
+    {
+        PumpLock held;
+        g_pump.quit = true;
+        WakeAllConditionVariable(&g_pump.changed);
+    }
+    if (WaitForSingleObject(g_pump.thread, ms) != WAIT_OBJECT_0) {
+        return false;
+    }
+    CloseHandle(g_pump.thread);
+    g_pump.thread = nullptr;
+    return true;
+}
+
+/** The present thread's frame is over (or never began): the frame thread may feed the headset and end the session. */
+void main_frame_ended() noexcept {
+    PumpLock held;
+    g_pump.mainOpen = false;
+    g_pump.lastMainEnd = now_seconds();
+    WakeAllConditionVariable(&g_pump.changed);
+}
+
+/** A copy of this frame's layers for the keep-alive. */
+void save_layers(const XrCompositionLayerBaseHeader* const* layers, std::uint32_t count) noexcept {
+    PumpLock held;
+    g_pump.layers.haveProjection = false;
+    g_pump.layers.quadCount = 0;
+    for (std::uint32_t i = 0; i < count; ++i) {
+        const XrCompositionLayerBaseHeader* layer = layers[i];
+        if (layer->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION) {
+            const auto* projection = reinterpret_cast<const XrCompositionLayerProjection*>(layer);
+            if (projection->viewCount > kViewCount) {
+                continue;
+            }
+            g_pump.layers.projection = *projection;
+            for (std::uint32_t v = 0; v < projection->viewCount; ++v) {
+                g_pump.layers.views[v] = projection->views[v];
+            }
+            g_pump.layers.haveProjection = true;
+        } else if (layer->type == XR_TYPE_COMPOSITION_LAYER_QUAD && g_pump.layers.quadCount < kMaxQuads) {
+            g_pump.layers.quads[g_pump.layers.quadCount++] = *reinterpret_cast<const XrCompositionLayerQuad*>(layer);
         }
     }
 }
@@ -1826,22 +2870,44 @@ int render_eye() noexcept {
     return g_renderEye.load(std::memory_order_relaxed);
 }
 
+Vector aiming_eye_offset(const HeadPose& head) noexcept {
+    const int eye = g_renderEye.load(std::memory_order_relaxed);
+    if (head.eye == eye) {
+        return head.offset;
+    }
+    if (eye == 1 || eye == 2) {
+        return head.eyeOffsets[static_cast<std::size_t>(eye - 1)];
+    }
+    return Vector{(head.eyeOffsets[0][0] + head.eyeOffsets[1][0]) * 0.5F,
+                  (head.eyeOffsets[0][1] + head.eyeOffsets[1][1]) * 0.5F,
+                  (head.eyeOffsets[0][2] + head.eyeOffsets[1][2]) * 0.5F};
+}
+
 /** Takes the next head position as the origin. */
 void recentre() noexcept {
     g_recentreRequested = true;
 }
 
-/** Brings up the runtime, instance, system and session on the game's device. */
-bool initialize(ID3D11Device* device) noexcept {
-    if (g_status == Status::running) {
-        return true;
+namespace {
+
+[[nodiscard]] bool finish_initialize(ID3D11Device* device) noexcept;
+
+/**
+ * Brings up the runtime, instance and system. On the init thread; the session follows on the present
+ * thread (create_session), because it is the one call that works on the game's device.
+ * An instance left from an earlier attempt that found no headset is reused: only xrGetSystem is
+ * asked again, so a headset switched on later is picked up without reloading the runtime.
+ */
+[[nodiscard]] bool initialize_blocking(ID3D11Device* device) noexcept {
+    // Everything the runtime maps while we are inside its setup is the runtime's, not the game's.
+    const OwnLoads own;
+    if (g_instance == XR_NULL_HANDLE) {
+        if (!load_runtime() || !bind_global()) {
+            return false;
+        }
     }
-    if (g_attempted || device == nullptr) {
-        return false;
-    }
-    g_attempted = true;
-    if (!load_runtime() || !bind_global()) {
-        return false;
+    if (g_instance != XR_NULL_HANDLE) {
+        return finish_initialize(device);
     }
     std::array<const char*, 1> extensions{XR_KHR_D3D11_ENABLE_EXTENSION_NAME};
     XrInstanceCreateInfo create{XR_TYPE_INSTANCE_CREATE_INFO};
@@ -1873,6 +2939,14 @@ bool initialize(ID3D11Device* device) noexcept {
         std::snprintf(
             g_runtimeName.data(), g_runtimeName.size(), "%s", properties.runtimeName);
     }
+    return finish_initialize(device);
+}
+
+/**
+ * From the instance on, as far as the init thread may go: the system (the headset), its D3D11
+ * requirements and the views. The session is the present thread's (create_session).
+ */
+[[nodiscard]] bool finish_initialize(ID3D11Device* device) noexcept {
     XrSystemGetInfo systemInfo{XR_TYPE_SYSTEM_GET_INFO};
     systemInfo.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
     if (g_api.getSystem(g_instance, &systemInfo, &g_system) != XR_SUCCESS) {
@@ -1909,17 +2983,41 @@ bool initialize(ID3D11Device* device) noexcept {
             views[0].recommendedImageRectWidth,
             views[0].recommendedImageRectHeight,
             runtime_name());
+    AcquireSRWLockExclusive(&g_geometryLock);
+    g_geometry = EyeGeometry{};
+    g_geometry.recommendedWidth = views[0].recommendedImageRectWidth;
+    g_geometry.recommendedHeight = views[0].recommendedImageRectHeight;
+    ReleaseSRWLockExclusive(&g_geometryLock);
+    (void)device;
+    return true;
+}
+
+/**
+ * The session, its spaces and the controllers: everything that hands the runtime the game's device.
+ * On the PRESENT thread, never the init thread. xrCreateSession on Meta's runtime works on the device
+ * it is given, and this game has no D3D11 multithread protection: called from the init thread while
+ * the game rendered, on 18 Oct (after the headset came off and on, Air Link), the game's main loop froze
+ * for good inside the 1.5 s the call took (13:20:26-28 in Meta's log, `stall result=detected` 6 s later,
+ * no line of ours ever again). On the present thread the game is waiting for us, so nothing else is
+ * on the device; the price is a hitch of that call's length, once per session.
+ */
+[[nodiscard]] bool create_session(ID3D11Device* device) noexcept {
+    const OwnLoads own;
     XrGraphicsBindingD3D11KHR binding{XR_TYPE_GRAPHICS_BINDING_D3D11_KHR};
     binding.device = device;
     XrSessionCreateInfo sessionInfo{XR_TYPE_SESSION_CREATE_INFO};
     sessionInfo.next = &binding;
     sessionInfo.systemId = g_system;
-    if (g_api.createSession(g_instance, &sessionInfo, &g_session) != XR_SUCCESS
-        || g_session == XR_NULL_HANDLE) {
-        log_line("ev=vr.xr session result=fail");
+    const ULONGLONG started = GetTickCount64();
+    const XrResult created = g_api.createSession(g_instance, &sessionInfo, &g_session);
+    const auto took = static_cast<unsigned long long>(GetTickCount64() - started);
+    if (created != XR_SUCCESS || g_session == XR_NULL_HANDLE) {
+        log_fmt("ev=vr.xr session result=fail code=%d ms=%llu", static_cast<int>(created), took);
+        g_session = XR_NULL_HANDLE;
         g_status = Status::sessionFailed;
         return false;
     }
+    log_fmt("ev=vr.xr session result=ok ms=%llu thread=present", took);
     XrReferenceSpaceCreateInfo spaceInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
     spaceInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
     spaceInfo.poseInReferenceSpace.orientation.w = 1.0F;
@@ -1928,11 +3026,107 @@ bool initialize(ID3D11Device* device) noexcept {
         g_status = Status::sessionFailed;
         return false;
     }
+    // VIEW: the head's own space, for the fade that brings the world back after a screen.
+    XrReferenceSpaceCreateInfo viewInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+    viewInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+    viewInfo.poseInReferenceSpace.orientation.w = 1.0F;
+    if (g_api.createReferenceSpace(g_session, &viewInfo, &g_viewSpace) != XR_SUCCESS) {
+        g_viewSpace = XR_NULL_HANDLE;
+        log_line("ev=vr.xr view_space result=fail note=no_fade");
+    }
     // The controllers are optional: head tracking runs with or without them.
     (void)create_actions();
-    g_status = Status::running;
     log_fmt("ev=vr.xr init result=ok runtime=%s", runtime_name());
     return true;
+}
+
+DWORD WINAPI init_thread(void*) noexcept {
+    const bool ok = initialize_blocking(g_initDevice);
+    g_initOk.store(ok, std::memory_order_release);
+    g_initPhase.store(static_cast<int>(InitPhase::done), std::memory_order_release);
+    return 0;
+}
+
+/** Destroys the session, its spaces and swapchains, and (unless `keepInstance`) the instance. Present thread. */
+void teardown(bool keepInstance) noexcept;
+
+} // namespace
+
+/**
+ * Brings the runtime up, without ever blocking the game: the work runs on the init thread, and this
+ * picks the answer up on a later present. A failure is retried -- every 3 s while there is no
+ * headset or no runtime (the instance is kept, so only the headset is asked for again), every 10 s
+ * otherwise -- for as long as VR is switched on. Present thread.
+ * @return True once a session exists (it runs when the runtime says READY).
+ */
+bool initialize(ID3D11Device* device) noexcept {
+    const auto phase = static_cast<InitPhase>(g_initPhase.load(std::memory_order_acquire));
+    if (phase == InitPhase::idle && g_status == Status::running) {
+        return true;
+    }
+    if (g_exitHold) {
+        return false;
+    }
+    if (phase == InitPhase::working) {
+        return false;
+    }
+    if (phase == InitPhase::done) {
+        if (g_initThread != nullptr) {
+            // Never an unbounded wait on the game's thread: the init thread has published its answer,
+            // but leaving takes the loader lock, which the runtime's own threads may be holding.
+            if (WaitForSingleObject(g_initThread, 0) != WAIT_OBJECT_0) {
+                return false;
+            }
+            CloseHandle(g_initThread);
+            g_initThread = nullptr;
+        }
+        g_initPhase.store(static_cast<int>(InitPhase::idle), std::memory_order_release);
+        if (g_initOk.load(std::memory_order_acquire)
+            && !create_session(device != nullptr ? device : g_initDevice)) {
+            g_initOk.store(false, std::memory_order_release);
+        }
+        if (g_initOk.load(std::memory_order_acquire)) {
+            g_status = Status::running;
+            g_attempts = 0;
+            g_restartRequested = false;
+            // Off unless asked for: on 17 Oct the first keep-alive frame of a run coincided with the game
+            // AND the frame thread freezing together for 7.5 s (one keep-alive frame, an hourglass of
+            // 7.53 s on the mock), and calling the runtime from a second thread while the game renders
+            // cannot be proven safe here. When the game stalls, the runtime reprojects its last frame.
+            const char* keepAlive = settings::value("keepalive", "off");
+            g_keepAliveAllowed = std::strcmp(keepAlive, "on") == 0 || (std::strcmp(keepAlive, "auto") == 0 && kick_applies());
+            log_fmt("ev=vr.xr keepalive allowed=%d setting=%s runtime=%s", g_keepAliveAllowed ? 1 : 0, keepAlive, runtime_name());
+            start_pump();
+            return true;
+        }
+        const Status failed = g_status;
+        const bool noHeadset = failed == Status::systemFailed || failed == Status::noRuntime;
+        // Without a headset the instance is kept: asking for the system again is all a retry needs.
+        teardown(failed == Status::systemFailed);
+        g_status = failed;
+        g_nextAttemptMs = GetTickCount64() + (noHeadset ? 3000 : 10000);
+        if (g_attempts <= 3 || (g_attempts % 20) == 0) {
+            log_fmt("ev=vr.xr init result=retry status=%d attempt=%u next_ms=%d", static_cast<int>(failed), g_attempts,
+                    noHeadset ? 3000 : 10000);
+        }
+        return false;
+    }
+    if (device == nullptr || GetTickCount64() < g_nextAttemptMs) {
+        return false;
+    }
+    ++g_attempts;
+    g_initDevice = device;
+    g_initOk = false;
+    g_initPhase.store(static_cast<int>(InitPhase::working), std::memory_order_release);
+    DWORD id = 0;
+    g_initThread = CreateThread(nullptr, 0, &init_thread, nullptr, 0, &id);
+    if (g_initThread == nullptr) {
+        // No thread: the old way, on this one.
+        const bool ok = initialize_blocking(device);
+        g_initOk = ok;
+        g_initPhase.store(static_cast<int>(InitPhase::done), std::memory_order_release);
+    }
+    return false;
 }
 
 /** Runs one OpenXR frame and publishes the pose. */
@@ -1940,18 +3134,100 @@ void begin_frame(float roomAnchor) noexcept {
     if (g_status != Status::running) {
         return;
     }
-    pump_events();
+    if (g_restartRequested) {
+        // The runtime took the session (or the instance) away: everything goes, and initialize()
+        // brings it back when the runtime has it again. A frame thread still inside a runtime call
+        // keeps the teardown waiting until it returns (this runs again next present).
+        if (!stop_pump(50)) {
+            return;
+        }
+        log_line("ev=vr.xr restart action=teardown");
+        teardown(false);
+        g_nextAttemptMs = GetTickCount64() + 3000;
+        g_restartRequested = false;
+        return;
+    }
+    if (g_pump.thread == nullptr) {
+        pump_events();
+    }
+    if (g_runtimeRecentre.exchange(false)) {
+        // LOCAL moved under us: take the origin again, where the head is now.
+        g_recentreRequested = true;
+        log_line("ev=vr.xr recentre reason=runtime");
+    }
     if (!g_sessionRunning || g_frameOpen) {
         return;
     }
-    XrFrameWaitInfo waitInfo{XR_TYPE_FRAME_WAIT_INFO};
     XrFrameState frameState{XR_TYPE_FRAME_STATE};
-    if (g_api.waitFrame(g_session, &waitInfo, &frameState) != XR_SUCCESS) {
-        return;
+    if (g_pump.thread != nullptr) {
+        // The frame thread waits; this asks for a frame and waits for it with a bound. A runtime that
+        // holds frames back costs this present the headset, never the game its frame.
+        AcquireSRWLockExclusive(&g_pump.lock);
+        if (!g_pump.waited) {
+            g_pump.request = true;
+            WakeAllConditionVariable(&g_pump.changed);
+        }
+        const DWORD bound = g_pump.lastTimedOut ? 2 : kWaitBoundMs;
+        const double deadline = now_seconds() + bound / 1000.0;
+        while (!g_pump.waited && !g_pump.quit && !g_pump.ending && g_sessionRunning) {
+            const double left = deadline - now_seconds();
+            if (left <= 0.0) {
+                break;
+            }
+            pump_wait(static_cast<DWORD>(left * 1000.0) + 1);
+        }
+        const double now = now_seconds();
+        if (!g_pump.waited || g_pump.ending || !g_sessionRunning) {
+            ++g_pump.mainTimeouts;
+            if (!g_pump.lastTimedOut) {
+                g_pump.lastTimedOut = true;
+                g_pump.timedOutSince = now;
+                if (g_pump.mainTimeouts <= 20) {
+                    log_fmt("ev=vr.xr wait_bound ms=%lu waiting=%d note=game_goes_on", bound, g_pump.waiting ? 1 : 0);
+                }
+            }
+            ReleaseSRWLockExclusive(&g_pump.lock);
+            return;
+        }
+        if (g_pump.lastTimedOut) {
+            g_pump.lastTimedOut = false;
+            if (g_pump.mainTimeouts <= 20) {
+                log_fmt("ev=vr.xr wait_bound over s=%.2f", now - g_pump.timedOutSince);
+            }
+        }
+        if (g_pump.inRun) {
+            const double run = now - g_pump.runStart;
+            g_pump.longestRun = (std::max)(g_pump.longestRun, run);
+            if (g_pump.keepAliveRuns <= 30) {
+                log_fmt("ev=vr.xr keepalive over frames=%llu s=%.2f", static_cast<unsigned long long>(g_pump.runFrames), run);
+            }
+            g_pump.inRun = false;
+        }
+        frameState = g_pump.state;
+        g_pump.waited = false;
+        g_pump.request = false;
+        g_pump.mainOpen = true;
+        g_pump.lastMainBegin = now;
+        ReleaseSRWLockExclusive(&g_pump.lock);
+    } else {
+        XrFrameWaitInfo waitInfo{XR_TYPE_FRAME_WAIT_INFO};
+        g_presentCall = "xrWaitFrame";
+        const XrResult waited = g_api.waitFrame(g_session, &waitInfo, &frameState);
+        g_presentCall = nullptr;
+        if (waited != XR_SUCCESS) {
+            return;
+        }
     }
     g_predictedDisplayTime = frameState.predictedDisplayTime;
+    g_displayPeriod = frameState.predictedDisplayPeriod;
+    const std::int64_t fixedLead = g_leadFixedNs.load(std::memory_order_relaxed);
+    g_locateTime = g_predictedDisplayTime + (fixedLead >= 0 ? fixedLead : g_leadNs.load(std::memory_order_relaxed));
     XrFrameBeginInfo beginInfo{XR_TYPE_FRAME_BEGIN_INFO};
-    if (g_api.beginFrame(g_session, &beginInfo) != XR_SUCCESS) {
+    g_presentCall = "xrBeginFrame";
+    const XrResult begun = g_api.beginFrame(g_session, &beginInfo);
+    g_presentCall = nullptr;
+    if (XR_FAILED(begun)) {
+        main_frame_ended();
         return;
     }
     g_frameOpen = true;
@@ -1963,7 +3239,7 @@ void begin_frame(float roomAnchor) noexcept {
     }
     XrViewLocateInfo locate{XR_TYPE_VIEW_LOCATE_INFO};
     locate.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-    locate.displayTime = g_predictedDisplayTime;
+    locate.displayTime = g_locateTime;
     locate.space = g_space;
     XrViewState viewState{XR_TYPE_VIEW_STATE};
     std::array<XrView, kViewCount> views{};
@@ -2047,6 +3323,15 @@ void begin_frame(float roomAnchor) noexcept {
     yaw_about_up(pose.forward, sine, cosine);
     yaw_about_up(pose.up, sine, cosine);
     yaw_about_up(pose.offset, sine, cosine);
+    for (std::size_t index = 0; index < kViewCount; ++index) {
+        const XrVector3f& p = views[index].pose.position;
+        pose.eyeOffsets[index] = to_game(XrVector3f{(p.x - g_origin.x) * g_unitsPerMetre,
+                                                    (p.y - g_origin.y) * g_unitsPerMetre,
+                                                    (p.z - g_origin.z) * g_unitsPerMetre});
+        yaw_about_up(pose.eyeOffsets[index], sine, cosine);
+    }
+    pose.eye = g_pendingEye;
+    pose.fold = fold;
 
     // The engine's frustum field is a single symmetric horizontal FOV, so the eyes' asymmetric
     // frusta have to be covered by the smallest symmetric one that contains both.
@@ -2060,6 +3345,32 @@ void begin_frame(float roomAnchor) noexcept {
                                   (std::max)(std::fabs(fov.angleUp), std::fabs(fov.angleDown)));
     }
     pose.horizontalFov = halfHorizontal * 2.0F;
+    {
+        // The union both eyes need, and the density of the panel at its centre: the recommended
+        // size spread over one eye's own tangent extent.
+        float densityX = 0.0F;
+        float densityY = 0.0F;
+        for (std::uint32_t index = 0; index < kViewCount; ++index) {
+            const XrFovf& fov = views[index].fov;
+            const float spanX = std::tan(fov.angleRight) - std::tan(fov.angleLeft);
+            const float spanY = std::tan(fov.angleUp) - std::tan(fov.angleDown);
+            AcquireSRWLockShared(&g_geometryLock);
+            const float recW = static_cast<float>(g_geometry.recommendedWidth);
+            const float recH = static_cast<float>(g_geometry.recommendedHeight);
+            ReleaseSRWLockShared(&g_geometryLock);
+            if (spanX > 0.01F && spanY > 0.01F) {
+                densityX = (std::max)(densityX, recW / spanX);
+                densityY = (std::max)(densityY, recH / spanY);
+            }
+        }
+        AcquireSRWLockExclusive(&g_geometryLock);
+        g_geometry.tanHalfWidth = std::tan(halfHorizontal);
+        g_geometry.tanHalfHeight = std::tan(halfVertical);
+        g_geometry.pixelsPerTanX = densityX;
+        g_geometry.pixelsPerTanY = densityY;
+        g_geometry.valid = densityX > 0.0F && densityY > 0.0F;
+        ReleaseSRWLockExclusive(&g_geometryLock);
+    }
     const float tangentVertical = std::tan(halfVertical);
     pose.aspect = tangentVertical > 0.0F ? std::tan(halfHorizontal) / tangentVertical : 1.0F;
     pose.frame = ++g_frameIndex;
@@ -2075,6 +3386,17 @@ void begin_frame(float roomAnchor) noexcept {
     g_pose = pose;
     g_hands = hands;
     ReleaseSRWLockExclusive(&g_poseLock);
+    g_pendingSerial = pose.frame;
+    frames::note(frames::Kind::publish, pose.frame, nullptr, g_pendingEye);
+    AcquireSRWLockExclusive(&g_ledgerLock);
+    Publication& publication = g_publications[pose.frame % kPublicationRing];
+    publication.serial = pose.frame;
+    publication.located = g_locateTime;
+    publication.views = views;
+    publication.head = pose;
+    publication.hands = hands;
+    publication.valid = true;
+    ReleaseSRWLockExclusive(&g_ledgerLock);
 
     if ((g_frameIndex % kHandReportPeriod) == 0) {
         // The fold angle goes out with the poses, and the head's offset beside the hands', so a
@@ -2108,34 +3430,492 @@ void begin_frame(float roomAnchor) noexcept {
     }
 }
 
+namespace {
+
+/**
+ * A swapchain of the module's own drawing (the screen's panel, its room, the beam, a fade): images a
+ * pass renders into, sRGB so the passes work in linear light. One image is acquired, drawn, released
+ * per frame; an image whose wait timed out stays acquired and is waited for again next frame, as the
+ * spec requires (releasing it unwaited is a call-order error).
+ */
+struct Surface final {
+    XrSwapchain swapchain{XR_NULL_HANDLE};
+    std::array<ID3D11Texture2D*, kMaxSwapchainImages> images{};
+    std::uint32_t imageCount{};
+    std::uint32_t width{};
+    std::uint32_t height{};
+    DXGI_FORMAT format{DXGI_FORMAT_UNKNOWN};
+    bool failed{};
+    bool acquired{};
+    std::uint32_t index{};
+};
+Surface g_panelSurface{};
+Surface g_beamSurface{};
+Surface g_fadeSurface{};
+std::array<Surface, kViewCount> g_backdropSurfaces{};
+
+void destroy_surface(Surface& s) noexcept {
+    if (s.swapchain != XR_NULL_HANDLE && g_api.destroySwapchain != nullptr) {
+        g_api.destroySwapchain(s.swapchain);
+    }
+    s = Surface{};
+}
+
+[[nodiscard]] bool ensure_surface(Surface& s, std::uint32_t width, std::uint32_t height, const char* name) noexcept {
+    if (s.swapchain != XR_NULL_HANDLE && s.width == width && s.height == height) {
+        return true;
+    }
+    if (s.failed && s.width == width && s.height == height) {
+        return false;
+    }
+    destroy_surface(s);
+    s.width = width;
+    s.height = height;
+    std::array<std::int64_t, 32> offered{};
+    std::uint32_t count = 0;
+    if (g_api.enumerateSwapchainFormats(g_session, static_cast<std::uint32_t>(offered.size()), &count, offered.data()) != XR_SUCCESS) {
+        count = 0;
+    }
+    for (const DXGI_FORMAT candidate : {DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, DXGI_FORMAT_B8G8R8A8_UNORM_SRGB}) {
+        for (std::uint32_t i = 0; i < count && s.format == DXGI_FORMAT_UNKNOWN; ++i) {
+            if (offered[i] == static_cast<std::int64_t>(candidate)) {
+                s.format = candidate;
+            }
+        }
+    }
+    XrSwapchainCreateInfo info{XR_TYPE_SWAPCHAIN_CREATE_INFO};
+    info.usageFlags = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT | XR_SWAPCHAIN_USAGE_SAMPLED_BIT;
+    info.format = static_cast<std::int64_t>(s.format);
+    info.sampleCount = 1;
+    info.width = width;
+    info.height = height;
+    info.faceCount = 1;
+    info.arraySize = 1;
+    info.mipCount = 1;
+    std::array<XrSwapchainImageD3D11KHR, kMaxSwapchainImages> images{};
+    for (auto& image : images) {
+        image.type = XR_TYPE_SWAPCHAIN_IMAGE_D3D11_KHR;
+    }
+    if (s.format == DXGI_FORMAT_UNKNOWN || g_api.createSwapchain(g_session, &info, &s.swapchain) != XR_SUCCESS
+        || g_api.enumerateSwapchainImages(s.swapchain, kMaxSwapchainImages, &s.imageCount,
+                                          reinterpret_cast<XrSwapchainImageBaseHeader*>(images.data()))
+               != XR_SUCCESS
+        || s.imageCount == 0 || s.imageCount > kMaxSwapchainImages) {
+        log_fmt("ev=vr.xr surface=%s result=fail size=%ux%u format=%d", name, width, height, static_cast<int>(s.format));
+        destroy_surface(s);
+        s.width = width;
+        s.height = height;
+        s.failed = true;
+        return false;
+    }
+    for (std::uint32_t i = 0; i < s.imageCount; ++i) {
+        s.images[i] = images[i].texture;
+    }
+    log_fmt("ev=vr.xr surface=%s result=ok size=%ux%u images=%u", name, width, height, s.imageCount);
+    return true;
+}
+
+/** Acquires (or keeps) an image, draws it with `draw(target)`, releases it. */
+template <typename Draw> [[nodiscard]] bool render_surface(Surface& s, Draw&& draw) noexcept {
+    if (s.swapchain == XR_NULL_HANDLE) {
+        return false;
+    }
+    if (!s.acquired) {
+        XrSwapchainImageAcquireInfo acquire{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
+        if (g_api.acquireSwapchainImage(s.swapchain, &acquire, &s.index) != XR_SUCCESS || s.index >= s.imageCount) {
+            return false;
+        }
+        s.acquired = true;
+    }
+    XrSwapchainImageWaitInfo wait{XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+    wait.timeout = kImageWaitNanoseconds;
+    if (g_api.waitSwapchainImage(s.swapchain, &wait) != XR_SUCCESS) {
+        return false;
+    }
+    const compositor::Target target{s.images[s.index], s.width, s.height, static_cast<std::uint32_t>(s.format)};
+    const bool drawn = draw(target);
+    XrSwapchainImageReleaseInfo release{XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
+    g_api.releaseSwapchainImage(s.swapchain, &release);
+    s.acquired = false;
+    return drawn;
+}
+
+/** The game, a moment ago, for the screen's room: a ring of three, one frozen while a screen shows. */
+struct Snapshot final {
+    bool valid{};
+    double at{};
+    XrQuaternionf orientation{0, 0, 0, 1};
+    float tangents[4]{};
+    ID3D11ShaderResourceView* view{};
+};
+std::array<Snapshot, 3> g_snapshots{};
+std::size_t g_snapshotNext = 0;
+int g_frozen = -1;
+double g_lastSnapshot = 0.0;
+
+void offer_snapshot(ID3D11Device* device, ID3D11DeviceContext* context, IDXGISwapChain* swapChain) noexcept {
+    const double now = now_seconds();
+    if (now - g_lastSnapshot < 0.2 || g_submittedTanX <= 0.0F || g_submittedTanY <= 0.0F) {
+        return;
+    }
+    std::size_t slot = g_snapshotNext;
+    if (static_cast<int>(slot) == g_frozen) {
+        slot = (slot + 1) % g_snapshots.size();
+    }
+    // The whole eye-shaped world when the scene composite ran (no HUD), the back buffer otherwise.
+    ID3D11Texture2D* source = gpu::scene_texture();
+    ID3D11Texture2D* backBuffer = nullptr;
+    if (source == nullptr) {
+        if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))) {
+            return;
+        }
+    }
+    ID3D11ShaderResourceView* view =
+        compositor::snapshot(device, context, source != nullptr ? source : backBuffer, static_cast<unsigned>(slot));
+    if (source != nullptr) {
+        source->Release();
+    }
+    release_com(backBuffer);
+    g_lastSnapshot = now;
+    if (view == nullptr) {
+        return;
+    }
+    Snapshot& snap = g_snapshots[slot];
+    snap.valid = true;
+    snap.at = now;
+    snap.view = view;
+    snap.orientation = render_pose(g_lastSource.views, g_lastSource.eye).orientation;
+    snap.tangents[0] = -g_submittedTanX;
+    snap.tangents[1] = g_submittedTanX;
+    snap.tangents[2] = g_submittedTanY;
+    snap.tangents[3] = -g_submittedTanY;
+    g_snapshotNext = (slot + 1) % g_snapshots.size();
+}
+
+/** @return Seconds since the newest snapshot, or -1. */
+[[nodiscard]] double newest_snapshot_age() noexcept {
+    double newest = -1.0;
+    for (const Snapshot& s : g_snapshots) {
+        if (s.valid) {
+            newest = (std::max)(newest, s.at);
+        }
+    }
+    return newest < 0.0 ? -1.0 : now_seconds() - newest;
+}
+
+/** Freezes the newest snapshot at least 0.15 s old (a menu draws itself a frame or two before it is known), else the newest. */
+void freeze_snapshot() noexcept {
+    const double now = now_seconds();
+    int best = -1;
+    int newest = -1;
+    for (int i = 0; i < static_cast<int>(g_snapshots.size()); ++i) {
+        const Snapshot& s = g_snapshots[static_cast<std::size_t>(i)];
+        if (!s.valid) {
+            continue;
+        }
+        if (newest < 0 || s.at > g_snapshots[static_cast<std::size_t>(newest)].at) {
+            newest = i;
+        }
+        if (now - s.at >= 0.15 && (best < 0 || s.at > g_snapshots[static_cast<std::size_t>(best)].at)) {
+            best = i;
+        }
+    }
+    g_frozen = best >= 0 ? best : newest;
+}
+
+void forget_snapshots() noexcept {
+    g_snapshots = {};
+    g_frozen = -1;
+    g_snapshotNext = 0;
+}
+
+/** The screen's frame: the room drawn for each eye's pose now, the panel and the beam over it. */
+[[nodiscard]] std::uint32_t compose_screen(const screen::Plan& plan, IDXGISwapChain* swapChain,
+                                           XrCompositionLayerProjection& projection,
+                                           std::array<XrCompositionLayerProjectionView, kViewCount>& views,
+                                           std::array<XrCompositionLayerQuad, kMaxQuads>& quads, std::uint32_t& quadCount) noexcept {
+    ID3D11Texture2D* backBuffer = nullptr;
+    if (swapChain == nullptr
+        || FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
+        || backBuffer == nullptr) {
+        return 0;
+    }
+    ID3D11Device* device = nullptr;
+    ID3D11DeviceContext* context = nullptr;
+    backBuffer->GetDevice(&device);
+    if (device != nullptr) {
+        device->GetImmediateContext(&context);
+    }
+    std::uint32_t layers = 0;
+    quadCount = 0;
+    if (device != nullptr && context != nullptr && g_havePending) {
+        // The room, per eye, at the pose that eye has this frame: it holds still in the room with
+        // nothing to reproject.
+        AcquireSRWLockShared(&g_geometryLock);
+        const std::uint32_t rw = (std::max)(256U, g_geometry.recommendedWidth / 2);
+        const std::uint32_t rh = (std::max)(256U, g_geometry.recommendedHeight / 2);
+        ReleaseSRWLockShared(&g_geometryLock);
+        const Snapshot* frozen = g_frozen >= 0 && g_snapshots[static_cast<std::size_t>(g_frozen)].valid
+                                     ? &g_snapshots[static_cast<std::size_t>(g_frozen)]
+                                     : nullptr;
+        bool eyesDrawn = true;
+        for (std::uint32_t eye = 0; eye < kViewCount; ++eye) {
+            Surface& s = g_backdropSurfaces[eye];
+            const XrView& view = g_pendingViews[eye];
+            const bool drawn = ensure_surface(s, rw, rh, eye == 0 ? "room_l" : "room_r")
+                               && render_surface(s, [&](const compositor::Target& target) {
+                                      compositor::BackdropDraw b{};
+                                      b.eyeOrientation[0] = view.pose.orientation.x;
+                                      b.eyeOrientation[1] = view.pose.orientation.y;
+                                      b.eyeOrientation[2] = view.pose.orientation.z;
+                                      b.eyeOrientation[3] = view.pose.orientation.w;
+                                      b.eyeTangents[0] = std::tan(view.fov.angleLeft);
+                                      b.eyeTangents[1] = std::tan(view.fov.angleRight);
+                                      b.eyeTangents[2] = std::tan(view.fov.angleUp);
+                                      b.eyeTangents[3] = std::tan(view.fov.angleDown);
+                                      if (frozen != nullptr) {
+                                          b.snapshot = frozen->view;
+                                          b.snapshotOrientation[0] = frozen->orientation.x;
+                                          b.snapshotOrientation[1] = frozen->orientation.y;
+                                          b.snapshotOrientation[2] = frozen->orientation.z;
+                                          b.snapshotOrientation[3] = frozen->orientation.w;
+                                          for (int i = 0; i < 4; ++i) {
+                                              b.snapshotTangents[i] = frozen->tangents[i];
+                                          }
+                                          b.snapshotBrightness = plan.snapshot;
+                                      }
+                                      b.desaturate = plan.desaturate;
+                                      b.environment = plan.environment;
+                                      b.fade = plan.fade;
+                                      for (int i = 0; i < 3; ++i) {
+                                          b.glowDirection[i] = plan.glowDirection[i];
+                                      }
+                                      b.glow = plan.glow;
+                                      return compositor::draw_backdrop(device, context, b, target);
+                                  });
+            eyesDrawn = eyesDrawn && drawn;
+            views[eye] = XrCompositionLayerProjectionView{XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW};
+            views[eye].pose = view.pose;
+            views[eye].fov = view.fov;
+            views[eye].subImage.swapchain = s.swapchain;
+            views[eye].subImage.imageRect = XrRect2Di{XrOffset2Di{0, 0},
+                                                      XrExtent2Di{static_cast<std::int32_t>(s.width), static_cast<std::int32_t>(s.height)}};
+        }
+        if (eyesDrawn) {
+            projection.space = g_space;
+            projection.viewCount = kViewCount;
+            projection.views = views.data();
+            layers = 1;
+        }
+        if (plan.alpha > 0.0F && plan.outWidth >= 16 && plan.outHeight >= 16
+            && ensure_surface(g_panelSurface, plan.outWidth, plan.outHeight, "panel")
+            && render_surface(g_panelSurface, [&](const compositor::Target& target) {
+                   compositor::PanelDraw p{};
+                   p.source = backBuffer;
+                   for (int i = 0; i < 4; ++i) {
+                       p.crop[i] = plan.crop[i];
+                   }
+                   p.alpha = plan.alpha;
+                   p.corner = plan.corner;
+                   p.aspect = plan.height > 0.0F ? plan.width / plan.height : 1.6F;
+                   p.pointerU = plan.pointerU;
+                   p.pointerV = plan.pointerV;
+                   p.pointerAlpha = plan.pointer ? 1.0F : 0.0F;
+                   return compositor::draw_panel(device, context, p, target);
+               })) {
+            XrCompositionLayerQuad& quad = quads[quadCount++];
+            quad = XrCompositionLayerQuad{XR_TYPE_COMPOSITION_LAYER_QUAD};
+            quad.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;  // premultiplied
+            quad.space = g_space;
+            quad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+            quad.subImage.swapchain = g_panelSurface.swapchain;
+            quad.subImage.imageRect = XrRect2Di{XrOffset2Di{0, 0}, XrExtent2Di{static_cast<std::int32_t>(g_panelSurface.width),
+                                                                               static_cast<std::int32_t>(g_panelSurface.height)}};
+            quad.pose.position = XrVector3f{plan.panel.position[0], plan.panel.position[1], plan.panel.position[2]};
+            quad.pose.orientation = XrQuaternionf{plan.panel.orientation[0], plan.panel.orientation[1], plan.panel.orientation[2],
+                                                  plan.panel.orientation[3]};
+            quad.size = XrExtent2Df{plan.width, plan.height};
+        }
+        if (plan.beam && plan.beamLength > 0.01F && ensure_surface(g_beamSurface, 128, 16, "beam")
+            && render_surface(g_beamSurface, [&](const compositor::Target& target) {
+                   compositor::SolidDraw b{};
+                   b.colour[0] = 0.55F;
+                   b.colour[1] = 0.75F;
+                   b.colour[2] = 1.0F;
+                   b.colour[3] = plan.beamAlpha;
+                   b.gradient = 1.0F;
+                   b.softEdge = 0.45F;
+                   return compositor::draw_solid(device, context, b, target);
+               })) {
+            XrCompositionLayerQuad& quad = quads[quadCount++];
+            quad = XrCompositionLayerQuad{XR_TYPE_COMPOSITION_LAYER_QUAD};
+            quad.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+            quad.space = g_space;
+            quad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+            quad.subImage.swapchain = g_beamSurface.swapchain;
+            quad.subImage.imageRect = XrRect2Di{XrOffset2Di{0, 0}, XrExtent2Di{128, 16}};
+            quad.pose.position = XrVector3f{plan.beamPose.position[0], plan.beamPose.position[1], plan.beamPose.position[2]};
+            quad.pose.orientation = XrQuaternionf{plan.beamPose.orientation[0], plan.beamPose.orientation[1],
+                                                  plan.beamPose.orientation[2], plan.beamPose.orientation[3]};
+            quad.size = XrExtent2Df{plan.beamLength, 0.006F};
+        }
+    }
+    release_com(context);
+    release_com(device);
+    release_com(backBuffer);
+    return layers;
+}
+
+/** The world fading back in after a screen: a black quad over the view, `1 - fade` opaque. */
+[[nodiscard]] bool compose_fade(float fade, IDXGISwapChain* swapChain, XrCompositionLayerQuad& quad) noexcept {
+    if (fade >= 0.999F || g_viewSpace == XR_NULL_HANDLE || swapChain == nullptr) {
+        return false;
+    }
+    ID3D11Device* device = nullptr;
+    if (FAILED(swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device))) || device == nullptr) {
+        return false;
+    }
+    ID3D11DeviceContext* context = nullptr;
+    device->GetImmediateContext(&context);
+    const bool drawn = ensure_surface(g_fadeSurface, 16, 16, "fade")
+                       && render_surface(g_fadeSurface, [&](const compositor::Target& target) {
+                              compositor::SolidDraw s{};
+                              s.colour[3] = std::clamp(1.0F - fade, 0.0F, 1.0F);
+                              return compositor::draw_solid(device, context, s, target);
+                          });
+    release_com(context);
+    release_com(device);
+    if (!drawn) {
+        return false;
+    }
+    quad = XrCompositionLayerQuad{XR_TYPE_COMPOSITION_LAYER_QUAD};
+    quad.layerFlags = XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
+    quad.space = g_viewSpace;
+    quad.eyeVisibility = XR_EYE_VISIBILITY_BOTH;
+    quad.subImage.swapchain = g_fadeSurface.swapchain;
+    quad.subImage.imageRect = XrRect2Di{XrOffset2Di{0, 0}, XrExtent2Di{16, 16}};
+    quad.pose.orientation.w = 1.0F;
+    quad.pose.position = XrVector3f{0.0F, 0.0F, -0.3F};
+    quad.size = XrExtent2Df{3.0F, 3.0F};
+    return true;
+}
+
+} // namespace
+
 /** Ends the OpenXR frame opened by begin_frame, submitting the presented image when it can. */
 void end_frame(IDXGISwapChain* swapChain) noexcept {
     if (g_status != Status::running || !g_frameOpen) {
         return;
     }
+    // What this frame shows: the game, or the screen (vr_state.cpp decides, vr_screen.cpp places).
+    screen::Pose head{};
+    bool headValid = false;
+    if (g_havePending) {
+        const XrPosef centre = cyclopean(g_pendingViews);
+        head.position[0] = centre.position.x;
+        head.position[1] = centre.position.y;
+        head.position[2] = centre.position.z;
+        head.orientation[0] = centre.orientation.x;
+        head.orientation[1] = centre.orientation.y;
+        head.orientation[2] = centre.orientation.z;
+        head.orientation[3] = centre.orientation.w;
+        headValid = true;
+    }
+    screen::Pose aims[2]{};
+    bool aimValid[2]{};
+    for (std::size_t h = 0; h < 2; ++h) {
+        if (g_handRaw[h].have) {
+            const XrPosef& a = g_handRaw[h].aim;
+            aims[h].position[0] = a.position.x;
+            aims[h].position[1] = a.position.y;
+            aims[h].position[2] = a.position.z;
+            aims[h].orientation[0] = a.orientation.x;
+            aims[h].orientation[1] = a.orientation.y;
+            aims[h].orientation[2] = a.orientation.z;
+            aims[h].orientation[3] = a.orientation.w;
+            aimValid[h] = true;
+        }
+    }
+    std::uint32_t bbW = 0;
+    std::uint32_t bbH = 0;
+    if (swapChain != nullptr) {
+        DXGI_SWAP_CHAIN_DESC desc{};
+        if (SUCCEEDED(swapChain->GetDesc(&desc))) {
+            bbW = desc.BufferDesc.Width;
+            bbH = desc.BufferDesc.Height;
+        }
+    }
+    const screen::Plan plan = screen::plan(head, headValid, aims, aimValid, bbW, bbH, newest_snapshot_age(),
+                                           g_runtimeRecentres.load(std::memory_order_relaxed));
+    if (plan.freeze) {
+        freeze_snapshot();
+    } else if (!plan.screen) {
+        g_frozen = -1;
+    }
+
     XrCompositionLayerProjection layer{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
     std::array<XrCompositionLayerProjectionView, kViewCount> projectionViews{};
-    const XrCompositionLayerBaseHeader* layers[1]{};
+    std::array<XrCompositionLayerQuad, kMaxQuads> quads{};
+    std::uint32_t quadCount = 0;
+    const XrCompositionLayerBaseHeader* layers[1 + kMaxQuads]{};
     std::uint32_t layerCount = 0;
-    if (g_shouldRender && swapChain != nullptr && g_haveRendered
+    if (g_shouldRender && plan.screen) {
+        if (compose_screen(plan, swapChain, layer, projectionViews, quads, quadCount) != 0) {
+            layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&layer);
+        }
+        for (std::uint32_t q = 0; q < quadCount; ++q) {
+            layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&quads[q]);
+        }
+    } else if (g_shouldRender && swapChain != nullptr && g_haveRendered
         && submit_back_buffer(swapChain, projectionViews)) {
         layer.space = g_space;
         layer.viewCount = kViewCount;
         layer.views = projectionViews.data();
-        layers[0] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&layer);
-        layerCount = 1;
+        layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&layer);
+        ID3D11Device* device = nullptr;
+        if (SUCCEEDED(swapChain->GetDevice(__uuidof(ID3D11Device), reinterpret_cast<void**>(&device))) && device != nullptr) {
+            ID3D11DeviceContext* context = nullptr;
+            device->GetImmediateContext(&context);
+            offer_snapshot(device, context, swapChain);
+            release_com(context);
+            release_com(device);
+        }
+        if (compose_fade(plan.worldFade, swapChain, quads[0])) {
+            layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&quads[0]);
+        }
     }
     XrFrameEndInfo endInfo{XR_TYPE_FRAME_END_INFO};
     endInfo.displayTime = g_predictedDisplayTime;
     endInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
     endInfo.layerCount = layerCount;
     endInfo.layers = layerCount != 0 ? layers : nullptr;
+    g_presentCall = "xrEndFrame";
     const XrResult result = g_api.endFrame(g_session, &endInfo);
+    g_presentCall = nullptr;
     g_frameOpen = false;
+    if (layerCount != 0) {
+        save_layers(layers, layerCount);
+    }
+    main_frame_ended();
+    if (XR_FAILED(result)) {
+        // A refused frame is a black headset with no other trace.
+        static std::uint32_t refused = 0;
+        if (refused++ < 10) {
+            log_fmt("ev=vr.xr end_frame result=%d layers=%u", static_cast<int>(result), layerCount);
+        }
+    }
+    if (frames::tracing()) {
+        // v0 = the ledger's draw sequence, v1 = 1 when the GPU named it, v2 = 1 when fresh.
+        const float v[6] = {static_cast<float>(g_lastSource.sequence), g_lastSource.ledger ? 1.0F : 0.0F,
+                            g_lastSource.fresh ? 1.0F : 0.0F, g_lastSource.stereo ? 1.0F : 0.0F, 0.0F, 0.0F};
+        frames::note(frames::Kind::present, layerCount != 0 ? g_lastSource.serial : 0, v, g_lastSource.eye);
+    }
+    frames::present_tick();
     // The frame the game draws next uses the views located this frame.
     if (g_havePending) {
         g_renderedViews = g_pendingViews;
         g_renderedEye = g_pendingEye;
+        g_renderedSerial = g_pendingSerial;
         g_haveRendered = true;
     }
     if ((g_frameIndex % kSubmitReportPeriod) == 0 || result != XR_SUCCESS) {
@@ -2147,6 +3927,19 @@ void end_frame(IDXGISwapChain* swapChain) noexcept {
                 2.0F * g_declaredHalfVertical.load(std::memory_order_relaxed),
                 g_renderedFov.load(std::memory_order_relaxed),
                 g_renderedAspect.load(std::memory_order_relaxed));
+        AcquireSRWLockShared(&g_ledgerLock);
+        const unsigned long long matches = g_drawnMatches;
+        const unsigned long long misses = g_drawnMisses;
+        ReleaseSRWLockShared(&g_ledgerLock);
+        log_fmt("ev=vr.xr ledger stereo=%d ledger=%d eye=%d fresh=%d world_matches=%llu world_misses=%llu filled=%llu",
+                g_lastSource.stereo ? 1 : 0, g_lastSource.ledger ? 1 : 0, g_lastSource.eye,
+                g_lastSource.fresh ? 1 : 0, matches, misses,
+                static_cast<unsigned long long>(g_filledFrames));
+        const std::int64_t fixedLead = g_leadFixedNs.load(std::memory_order_relaxed);
+        log_fmt("ev=vr.xr lead mode=%s lead_ms=%.2f shortfall_ms=%.2f period_ms=%.2f",
+                fixedLead >= 0 ? "fixed" : "measured",
+                static_cast<double>(fixedLead >= 0 ? fixedLead : g_leadNs.load()) * 1e-6,
+                static_cast<double>(g_leadErrorNs.load()) * 1e-6, static_cast<double>(g_displayPeriod) * 1e-6);
     }
 }
 
@@ -2197,6 +3990,194 @@ float rendered_fov() noexcept {
     return g_renderedFov.load(std::memory_order_relaxed);
 }
 
+float origin_yaw() noexcept {
+    return g_originYaw;
+}
+
+EyeGeometry eye_geometry() noexcept {
+    AcquireSRWLockShared(&g_geometryLock);
+    const EyeGeometry geometry = g_geometry;
+    ReleaseSRWLockShared(&g_geometryLock);
+    return geometry;
+}
+
+void set_stereo(bool alternate) noexcept {
+    g_stereoMode.store(alternate ? 1 : 0, std::memory_order_relaxed);
+}
+
+void set_per_eye_crop(bool perEye) noexcept {
+    g_perEyeCrop.store(perEye, std::memory_order_relaxed);
+}
+
+bool per_eye_crop() noexcept {
+    return g_perEyeCrop.load(std::memory_order_relaxed);
+}
+
+void set_lead(float milliseconds) noexcept {
+    g_leadFixedNs.store(milliseconds < 0.0F ? -1 : static_cast<std::int64_t>(milliseconds * 1.0e6F),
+                        std::memory_order_relaxed);
+}
+
+float lead_ms() noexcept {
+    const std::int64_t fixedLead = g_leadFixedNs.load(std::memory_order_relaxed);
+    return static_cast<float>(fixedLead >= 0 ? fixedLead : g_leadNs.load(std::memory_order_relaxed)) * 1.0e-6F;
+}
+
+void set_declaration_probe(float yawDegrees, float fovScale) noexcept {
+    g_probeYaw.store(yawDegrees * 0.0174532925F, std::memory_order_relaxed);
+    g_probeFovScale.store(fovScale > 0.1F && fovScale < 10.0F ? fovScale : 1.0F, std::memory_order_relaxed);
+}
+
+bool stereo() noexcept {
+    return g_stereoMode.load(std::memory_order_relaxed) != 0;
+}
+
+bool camera_frame(HeadPose& head, HandPose& left, HandPose& right) noexcept {
+    AcquireSRWLockExclusive(&g_ledgerLock);
+    AcquireSRWLockShared(&g_poseLock);
+    head = g_pose;
+    left = g_hands[0];
+    right = g_hands[1];
+    ReleaseSRWLockShared(&g_poseLock);
+    if (!head.valid) {
+        g_haveCameraDraw = false;
+        ReleaseSRWLockExclusive(&g_ledgerLock);
+        return false;
+    }
+    DrawRecord record{};
+    record.serial = head.frame;
+    const Publication& publication = g_publications[head.frame % kPublicationRing];
+    if (publication.valid && publication.serial == head.frame) {
+        record.views = publication.views;
+        record.located = publication.located;
+    }
+    record.stereo = g_stereoMode.load(std::memory_order_relaxed) != 0;
+    if (record.stereo) {
+        // Every camera frame takes the other eye, whatever the publications did in between: what
+        // alternates is what gets DRAWN, and the GPU says which one each image was (note_world_camera).
+        record.eye = g_lastStereoEye == 1 ? 2 : 1;
+        g_lastStereoEye = record.eye;
+        head.offset = head.eyeOffsets[static_cast<std::size_t>(record.eye - 1)];
+        head.eye = record.eye;
+    } else {
+        record.eye = head.eye;
+    }
+    record.head = head;
+    record.hands = {left, right};
+    g_cameraDraw = record;
+    g_haveCameraDraw = true;
+    ReleaseSRWLockExclusive(&g_ledgerLock);
+    if (frames::tracing()) {
+        // The instant the camera takes its sample, and the newest publication at that instant.
+        const float v[6] = {static_cast<float>(g_frameIndex), 0.0F, 0.0F, 0.0F, 0.0F, 0.0F};
+        frames::note(frames::Kind::mark, head.frame, v, record.eye);
+    }
+    return true;
+}
+
+void commit_camera(const Vector& position, const Vector& forward) noexcept {
+    AcquireSRWLockExclusive(&g_ledgerLock);
+    if (g_haveCameraDraw) {
+        g_cameraDraw.cameraPosition = position;
+        g_cameraDraw.cameraForward = forward;
+        g_cameraDraw.sequence = ++g_drawSequence;
+        g_cameraDraw.committed = true;
+        g_draws[g_cameraDraw.sequence % kDrawRing] = g_cameraDraw;
+    }
+    ReleaseSRWLockExclusive(&g_ledgerLock);
+}
+
+bool camera_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept {
+    AcquireSRWLockShared(&g_ledgerLock);
+    const bool have = g_haveCameraDraw;
+    if (have) {
+        head = g_cameraDraw.head;
+        left = g_cameraDraw.hands[0];
+        right = g_cameraDraw.hands[1];
+    }
+    ReleaseSRWLockShared(&g_ledgerLock);
+    if (!have) {
+        frame_sample(head, left, right);
+    }
+    return have;
+}
+
+void note_world_camera(const float* position, const float* forward) noexcept {
+    // The newest record whose written camera this is. Exact up to float noise: the engine copies
+    // the block into the view constants.
+    constexpr float kPositionSlack = 1.0e-3F;
+    constexpr float kForwardSlack = 1.0e-4F;
+    // Several records can carry the same camera -- a head held still: the camera hook works a frame
+    // ahead of the renderer, so the newest match is often the NEXT frame. Frames are drawn in order, so
+    // the record drawn now is the OLDEST match not drawn yet; the newest only when nothing newer than
+    // the last drawn matches (a repeat), or to resync if the oldest has fallen behind.
+    constexpr std::uint64_t kResyncFrames = 3;
+    AcquireSRWLockExclusive(&g_ledgerLock);
+    const std::uint64_t lastDrawn = g_haveDrawn ? g_drawn.sequence : 0;
+    const DrawRecord* newest = nullptr;
+    const DrawRecord* oldestNew = nullptr;
+    for (const DrawRecord& record : g_draws) {
+        if (!record.committed) {
+            continue;
+        }
+        bool same = true;
+        for (std::size_t lane = 0; lane < 3 && same; ++lane) {
+            same = std::fabs(record.cameraPosition[lane] - position[lane]) < kPositionSlack
+                   && std::fabs(record.cameraForward[lane] - forward[lane]) < kForwardSlack;
+        }
+        if (!same) {
+            continue;
+        }
+        if (newest == nullptr || record.sequence > newest->sequence) {
+            newest = &record;
+        }
+        if (record.sequence > lastDrawn && (oldestNew == nullptr || record.sequence < oldestNew->sequence)) {
+            oldestNew = &record;
+        }
+    }
+    const DrawRecord* best = newest;
+    if (oldestNew != nullptr && newest != nullptr && newest->sequence - oldestNew->sequence <= kResyncFrames) {
+        best = oldestNew;
+    }
+    if (best != nullptr) {
+        g_drawn = *best;
+        g_haveDrawn = true;
+        ++g_drawnMatches;
+    } else {
+        ++g_drawnMisses;
+    }
+    ReleaseSRWLockExclusive(&g_ledgerLock);
+}
+
+std::uint64_t camera_sequence() noexcept {
+    AcquireSRWLockShared(&g_ledgerLock);
+    const std::uint64_t sequence = g_haveCameraDraw && g_cameraDraw.committed ? g_cameraDraw.sequence : 0;
+    ReleaseSRWLockShared(&g_ledgerLock);
+    return sequence;
+}
+
+std::uint64_t drawn_sequence() noexcept {
+    AcquireSRWLockShared(&g_ledgerLock);
+    const std::uint64_t sequence = g_haveDrawn ? g_drawn.sequence : 0;
+    ReleaseSRWLockShared(&g_ledgerLock);
+    return sequence;
+}
+
+bool drawn_sample(HeadPose& head, HandPose& left, HandPose& right) noexcept {
+    AcquireSRWLockShared(&g_ledgerLock);
+    const bool have = g_haveDrawn;
+    if (have) {
+        head = g_drawn.head;
+        left = g_drawn.hands[0];
+        right = g_drawn.hands[1];
+    }
+    ReleaseSRWLockShared(&g_ledgerLock);
+    if (!have) {
+        frame_sample(head, left, right);
+    }
+    return have;
+}
+
 void haptic(bool rightHand, float amplitude, float seconds) noexcept {
     const std::size_t hand = rightHand ? 1 : 0;
     g_hapticSeconds[hand].store(seconds, std::memory_order_relaxed);
@@ -2204,8 +4185,81 @@ void haptic(bool rightHand, float amplitude, float seconds) noexcept {
 }
 
 /** Tears the session and instance down and unloads the runtime. */
-void shutdown() noexcept {
-    destroy_presentation();
+bool session_focused() noexcept {
+    return g_sessionRunning && g_sessionState.load(std::memory_order_relaxed) == XR_SESSION_STATE_FOCUSED;
+}
+
+void drain_loader_log() noexcept {
+    const std::uint32_t written = g_loaderWritten.load(std::memory_order_acquire);
+    if (written - g_loaderRead > kLoaderRing) {
+        log_fmt("ev=vr.xr dll dropped=%u", written - g_loaderRead - kLoaderRing);
+        g_loaderRead = written - kLoaderRing;
+    }
+    for (; g_loaderRead != written; ++g_loaderRead) {
+        const LoaderRecord& record = g_loaderRing[g_loaderRead % kLoaderRing];
+        log_fmt("ev=vr.xr dll %s ours=%d forwarded=%d name=%s", record.reason == 1 ? "load" : "unload",
+                record.ours ? 1 : 0, record.forwarded ? 1 : 0, record.name.data());
+    }
+}
+
+/**
+ * Switching VR off. Waits for nothing: with the init thread still working, or the frame thread
+ * still inside a runtime call, it does nothing and says so -- the caller runs it every present while
+ * off, so the teardown happens on the first present after they are free.
+ * @return True once everything is down.
+ */
+bool shutdown() noexcept {
+    if (static_cast<InitPhase>(g_initPhase.load(std::memory_order_acquire)) == InitPhase::working) {
+        return false;
+    }
+    if (static_cast<InitPhase>(g_initPhase.load(std::memory_order_acquire)) == InitPhase::done) {
+        if (g_initThread != nullptr) {
+            WaitForSingleObject(g_initThread, INFINITE);
+            CloseHandle(g_initThread);
+            g_initThread = nullptr;
+        }
+        g_initPhase.store(static_cast<int>(InitPhase::idle), std::memory_order_release);
+    }
+    if (!stop_pump(50)) {
+        return false;
+    }
+    const bool wasUp = g_status != Status::off || g_instance != XR_NULL_HANDLE;
+    teardown(false);
+    // A switch off and on is the player asking for VR again, after an EXITING too.
+    g_exitHold = false;
+    g_restartRequested = false;
+    g_nextAttemptMs = 0;
+    g_attempts = 0;
+    return wasUp;
+}
+
+namespace {
+
+void teardown(bool keepInstance) noexcept {
+    const OwnLoads own;
+    for (Surface* surface : {&g_panelSurface, &g_beamSurface, &g_fadeSurface, &g_backdropSurfaces[0], &g_backdropSurfaces[1]}) {
+        destroy_surface(*surface);
+    }
+    if (g_viewSpace != XR_NULL_HANDLE && g_api.destroySpace != nullptr) {
+        g_api.destroySpace(g_viewSpace);
+    }
+    g_viewSpace = XR_NULL_HANDLE;
+    forget_snapshots();
+    compositor::release();
+    for (HandRaw& raw : g_handRaw) {
+        raw = HandRaw{};
+    }
+    for (Presentation& presentation : g_presentations) {
+        destroy_presentation(presentation);
+    }
+    g_shown = {};
+    g_lastSource = FrameSource{};
+    AcquireSRWLockExclusive(&g_ledgerLock);
+    g_publications = {};
+    g_draws = {};
+    g_haveCameraDraw = false;
+    g_haveDrawn = false;
+    ReleaseSRWLockExclusive(&g_ledgerLock);
     if (g_api.destroySpace != nullptr) {
         for (XrSpace* space : {&g_actions.spaceL, &g_actions.spaceR, &g_actions.palmSpaceL,
                                &g_actions.palmSpaceR}) {
@@ -2228,9 +4282,8 @@ void shutdown() noexcept {
     g_hands = std::array<HandPose, 2>{};
     ReleaseSRWLockExclusive(&g_poseLock);
     if (g_session != XR_NULL_HANDLE) {
-        if (g_sessionRunning && g_api.endSession != nullptr) {
-            g_api.endSession(g_session);
-        }
+        // Destroyed directly, whatever its state: xrDestroySession is valid in any of them, while
+        // xrEndSession is only valid once the runtime has said STOPPING.
         if (g_space != XR_NULL_HANDLE && g_api.destroySpace != nullptr) {
             g_api.destroySpace(g_space);
         }
@@ -2238,24 +4291,28 @@ void shutdown() noexcept {
             g_api.destroySession(g_session);
         }
     }
+    g_session = XR_NULL_HANDLE;
+    g_space = XR_NULL_HANDLE;
+    g_sessionRunning = false;
+    g_sessionState = XR_SESSION_STATE_UNKNOWN;
+    g_frameOpen = false;
+    g_status = Status::off;
+    g_haveOrigin = false;
+    g_recentreRequested = true;
+    g_runtimeRecentre = false;
+    if (keepInstance) {
+        return;
+    }
     if (g_instance != XR_NULL_HANDLE && g_api.destroyInstance != nullptr) {
         g_api.destroyInstance(g_instance);
     }
-    if (g_runtimeModule != nullptr) {
-        FreeLibrary(g_runtimeModule);
-    }
-    g_runtimeModule = nullptr;
+    // The runtime's library stays mapped: its own threads may outlive the instance, and the next
+    // attempt maps the same module again (the loader only counts a reference).
     g_api = Api{};
     g_instance = XR_NULL_HANDLE;
-    g_session = XR_NULL_HANDLE;
-    g_space = XR_NULL_HANDLE;
     g_system = XR_NULL_SYSTEM_ID;
-    g_sessionRunning = false;
-    g_frameOpen = false;
-    g_status = Status::off;
-    g_attempted = false;
-    g_haveOrigin = false;
-    g_recentreRequested = true;
 }
+
+} // namespace
 
 } // namespace sunrise::client::hooks::vr::xr

@@ -304,19 +304,45 @@ enum class PassResult {
 
 } // namespace
 
+/**
+ * (destiny2-vr) DetourUpdateThread suspends a thread and THEN allocates its record on the process heap.
+ * A thread suspended while it held the heap's lock leaves that allocation waiting for ever: the game
+ * froze at boot, the installing thread in `enlist_pass -> DetourUpdateThread -> operator new` (2 boots
+ * in 10 on 2026-10-18, read from a dump). Holding the heap lock across the transaction means no thread
+ * can be suspended inside it; the lock is recursive for this thread, so its own allocations go on.
+ */
+thread_local bool t_heapLocked = false;
+
+void lock_heap() noexcept {
+    t_heapLocked = HeapLock(GetProcessHeap()) != FALSE;
+}
+
+void unlock_heap() noexcept {
+    if (t_heapLocked) {
+        t_heapLocked = false;
+        HeapUnlock(GetProcessHeap());
+    }
+}
+
 /** Starts a Detours transaction and enlists process threads to a stable snapshot. */
 bool begin(Threads& threads) noexcept {
     threads = {};
     // Detours suspends these threads at commit. Another suspender running at the same time
     // would freeze this thread, and then neither side can finish.
     process::freeze::enter_exclusive();
+    // (destiny2-vr) Resolved once, here, before the heap is locked: its first call goes through
+    // GetProcAddress, which the anti-tamper hot-patches.
+    static_cast<void>(next_thread_entry());
+    lock_heap();
     if (DetourTransactionBegin() != NO_ERROR) {
+        unlock_heap();
         process::freeze::leave_exclusive();
         return false;
     }
     if (DetourUpdateThread(GetCurrentThread()) != NO_ERROR || !enlist_until_stable(threads)) {
         (void)DetourTransactionAbort();
         close_threads(threads);
+        unlock_heap();
         process::freeze::leave_exclusive();
         return false;
     }
@@ -327,6 +353,7 @@ bool begin(Threads& threads) noexcept {
 bool abort(Threads& threads) noexcept {
     const bool aborted = DetourTransactionAbort() == NO_ERROR;
     close_threads(threads);
+    unlock_heap();
     process::freeze::leave_exclusive();
     return aborted;
 }
@@ -335,6 +362,7 @@ bool abort(Threads& threads) noexcept {
 bool commit(Threads& threads) noexcept {
     const bool committed = DetourTransactionCommit() == NO_ERROR;
     close_threads(threads);
+    unlock_heap();
     process::freeze::leave_exclusive();
     return committed;
 }

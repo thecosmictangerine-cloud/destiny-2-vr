@@ -119,7 +119,7 @@ constexpr std::uint64_t kDescriptorCount = 128;
            && writer.write(teleportState, kStateBitWidth)
            && writer.write(snapshot.teleport.token, 8)
            && writer.write(sliceSetIndex, kSliceSetBitWidth)
-           && writer.write(snapshot.teleport.sliceSetHash, 32) && writer.write(0, 1)
+           && writer.write(snapshot.teleport.spawnSetHash, 32) && writer.write(0, 1)
            && writer.write(1, 1) && write_host_key(writer, snapshot.identity.memberKey)
            && writer.write(0, 1) && writer.write(0, 1);
 }

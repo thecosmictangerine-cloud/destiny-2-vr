@@ -13,16 +13,16 @@ namespace sunrise::middleware::bap::activity_message::replicate_membership {
 
 /** Membership snapshots use activity message type 12. */
 inline constexpr std::uint32_t kMessageType = 12;
-/** One local player and an explicit empty view mask use 30,077 meaningful bits. */
-inline constexpr std::size_t kMeaningfulBitCount = 30'077;
+/** One local player and an explicit empty view mask use 30,085 meaningful bits. */
+inline constexpr std::size_t kMeaningfulBitCount = 30'085;
 /** The one-member snapshot has three zero padding bits. */
-inline constexpr std::size_t kEncodedSize = 3'760;
+inline constexpr std::size_t kEncodedSize = 3'761;
 /** A remote row adds its channel, process identity, view identity, and player snapshot. */
-inline constexpr std::size_t kRemoteMemberBitDelta = 3'044;
-/** The complete two-member body carries 33,121 meaningful bits. */
-inline constexpr std::size_t kRemoteHostMeaningfulBitCount = 33'121;
+inline constexpr std::size_t kRemoteMemberBitDelta = 3'052;
+/** The complete two-member body carries 33,137 meaningful bits. */
+inline constexpr std::size_t kRemoteHostMeaningfulBitCount = 33'137;
 /** Byte extent of the two-member body, including its seven zero padding bits. */
-inline constexpr std::size_t kRemoteHostEncodedSize = 4'141;
+inline constexpr std::size_t kRemoteHostEncodedSize = 4'143;
 /** One filled descriptor makes its record 1,024 bits longer and shifts every later field. */
 inline constexpr std::size_t kDescriptorBitCount = gameplay::descriptor::kDescriptorSize * 8U;
 /** Byte size once one record carries a descriptor. */
@@ -211,10 +211,10 @@ advertisement_in_bubble(const MembershipSnapshot& snapshot, std::size_t bubble) 
 
 /** The local member begins after root, revision, and epoch fields. */
 inline constexpr std::size_t kMemberStartBit = 65;
-/** The local identity alone shifts the region block to bit 912. */
-inline constexpr std::size_t kRegionBlockStartBit = 912;
+/** The local identity alone shifts the region block to bit 920. */
+inline constexpr std::size_t kRegionBlockStartBit = 920;
 /** The host-present region block ends before top-level field four. */
-inline constexpr std::size_t kRegionBlockEndBit = 29'976;
+inline constexpr std::size_t kRegionBlockEndBit = 29'984;
 
 /** @return Bit at which the region block ends for one snapshot. */
 [[nodiscard]] constexpr std::size_t

@@ -12,6 +12,7 @@
 
 #include "../../core/logging/log.h"
 #include "../../middleware/bap/activity_message/activity_entity_slot_request_parser.h"
+#include "../../state/activity/mission/runtime.h"
 #include "../../state/activity/runtime.h"
 #include "host_runtime_internal.h"
 
@@ -107,6 +108,32 @@ bool append_pending(const PendingInput& pending) noexcept {
         report_ingress_drop(pending.kind, "no_memory");
         return false;
     }
+    const auto stamp = [](auto& input) noexcept {
+        state::activity::mission::InputSequenceSnapshot snapshot{};
+        static_cast<void>(
+            state::activity::mission::input_sequence_snapshot(input.binding, snapshot));
+        input.attemptGeneration = snapshot.attemptGeneration;
+    };
+    auto& admitted = g_pending.back();
+    switch (admitted.kind) {
+    case PendingKind::sense:
+        stamp(admitted.sense);
+        break;
+    case PendingKind::incident:
+        stamp(admitted.incident);
+        break;
+    case PendingKind::clientStateChange:
+        stamp(admitted.clientStateChange);
+        break;
+    case PendingKind::entitySlotsRequested:
+        stamp(admitted.entitySlotsRequested);
+        break;
+    case PendingKind::clientMessage:
+        stamp(admitted.clientMessage);
+        break;
+    default:
+        break;
+    }
     return true;
 }
 
@@ -201,6 +228,7 @@ void apply_client_state_change(const ClientStateChangeInput& input, std::uint64_
     }
     touch(*instance);
     Event event{};
+    event.attemptGeneration = input.attemptGeneration;
     event.binding = input.binding;
     event.tick = now;
     event.kind = EventKind::clientStateChanged;
@@ -214,6 +242,7 @@ void apply_client_state_change(const ClientStateChangeInput& input, std::uint64_
     event.currentRegionIndex = input.state.currentRegion.index;
     event.clientStateHasCurrentRegion = input.state.hasCurrentRegion;
     event.heldRegionIndex = input.state.heldRegion;
+    event.previousRegionIndex = input.state.previousRegion;
     event.teleportSliceSetIndex = input.state.teleportSliceSetIndex;
     event.teleportSliceSetHash = input.state.teleportSliceSetHash;
     event.spawnState = input.state.spawnState;
@@ -221,6 +250,7 @@ void apply_client_state_change(const ClientStateChangeInput& input, std::uint64_
     event.clientStateHasRegion = input.state.hasRegion;
     event.clientStateHasSpawn = input.state.hasSpawn;
     event.clientStateHasTeleport = input.state.hasTeleport;
+    event.clientEntered = input.state.entered;
     append_event(event);
     append_mission_input(event, nullptr);
     instance->view.lastEventSequence = g_sequence;
@@ -236,6 +266,7 @@ void apply_entity_slots_requested(const EntitySlotsRequestedInput& input,
     }
     touch(*instance);
     Event event{};
+    event.attemptGeneration = input.attemptGeneration;
     event.binding = input.binding;
     event.tick = now;
     event.kind = EventKind::entitySlotsRequested;
@@ -289,9 +320,9 @@ using namespace detail;
 
 /** Queues one post-commit client State after-image for the ordered Host service slice. */
 bool submit_client_state_change(const ClientStateChangeInput& input) noexcept {
-    // A report that moved no region, spawn or teleport field is the client's settle, sent once
-    // spawn-in completes. The mission surface needs it to time the opening line, so only a
-    // malformed report is refused, never a material-less one.
+    // A report that moved no region, spawn or teleport field still reaches the mission surface.
+    // The client sends such reports while loading too, so none of them marks the spawn; the
+    // host's own arrival answer carries `entered` for that.
     if (!state::activity::binding_matches(input.binding) || input.sourceGeneration == 0
         || input.clientMessageSequence == 0 || !input.state.committed
         || (input.state.hasRegion && input.state.region.index < 0)

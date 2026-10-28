@@ -52,6 +52,10 @@ struct Work final {
     std::wstring packPath{};
     std::wstring cacheScenarioDirectory{};
     std::wstring cacheCatalogPath{};
+    /** Owned client executable whose reflection metadata compiles the decoder cache. */
+    std::wstring executablePath{};
+    /** Base of the running client module; null in the offline pass, which reads the file. */
+    const void* executableModule{};
     std::vector<Scenario> scenarios{};
     std::vector<manifest::ActivityRootRecord> activityRoots{};
     std::vector<manifest::ActivityVariantRecord> activityVariants{};

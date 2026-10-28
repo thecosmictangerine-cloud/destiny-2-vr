@@ -406,16 +406,23 @@ scoped_sources(const GraphSnapshot& graph,
         logical.try_emplace({d.objectIndex, d.slotIndex}, row);
     }
     std::vector<std::uint32_t> result;
-    for (const auto& [identity, row] : logical) {
+    for (const auto& entry : logical) {
+        const auto identity = entry.first;
+        const auto row = entry.second;
         const auto& owned = scenarios[identity.first];
-        const bool overlap = std::any_of(logical.begin(), logical.end(), [&](const auto& other) {
-            if (other.first == identity) return false;
-            const auto& peers = scenarios[other.first.first];
-            return std::any_of(owned.begin(), owned.end(), [&](auto scenario) {
-                return std::binary_search(peers.begin(), peers.end(), scenario);
+        const bool overlap = std::any_of(
+            logical.begin(), logical.end(), [&scenarios, &owned, identity](const auto& other) {
+                if (other.first == identity) {
+                    return false;
+                }
+                const auto& peers = scenarios[other.first.first];
+                return std::any_of(owned.begin(), owned.end(), [&peers](auto scenario) {
+                    return std::binary_search(peers.begin(), peers.end(), scenario);
+                });
             });
-        });
-        if (!overlap) result.push_back(row);
+        if (!overlap) {
+            result.push_back(row);
+        }
     }
     return result;
 }
@@ -485,7 +492,9 @@ scoped_sources(const GraphSnapshot& graph,
 
         spawner.references.first = static_cast<std::uint32_t>(graph.references.size());
         auto sources = scoped_sources(graph, spawner, scenariosByObject);
-        if (sources.empty()) sources.push_back(format::kAbsentIndex);
+        if (sources.empty()) {
+            sources.push_back(format::kAbsentIndex);
+        }
         for (const auto sourceRow : sources) {
             std::map<TargetGroup, ExactTarget> exactTargets{};
             std::array<ReferenceResolutionStatus, 2> statuses{};

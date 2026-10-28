@@ -78,6 +78,7 @@ static_assert(sizeof(AuthoredSceneSeed) == kAuthoredSceneSeedSize);
 
 /** The mission owns which objects its seed leaves out, so Mission State owns the type. */
 using MissionSeedOmission = ::sunrise::state::activity::mission::MissionSeedOmission;
+// The SDK uses the Mission State omission capacity.
 inline constexpr std::size_t kMissionSeedOmitCapacity =
     ::sunrise::state::activity::mission::kMissionSeedOmitCapacity;
 
@@ -183,6 +184,12 @@ public:
     [[nodiscard]] std::span<const format::TaskTarget> task_targets() const noexcept;
     /** @return Every localized authored dialogue-line alias. */
     [[nodiscard]] std::span<const format::DialogueCueText> dialogue_cue_texts() const noexcept;
+    [[nodiscard]] std::span<const format::DialogueCue> dialogue_cues() const noexcept;
+    [[nodiscard]] std::span<const format::ActorAbility> actor_abilities() const noexcept;
+    [[nodiscard]] std::span<const format::ActorAbilityTarget>
+    actor_ability_targets() const noexcept;
+    [[nodiscard]] std::span<const format::CombatObjectiveGroup>
+    combat_objective_groups() const noexcept;
     /** @return Every localized bounded directive-element alias. */
     [[nodiscard]] std::span<const format::DirectiveElement> directive_elements() const noexcept;
     /** @return Every canonical activity-binding candidate or evidence tag. */
@@ -235,6 +242,12 @@ public:
     sobject_rsat_field_bindings() const noexcept;
     /** @return Every state-machine state name declared by an actor class, in actor-class order. */
     [[nodiscard]] std::span<const format::ActorStateName> actor_state_names() const noexcept;
+    [[nodiscard]] std::span<const format::ActorSequenceTable>
+    actor_sequence_tables() const noexcept;
+    [[nodiscard]] std::span<const format::ActorSequenceEntry>
+    actor_sequence_entries() const noexcept;
+    [[nodiscard]] std::span<const format::ActorSequenceBinding>
+    actor_sequence_bindings() const noexcept;
 
 private:
     friend bool load(void* module,
@@ -381,6 +394,19 @@ materialize_roster_group(const Catalog& catalog,
                                                        std::uint32_t objectTag,
                                                        std::uint32_t registryKey,
                                                        bool& scenarioWide) noexcept;
+/**
+ * Lists the roster groups of the objects that occur in every enabled state of the scenario.
+ * Such a group belongs in the top-level list; a bubble sub-block rebuilds it on a crossing. A
+ * scenario with one bubble has no crossing and lists nothing.
+ * @param omissions Objects the mission keeps out of every seed; they are left out here too.
+ * @param output Receives the groups in object order.
+ * @param count Receives the number of groups written.
+ * @return False when the scenario is unbound, a row is out of range, or the output is too small.
+ */
+[[nodiscard]] bool scenario_wide_groups(const BoundView& view,
+                                        std::span<const MissionSeedOmission> omissions,
+                                        std::span<state::build_data::scenarios::RosterGroup> output,
+                                        std::size_t& count) noexcept;
 /**
  * Builds the exact selected-state roster seed for one bound scenario and package region.
  * The caller owns fixed output storage; on failure no partial group is reported by the summary.

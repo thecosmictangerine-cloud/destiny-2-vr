@@ -687,7 +687,10 @@ bool sight_in_eye(V3& o, V3& d, V3& palm, xr::HeadPose& head, bool& guessed) noe
     if (!weapon::gun_frame(gun, head)) {
         return false;
     }
-    const V3 headOffset{head.offset[0], head.offset[1], head.offset[2]};
+    // The eye the player aims with, not necessarily the one this frame was drawn from: in alternating
+    // stereo those differ every other frame, and the detector would flicker in and out of ADS.
+    const xr::Vector aimEye = xr::aiming_eye_offset(head);
+    const V3 headOffset{aimEye[0], aimEye[1], aimEye[2]};
     xr::HeadPose unused{};
     xr::HandPose hand{};
     if (!weapon::weapon_sample(unused, hand)) {
@@ -1061,7 +1064,9 @@ bool compensation(Affine& delta) noexcept {
 }
 
 void observe(const Affine& drawnHand, const Affine* gunRoot, std::uint32_t gunBones, const Affine& controller) noexcept {
-    const weapon::DrawnFrame frame = weapon::drawn_frame();
+    // The placement of the very frame this palette belongs to (the frame ledger): relative to a
+    // neighbouring frame's, the drawn hand would jump by a whole eye distance in alternating stereo.
+    const weapon::DrawnFrame frame = weapon::drawn_frame_for(xr::drawn_sequence());
     if (!frame.valid || !enabled()) {
         g_atRest.store(false, std::memory_order_relaxed);
         g_restPrevValid = false;

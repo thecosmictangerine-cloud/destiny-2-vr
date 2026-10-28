@@ -7,10 +7,18 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <span>
+#include <string_view>
 
+#include "../../../state/build_data/scriptables/inline_name_evidence.h"
+#include "../activity_sdk_device_runtime.h"
 #include "../activity_sdk_mission_runtime.h"
+#include "../activity_sdk_scene_spawn.h"
+#include "mission_script_actor_ability_sdk.h"
 #include "mission_script_catalog_sdk_bridge.h"
+#include "mission_script_combat_objective_sdk.h"
 #include "mission_script_message_catalog.h"
+#include "mission_script_slot_index.h"
 
 namespace sunrise::server::activity::mission::sdk_bridge {
 namespace {
@@ -191,16 +199,6 @@ resolve_activity_binding_locator(const void* context,
     return true;
 }
 
-[[nodiscard]] bool object_seen_before(std::span<const format::Occurrence> occurrences,
-                                      std::size_t selected) noexcept {
-    for (std::size_t index = 0; index < selected; ++index) {
-        if (occurrences[index].objectIndex == occurrences[selected].objectIndex) {
-            return true;
-        }
-    }
-    return false;
-}
-
 /** Rejects cross-table rows before exposing stable native indices to Lua. */
 [[nodiscard]] bool slot_definition(const sdk::BoundView& view,
                                    const format::Object& object,
@@ -234,50 +232,46 @@ resolve_activity_binding_locator(const void* context,
     return !output.id.empty() && !output.objectId.empty();
 }
 
-/** Deduplicates repeated object occurrences and requires one selected slot. */
-template <typename Select>
-[[nodiscard]] bool
-resolve_slot(const sdk::BoundView& view, Select&& select, lua_vm::SlotDefinition& output) noexcept {
+/** Fills the name hash and the bubble hash from the object's first scenario occurrence. */
+void fill_marker_hashes(const sdk::BoundView& view,
+                        const format::Scenario& scenario,
+                        lua_vm::SlotDefinition& output) noexcept {
+    const sdk::Catalog& catalog = *view.catalog;
+    const std::string_view name = output.name;
+    output.nameHash = state::build_data::scriptables::inline_name_evidence::hash(
+        std::as_bytes(std::span<const char>(name.data(), name.size())));
+    // A navpoint marker names its bubble; the client routes to the bubble from elsewhere.
+    const std::uint32_t objectIndex = catalog.slots()[output.nativeRow].objectIndex;
+    for (const format::Occurrence& occurrence : sdk::scenario_occurrences(catalog, scenario)) {
+        if (occurrence.scenarioIndex != view.scenarioRow || occurrence.objectIndex != objectIndex) {
+            continue;
+        }
+        for (const format::Bubble& bubble : sdk::scenario_bubbles(catalog, scenario)) {
+            if (bubble.scenarioIndex == view.scenarioRow
+                && bubble.bubbleOrdinal == occurrence.bubbleIndex) {
+                output.bubbleHash = bubble.nameHash;
+                break;
+            }
+        }
+        break;
+    }
+}
+
+/** Copies the definition of one indexed slot of the bound scenario. */
+[[nodiscard]] bool indexed_slot(const sdk::BoundView& view,
+                                bool found,
+                                const slot_index::Found& row,
+                                lua_vm::SlotDefinition& output) noexcept {
     output = {};
-    if (!valid_view(&view)) {
+    if (!found) {
         return false;
     }
     const sdk::Catalog& catalog = *view.catalog;
-    const format::Scenario* const scenario = sdk::bound_scenario(view);
-    const auto occurrences = sdk::scenario_occurrences(catalog, *scenario);
-    const auto objects = catalog.objects();
-    std::uint32_t localRow = 0;
-    std::size_t matches = 0;
-    lua_vm::SlotDefinition selected{};
-    for (std::size_t occurrenceIndex = 0; occurrenceIndex < occurrences.size(); ++occurrenceIndex) {
-        const format::Occurrence& occurrence = occurrences[occurrenceIndex];
-        if (occurrence.objectIndex >= objects.size()) {
-            return false;
-        }
-        if (object_seen_before(occurrences, occurrenceIndex)) {
-            continue;
-        }
-        const format::Object& object = objects[occurrence.objectIndex];
-        for (const format::Slot& slot : sdk::object_slots(catalog, object)) {
-            if (localRow == (std::numeric_limits<std::uint32_t>::max)()) {
-                return false;
-            }
-            ++localRow;
-            lua_vm::SlotDefinition candidate{};
-            if (!slot_definition(view, object, slot, localRow, candidate)) {
-                return false;
-            }
-            if (!select(candidate)) {
-                continue;
-            }
-            selected = candidate;
-            ++matches;
-        }
-    }
-    if (matches != 1) {
+    const format::Slot& slot = catalog.slots()[row.nativeRow];
+    if (!slot_definition(view, catalog.objects()[slot.objectIndex], slot, row.localRow, output)) {
         return false;
     }
-    output = selected;
+    fill_marker_hashes(view, *sdk::bound_scenario(view), output);
     return true;
 }
 
@@ -285,54 +279,38 @@ resolve_slot(const sdk::BoundView& view, Select&& select, lua_vm::SlotDefinition
 [[nodiscard]] bool resolve_slot_row(const void* context,
                                     std::uint32_t localRow,
                                     lua_vm::SlotDefinition& output) noexcept {
+    output = {};
     const sdk::BoundView* const view = context_view(context);
-    return valid_view(view) && localRow != 0
-           && resolve_slot(
-               *view,
-               [localRow](const lua_vm::SlotDefinition& value) noexcept {
-                   return value.localRow == localRow;
-               },
-               output);
+    slot_index::Found row{};
+    return valid_view(view)
+           && indexed_slot(*view, slot_index::by_row(*view, localRow, row), row, output);
 }
 
 /** Requires one exact slot ID, name, or alias in the bound scenario. */
 [[nodiscard]] bool
 resolve_slot_id(const void* context, std::string_view id, lua_vm::SlotDefinition& output) noexcept {
+    output = {};
     const sdk::BoundView* const view = context_view(context);
-    if (!valid_view(view) || id.empty()) {
-        return false;
-    }
-    return resolve_slot(
-        *view,
-        [view, id](const lua_vm::SlotDefinition& value) noexcept {
-            if (value.id == id || value.name == id) {
-                return true;
-            }
-            const format::Slot& slot = view->catalog->slots()[value.nativeRow];
-            for (const format::Text& alias : sdk::slot_aliases(*view->catalog, slot)) {
-                if (view->catalog->string(alias.value) == id) {
-                    return true;
-                }
-            }
-            return false;
-        },
-        output);
+    slot_index::Found row{};
+    return valid_view(view) && indexed_slot(*view, slot_index::by_id(*view, id, row), row, output);
 }
 
-/** Resolves sensor keys only when every authored slot identity field agrees. */
+/** Incident sources omit a Sense schema; every authored identity field still has to agree. */
 [[nodiscard]] bool resolve_sense_slot(const void* context,
                                       const host::SenseObservationKey& key,
                                       lua_vm::SlotDefinition& output) noexcept {
+    output = {};
     const sdk::BoundView* const view = context_view(context);
-    return valid_view(view) && key.senseSchema != 0
-           && resolve_slot(
-               *view,
-               [&key](const lua_vm::SlotDefinition& value) noexcept {
-                   return value.registryKey == key.registryKey && value.objectTag == key.objectTag
-                          && value.slotIndex == key.slotIndex && value.slotType == key.slotType
-                          && value.senseSchema == key.senseSchema;
-               },
-               output);
+    if (!valid_view(view)) {
+        return false;
+    }
+    const slot_index::SenseKey indexKey{.registryKey = key.registryKey,
+                                        .objectTag = key.objectTag,
+                                        .senseSchema = key.senseSchema,
+                                        .slotIndex = key.slotIndex,
+                                        .slotType = key.slotType};
+    slot_index::Found row{};
+    return indexed_slot(*view, slot_index::by_sense(*view, indexKey, row), row, output);
 }
 
 /** @return True when a catalog-global slot belongs to the bound scenario. */
@@ -760,23 +738,7 @@ template <typename Select>
 /** Counts repeated object definitions once and rejects an invalid occurrence set. */
 [[nodiscard]] std::size_t slot_count(const void* context) noexcept {
     const sdk::BoundView* const view = context_view(context);
-    if (!valid_view(view)) {
-        return 0;
-    }
-    const sdk::Catalog& catalog = *view->catalog;
-    const auto occurrences = sdk::scenario_occurrences(catalog, *sdk::bound_scenario(*view));
-    const auto objects = catalog.objects();
-    std::size_t count = 0;
-    for (std::size_t occurrenceIndex = 0; occurrenceIndex < occurrences.size(); ++occurrenceIndex) {
-        const format::Occurrence& occurrence = occurrences[occurrenceIndex];
-        if (occurrence.objectIndex >= objects.size()) {
-            return 0;
-        }
-        if (!object_seen_before(occurrences, occurrenceIndex)) {
-            count += sdk::object_slots(catalog, objects[occurrence.objectIndex]).size();
-        }
-    }
-    return count;
+    return valid_view(view) ? slot_index::count(*view) : 0;
 }
 
 /** @return Sensor count of the bound task, or 0 when nothing is bound. */
@@ -815,56 +777,6 @@ template <typename Select>
 
 } // namespace
 
-/** Copies the bound activity's binding definition out of the catalog. */
-bool activity_binding_definition(const sdk::Catalog& catalog,
-                                 const format::Activity& activity,
-                                 lua_vm::ActivityBindingDefinition& output) noexcept {
-    output = {};
-    const auto activities = catalog.activities();
-    if (activities.empty()) {
-        return false;
-    }
-    const auto first = reinterpret_cast<std::uintptr_t>(activities.data());
-    const auto selected = reinterpret_cast<std::uintptr_t>(&activity);
-    const std::size_t bytes = activities.size_bytes();
-    if (selected < first || selected - first >= bytes
-        || (selected - first) % sizeof(format::Activity) != 0) {
-        return false;
-    }
-    output.internalName = catalog.string(activity.internalName);
-    output.displayName = catalog.string(activity.displayName);
-    output.selectedActivityRootTag = activity.selectedActivityRootTag;
-    output.selectedScenarioTag = activity.selectedScenarioTag;
-    output.matchmakingConfigTag = activity.matchmakingConfigTag;
-    output.joinStatus = activity.joinStatus;
-    output.bindingDisposition = activity.bindingDisposition;
-    output.bindingReason = activity.bindingReason;
-    output.bindingEvidenceBasis = activity.bindingEvidenceBasis;
-    output.runnableStatus = activity.runnableStatus;
-    output.fullSdkAcceptable =
-        (activity.bindingFlags & format::kActivityBindingFullSdkAcceptable) != 0;
-    output.hasInternalName = (activity.bindingFlags & format::kActivityBindingHasInternalName) != 0;
-    output.hasMatchmakingConfig =
-        (activity.bindingFlags & format::kActivityBindingHasMatchmakingConfig) != 0;
-    return true;
-}
-
-/** @return The binding tag span one kind names, or empty when the kind is unknown. */
-std::span<const format::ActivityBindingTag>
-activity_binding_tags(const sdk::Catalog& catalog,
-                      const format::Activity& activity,
-                      lua_vm::ActivityBindingTagKind kind) noexcept {
-    switch (kind) {
-    case lua_vm::ActivityBindingTagKind::activityRootCandidates:
-        return sdk::activity_root_candidate_tags(catalog, activity);
-    case lua_vm::ActivityBindingTagKind::scenarioNameCandidates:
-        return sdk::activity_scenario_name_candidate_tags(catalog, activity);
-    case lua_vm::ActivityBindingTagKind::evidenceRoots:
-        return sdk::activity_evidence_root_tags(catalog, activity);
-    }
-    return {};
-}
-
 /** Publishes only bound activity identities with a complete 32-byte SDK digest. */
 bool program_identity(const sdk::BoundView& view,
                       bool publicTarget,
@@ -900,6 +812,27 @@ bool program_identity(const sdk::BoundView& view,
 lua_vm::DefinitionApi definition_api(const sdk::BoundView& view) noexcept {
     lua_vm::DefinitionApi output{
         .context = &view,
+        .resolveCombatObjectiveGroup = &combat_objective::resolve,
+        .resolveActorAbility = &actor_ability::resolve,
+        .resolveActorAbilityTarget = &actor_ability::target,
+        .resolveActorProgramSource =
+            [](const void* context, std::uint32_t slot, std::uint32_t& source) noexcept {
+                const auto* view = context_view(context);
+                return view != nullptr
+                       && activity_sdk_devices::actor_program_source_squad(*view, slot, source)
+                              == activity_sdk_devices::Status::ready;
+            },
+        .resolveSceneSpawnSources =
+            [](const void* context,
+               std::uint32_t occurrence,
+               std::uint32_t slot,
+               std::span<std::uint32_t> sources,
+               std::size_t& count) noexcept {
+                const auto* view = context_view(context);
+                return view != nullptr
+                       && scenes::scene_spawn_sources(*view, occurrence, slot, sources, count)
+                              == scenes::SceneStatus::ready;
+            },
         .resolveSquadRow = &resolve_squad_row,
         .resolveSquadId = &resolve_squad_id,
         .resolveSceneRow = &resolve_scene_row,

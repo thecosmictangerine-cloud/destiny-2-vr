@@ -1,0 +1,24 @@
+# Destiny 2 VR settings. Read once when the game starts.
+# One "key value" per line; a line starting with # is ignored. Remove the # in front of a line to
+# change that setting. Anything not set here keeps its default, so deleting this file is safe.
+
+# VR comes up with the game. off: the game starts flat and F9 turns VR on.
+# start on
+
+# Which OpenXR runtime to use. auto picks Meta's (Quest Link / Air Link) when it is installed,
+# otherwise the system's active one. Other values: meta, steamvr, or the full path of a runtime's .json.
+# runtime auto
+
+# Render density. Higher is sharper and costs more GPU. Range 0.3 to 2.0.
+# display_scale 0.8
+
+# eye: the image fills the headset (the PC window shows it squashed). desktop: the PC window shows a
+# normal 16:9 picture, with black bands in the headset.
+# display_shape eye
+
+# The virtual screen used for menus, maps and loading: its width in degrees, and its distance in metres.
+# screen_size 62
+# screen_distance 2.4
+
+# Keeps the headset fed while the game stalls (loads, hitches). auto: on for Meta's runtime.
+# keepalive off

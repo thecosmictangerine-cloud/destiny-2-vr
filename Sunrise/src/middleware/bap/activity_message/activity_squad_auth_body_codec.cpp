@@ -2,6 +2,7 @@
 #include <array>
 
 #include "../../encoding/bit_writer.h"
+#include "auth_fields.h"
 #include "definition.h"
 #include "scriptable_auth_internal.h"
 #include "squad_auth_body.h"
@@ -39,12 +40,17 @@ constexpr std::size_t kLeadingAbsentFieldCount = 3;
 /** One unused dynamic field separates requested counts from generation. */
 constexpr std::size_t kAfterCountsAbsentFieldCount = 1;
 /**
- * Eleven dynamic fields separate generation from active, `.7` to `.17`, and two are sent.
- * `.11` and `.12` are the spawn references the point-set resolver reads, and it keeps the
- * package's own authored rule only for the unset ClientRef.
+ * Eleven dynamic fields separate generation from active, `.7` to `.17`. `.11` and `.12` are
+ * the spawn references the point-set resolver reads, and it keeps the package's own authored
+ * rule only for the unset ClientRef. `.10` and `.17` carry the destination when one is set.
  */
-constexpr std::size_t kBeforeSpawnReferenceAbsentFieldCount = 4;
-constexpr std::size_t kAfterSpawnReferenceAbsentFieldCount = 5;
+constexpr std::size_t kBeforeDestinationAbsentFieldCount = 3;
+constexpr std::size_t kAfterSpawnReferenceAbsentFieldCount = 4;
+/** The destination request revision is a 31-bit counter the client echoes at +600. */
+constexpr std::uint8_t kDestinationRevisionWidth = 31;
+/** A spawn rule is a type-66 slot; `.12` is the second of the two spawn references. */
+constexpr std::uint8_t kSpawnRuleSlotType = 66;
+constexpr std::size_t kSpawnRuleReferenceIndex = 1;
 
 /** @return True when the guard itself can name a prior positive generation. */
 [[nodiscard]] constexpr bool valid_guard(const GenerationGuard& guard) noexcept {
@@ -73,12 +79,22 @@ constexpr std::size_t kAfterSpawnReferenceAbsentFieldCount = 5;
             return false;
         }
     }
+    if (preset.destination.has_value()
+        && (preset.destination->registryKey == 0
+            || preset.destination->slotIndex > auth_fields::kMaximumClientRefIndex)) {
+        return false;
+    }
+    if (preset.spawnRule.has_value()
+        && (preset.spawnRule->registryKey == 0
+            || preset.spawnRule->slotIndex > auth_fields::kMaximumClientRefIndex)) {
+        return false;
+    }
     return true;
 }
 
 /** @return Exact number of meaningful schema bits for one validated preset. */
 [[nodiscard]] constexpr std::size_t body_bit_count(const Preset& preset) noexcept {
-    return exact_body_bit_count(preset.requestedCounts.size());
+    return exact_body_bit_count(preset.requestedCounts.size(), preset.destination.has_value());
 }
 
 /** Writes a repeated absent-field presence marker. */
@@ -116,13 +132,46 @@ constexpr std::size_t kAfterSpawnReferenceAbsentFieldCount = 5;
     }
     const std::uint8_t mode = static_cast<std::uint8_t>(preset.mode);
     if (!writer.write(1, kPresenceWidth) || !writer.write(preset.generation, kGenerationWidth)
-        || !write_absent(writer, kBeforeSpawnReferenceAbsentFieldCount)) {
+        || !write_absent(writer, kBeforeDestinationAbsentFieldCount)) {
+        return false;
+    }
+    if (preset.destination.has_value()) {
+        if (!writer.write(1, kPresenceWidth)
+            || !auth_fields::write_client_ref(writer,
+                                              preset.destination->registryKey,
+                                              kSlotType,
+                                              preset.destination->slotIndex)) {
+            return false;
+        }
+    } else if (!write_absent(writer, 1)) {
         return false;
     }
     for (std::size_t index = 0; index < kSpawnReferenceCount; ++index) {
-        if (!writer.write(1, kPresenceWidth) || !scriptable_auth::write_absent_client_ref(writer)) {
+        if (!writer.write(1, kPresenceWidth)) {
             return false;
         }
+        if (index == kSpawnRuleReferenceIndex && preset.spawnRule.has_value()) {
+            if (!auth_fields::write_client_ref(writer,
+                                               preset.spawnRule->registryKey,
+                                               kSpawnRuleSlotType,
+                                               preset.spawnRule->slotIndex)) {
+                return false;
+            }
+        } else if (!scriptable_auth::write_absent_client_ref(writer)) {
+            return false;
+        }
+    }
+    // The client binds the destination only when this revision differs from its echo.
+    if (!write_absent(writer, kAfterSpawnReferenceAbsentFieldCount)) {
+        return false;
+    }
+    if (preset.destination.has_value()) {
+        if (!writer.write(1, kPresenceWidth)
+            || !writer.write(preset.generation, kDestinationRevisionWidth)) {
+            return false;
+        }
+    } else if (!write_absent(writer, 1)) {
+        return false;
     }
     // A name the host does not own is the no-name value, never zero: `sub_7FF7421A9720`
     // compares this field against it and walks the member collection when it differs.
@@ -131,8 +180,7 @@ constexpr std::size_t kAfterSpawnReferenceAbsentFieldCount = 5;
     const bool hasRequests = std::any_of(preset.requestedCounts.begin(),
                                          preset.requestedCounts.end(),
                                          [](std::int32_t count) { return count > 0; });
-    if (!write_absent(writer, kAfterSpawnReferenceAbsentFieldCount)
-        || !writer.write(hasRequests ? kActiveWireValue : kInactiveWireValue, kActiveWidth)
+    if (!writer.write(hasRequests ? kActiveWireValue : kInactiveWireValue, kActiveWidth)
         || !writer.write(static_cast<std::uint32_t>(mode) + kModeBias, kModeWidth)
         || !writer.write(1, kPresenceWidth)
         || !writer.write(preset.nameHash.value_or(kEmptyNameHash), kNameHashWidth)) {

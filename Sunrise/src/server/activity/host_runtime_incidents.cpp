@@ -85,6 +85,7 @@ void apply_incident(const IncidentInput& input, std::uint64_t now) noexcept {
     touch(*instance);
     ++instance->view.incidentsReceived;
     Event event{};
+    event.attemptGeneration = input.attemptGeneration;
     event.binding = input.binding;
     event.tick = now;
     event.kind = EventKind::incidentReceived;

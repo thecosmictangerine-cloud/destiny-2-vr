@@ -18,6 +18,8 @@ struct RenderIndex final {
     std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> tasksBySlot{};
     std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> dialogueBySlot{};
     std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> directivesBySlot{};
+    std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> combatGroupsBySlot{};
+    std::unordered_map<std::uint32_t, std::vector<std::uint32_t>> abilitiesBySlot{};
     std::unordered_map<std::uint32_t, std::uint32_t> worldsByScenarioTag{};
 };
 

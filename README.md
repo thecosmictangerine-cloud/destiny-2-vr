@@ -1,21 +1,22 @@
 # Sunrise
 
-Destiny 2 Offline Exploration Mod
+Destiny 2 Offline Preservation Mod
 
 > This mod installs onto an old build of the game and allows you to play it offline, loading into
-> destinations and exploring them.
+> destinations, re-create missions and more.
 >
-> Most gameplay features are not currently supported. (Missions, Enemies, NPCs, Quests, Persistent Saves, ...)
+> Some gameplay features are not currently supported. (Full Progression, Multiplayer, Lots of Missions ...)
 
-- [Install Instructions](https://github.com/stanuwu/Sunrise/wiki/Installing)
-- [FAQ](https://github.com/stanuwu/Sunrise/wiki/FAQ)
-- [Common Issues](https://github.com/stanuwu/Sunrise/wiki/Common-Issues)
+- [Install Instructions](https://projectsunrise.dev/guides/installing/)
+- [FAQ](https://projectsunrise.dev/faq/)
+- [Documentation](https://projectsunrise.dev/docs/)
 - [Discord](https://discord.gg/22JS6et5k9)
 
 ## Features
 - Load into any Destination (matchmade activities are currently broken)
+- Script Missions
 - Exploration Features (Fly, Noclip, Activity Override, ...)
-- Basic Inventory Management
+- Persistent Save
 
 ## WIP
 
@@ -98,15 +99,23 @@ Pull Requests are welcome. Please follow these rules:
 - **Complete Implementations** - Do not PR features that are not completed and/or have non-functional parts.
 - **Server Focus** - For features that are intended to be part of the server, don't abuse client patches. Sometimes it's needed but mostly everything should go through the right requests and pushes.
 
+## Team
+
+- [stan](https://github.com/stanuwu) - Creator and lead developer. Works on core development
+  and the mission script SDK and API.
+- [techno](https://github.com/Techno453) - Works on p2p multiplayer.
+- [gage](https://github.com/gagefulwood) - Works on investment and progression.
+- All Sunrise open source contributors.
+
 ## Credits
 
 ### All Contributors
 
 ### Dependencies:
 
-- https://github.com/ocornut/imgui
-- https://github.com/microsoft/detours
-- https://lua.org/
+- [ImGui](https://github.com/ocornut/imgui)
+- [Detours](https://github.com/microsoft/detours)
+- [Lua](https://lua.org/)
 - [SQLite](https://www.sqlite.org/)
 
 ### Artwork:

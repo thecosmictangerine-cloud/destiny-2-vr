@@ -16,8 +16,10 @@
 #include "../../middleware/bap/activity_message/squad_objective_auth.h"
 #include "../../middleware/content/packages/tables/region_reader.h"
 #include "../../state/activity/runtime.h"
+#include "../../state/activity_sdk/actor_sequences.h"
 #include "../../state/build_data/runtime.h"
 #include "../bap/runtime.h"
+#include "activity_sdk_actor_sequences.h"
 #include "activity_sdk_device_internal.h"
 #include "host_runtime.h"
 
@@ -144,7 +146,8 @@ Status apply_auth_reserved(const sdk::BoundView& view,
                            std::span<const std::byte> body,
                            std::uint16_t bitCount,
                            std::span<const std::byte> sdkBuildSha256,
-                           const host::ScriptableOutputReservation& reservation) noexcept {
+                           const host::ScriptableOutputReservation& reservation,
+                           host::ScriptableOverrideKind kind) noexcept {
     const Status validated = validate_auth(view,
                                            slotRow,
                                            objectTag,
@@ -171,7 +174,8 @@ Status apply_auth_reserved(const sdk::BoundView& view,
         bitCount,
         prepared.effectiveRegion,
         prepared.activityClientGeneration,
-        &reservation);
+        &reservation,
+        kind);
     if (queued) {
         return Status::queued;
     }
@@ -289,7 +293,94 @@ Status set_combatant_channel(const sdk::BoundView& view,
                : Status::refused;
 }
 
-/** Binds one type-2 combatant to its authored squad member for an operator action. */
+/** Plays a sequence only through the current client's exact generated combatant route. */
+Status play_combatant_sequence(const sdk::BoundView& view,
+                               std::uint32_t slotRow,
+                               std::uint32_t sequenceRow) noexcept {
+    actor_sequences::Owner owner{};
+    if (!actor_sequences::owner(view, slotRow, owner)) {
+        return Status::invalidValue;
+    }
+    const auto* const sequence =
+        sdk::resolve_actor_sequence(*view.catalog, owner.actorClassRow, sequenceRow);
+    if (sequence == nullptr || !sdk::actor_sequence_playable(*sequence)) {
+        return Status::invalidValue;
+    }
+    PreparedDevice prepared{};
+    const Status status = prepare_combatant(view, slotRow, prepared);
+    if (status != Status::ready) {
+        return status;
+    }
+    if (!prepared.target.stateLocalRoster) {
+        return Status::targetUnavailable;
+    }
+    return host::request_state_local_type2_sequence(view.binding,
+                                                    prepared.target,
+                                                    prepared.generatedRosterGroup,
+                                                    sequence->keyHash,
+                                                    prepared.activityClientGeneration)
+               ? Status::queued
+               : Status::refused;
+}
+
+/** Resolves the captured owner again before reserving a native atom program. */
+Status
+play_combatant_sequence_reserved(const sdk::BoundView& view,
+                                 const state::activity::mission::ActorSequenceOwner& expected,
+                                 std::uint32_t sequenceRow,
+                                 const host::ScriptableOutputReservation& reservation) noexcept {
+    actor_sequences::Owner owner{};
+    if (!actor_sequences::owner(view, expected.slotRow, owner) || owner != expected) {
+        return Status::staleActivityClient;
+    }
+    const auto* const sequence =
+        sdk::resolve_actor_sequence(*view.catalog, owner.actorClassRow, sequenceRow);
+    if (sequence == nullptr || !sdk::actor_sequence_playable(*sequence)) {
+        return Status::invalidValue;
+    }
+    PreparedDevice prepared{};
+    const Status status = prepare_combatant(view, expected.slotRow, prepared);
+    if (status != Status::ready) {
+        return status;
+    }
+    if (!prepared.target.stateLocalRoster) {
+        return Status::targetUnavailable;
+    }
+    return host::request_state_local_type2_sequence(view.binding,
+                                                    prepared.target,
+                                                    prepared.generatedRosterGroup,
+                                                    sequence->keyHash,
+                                                    prepared.activityClientGeneration,
+                                                    &reservation)
+               ? Status::queued
+               : Status::refused;
+}
+
+/** An empty new-generation atom program cancels the current sequence. */
+Status stop_combatant_sequence(const sdk::BoundView& view, std::uint32_t slotRow) noexcept {
+    PreparedDevice prepared{};
+    const Status status = prepare_combatant(view, slotRow, prepared);
+    if (status != Status::ready) {
+        return status;
+    }
+    if (!prepared.target.stateLocalRoster) {
+        return Status::targetUnavailable;
+    }
+    return host::request_state_local_type2_sequence(view.binding,
+                                                    prepared.target,
+                                                    prepared.generatedRosterGroup,
+                                                    0,
+                                                    prepared.activityClientGeneration)
+               ? Status::queued
+               : Status::refused;
+}
+
+/**
+ * Arms one combatant for its scene's squad member spawn.
+ * @param view Current SDK and activity binding.
+ * @param slotRow Exact combatant slot in that SDK.
+ * @return Queued only when the binding request reaches the host.
+ */
 Status bind_combatant_to_squad(const sdk::BoundView& view, std::uint32_t slotRow) noexcept {
     PreparedDevice prepared{};
     const Status status = prepare_combatant(view, slotRow, prepared);
@@ -442,7 +533,8 @@ Status fire_trigger(const sdk::BoundView& view, std::uint32_t slotRow) noexcept 
 /** Fires one device's configured trigger against an already-reserved Host output revision. */
 Status fire_trigger_reserved(const sdk::BoundView& view,
                              std::uint32_t slotRow,
-                             const host::ScriptableOutputReservation& reservation) noexcept {
+                             const host::ScriptableOutputReservation& reservation,
+                             bool enabled) noexcept {
     PreparedDevice prepared{};
     const Status status = prepare_trigger(view, slotRow, prepared);
     if (status != Status::ready) {
@@ -456,9 +548,10 @@ Status fire_trigger_reserved(const sdk::BoundView& view,
                   prepared.generatedRosterGroup,
                   prepared.effectiveRegion,
                   prepared.activityClientGeneration,
-                  &reservation)
+                  &reservation,
+                  enabled)
             : server::bap::request_activity_type31_override(
-                  view.binding, prepared.target, prepared.effectiveRegion, &reservation);
+                  view.binding, prepared.target, prepared.effectiveRegion, &reservation, enabled);
     if (queued) {
         return Status::queued;
     }
